@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kudlit_ph/app/router.dart';
 
 void main() {
-  runApp(const KudlitApp());
+  runApp(const ProviderScope(child: KudlitApp()));
 }
 
 class KudlitApp extends StatelessWidget {
@@ -9,16 +11,13 @@ class KudlitApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MaterialApp.router(
       title: 'Kudlit',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: const Scaffold(
-        body: Center(
-          child: Text('Kudlit'),
-        ),
-      ),
+      routerConfig: router,
     );
   }
 }
