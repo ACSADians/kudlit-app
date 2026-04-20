@@ -136,3 +136,17 @@ Dependencies flow inward only: `presentation` → `domain` ← `data`. The `doma
 
 ### Error Handling
 Domain layer returns `Either<Failure, T>` (using `fpdart` or `dartz`). Use cases propagate typed `Failure` subclasses; presentation layer maps them to user-facing messages.
+
+## Commit Rules
+
+1. **Branch off `dev`** — all work starts from a new branch cut from `dev`, never from `main`.
+2. **Prefix with type** — commit messages must start with a conventional type:
+   - `feat:` new feature
+   - `fix:` bug fix
+   - `chore:` tooling, dependencies, config
+   - `refactor:` code change with no behavior change
+   - `test:` adding or updating tests
+   - `docs:` documentation only
+   - `style:` formatting, no logic change
+3. **Atomic and concise** — one logical change per commit; subject line under 72 characters; no filler words.
+4. **Run the linter before committing** — always run `flutter analyze` and resolve all issues before creating a commit.
