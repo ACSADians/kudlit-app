@@ -35,6 +35,9 @@ flutter doctor
 
 ## Getting Started
 
+For the full local setup, run commands, build steps, and troubleshooting notes,
+see [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md).
+
 ```bash
 git clone <repo-url>
 cd kudlit_ph
