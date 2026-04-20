@@ -1,0 +1,180 @@
+services:
+  app:
+    build:
+      context: .
+      args:
+        SUPABASE_URL: ${SUPABASE_URL:-http://localhost:8000}
+        SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:-}
+    ports:
+      - '${APP_PORT:-8080}:80'
+    depends_on:
+      supabase-kong:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${APP_POSTGRES_DB:-kudlit}
+      POSTGRES_USER: ${APP_POSTGRES_USER:-kudlit}
+      POSTGRES_PASSWORD: ${APP_POSTGRES_PASSWORD:-kudlit_dev_password}
+    ports:
+      - '${APP_POSTGRES_PORT:-5433}:5432'
+    volumes:
+      - app-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U ${APP_POSTGRES_USER:-kudlit} -d ${APP_POSTGRES_DB:-kudlit}
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  supabase-kong:
+    image: kong/kong:3.9.1
+    environment:
+      KONG_DATABASE: 'off'
+      KONG_DECLARATIVE_CONFIG: /usr/local/kong/declarative/kong.yml
+      KONG_DNS_ORDER: LAST,A,CNAME
+      KONG_PLUGINS: bundled
+      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+    ports:
+      - '${SUPABASE_API_PORT:-8000}:8000'
+    volumes:
+      - ./docker/supabase/kong.yml:/home/kong/temp.yml:ro
+      - ./docker/supabase/kong-entrypoint.sh:/home/kong/kong-entrypoint.sh:ro
+    entrypoint: /home/kong/kong-entrypoint.sh
+    depends_on:
+      supabase-auth:
+        condition: service_healthy
+      supabase-rest:
+        condition: service_started
+      supabase-realtime:
+        condition: service_started
+    healthcheck:
+      test:
+        - CMD
+        - kong
+        - health
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  supabase-db:
+    image: supabase/postgres:15.8.1.085
+    environment:
+      POSTGRES_PASSWORD: ${SUPABASE_POSTGRES_PASSWORD:-supabase_dev_password}
+      POSTGRES_DB: ${SUPABASE_POSTGRES_DB:-postgres}
+      JWT_SECRET: ${SUPABASE_JWT_SECRET}
+      JWT_EXP: ${SUPABASE_JWT_EXPIRY:-3600}
+    ports:
+      - '${SUPABASE_POSTGRES_PORT:-5434}:5432'
+    volumes:
+      - ./docker/supabase/db/init-roles.sh:/docker-entrypoint-initdb.d/00-init-roles.sh:ro
+      - supabase-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U postgres -h localhost
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  supabase-auth:
+    image: supabase/gotrue:v2.186.0
+    environment:
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_API_PORT: 9999
+      API_EXTERNAL_URL: ${SUPABASE_URL:-http://localhost:8000}
+      GOTRUE_SITE_URL: ${SITE_URL:-http://localhost:8080}
+      GOTRUE_URI_ALLOW_LIST: ${ADDITIONAL_REDIRECT_URLS:-}
+      GOTRUE_DISABLE_SIGNUP: ${DISABLE_SIGNUP:-false}
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:${SUPABASE_POSTGRES_PASSWORD:-supabase_dev_password}@supabase-db:5432/${SUPABASE_POSTGRES_DB:-postgres}
+      GOTRUE_JWT_ADMIN_ROLES: service_role
+      GOTRUE_JWT_AUD: authenticated
+      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+      GOTRUE_JWT_EXP: ${SUPABASE_JWT_EXPIRY:-3600}
+      GOTRUE_JWT_SECRET: ${SUPABASE_JWT_SECRET}
+      GOTRUE_EXTERNAL_EMAIL_ENABLED: ${ENABLE_EMAIL_SIGNUP:-true}
+      GOTRUE_MAILER_AUTOCONFIRM: ${ENABLE_EMAIL_AUTOCONFIRM:-true}
+      GOTRUE_SMTP_ADMIN_EMAIL: ${SMTP_ADMIN_EMAIL:-admin@example.com}
+      GOTRUE_SMTP_HOST: ${SMTP_HOST:-inbucket}
+      GOTRUE_SMTP_PORT: ${SMTP_PORT:-2500}
+      GOTRUE_SMTP_USER: ${SMTP_USER:-}
+      GOTRUE_SMTP_PASS: ${SMTP_PASS:-}
+      GOTRUE_SMTP_SENDER_NAME: ${SMTP_SENDER_NAME:-Kudlit}
+    depends_on:
+      supabase-db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - --no-verbose
+        - --tries=1
+        - --spider
+        - http://localhost:9999/health
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  supabase-rest:
+    image: postgrest/postgrest:v14.8
+    environment:
+      PGRST_DB_URI: postgres://authenticator:${SUPABASE_POSTGRES_PASSWORD:-supabase_dev_password}@supabase-db:5432/${SUPABASE_POSTGRES_DB:-postgres}
+      PGRST_DB_SCHEMAS: ${PGRST_DB_SCHEMAS:-public,storage,graphql_public}
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_JWT_SECRET: ${SUPABASE_JWT_SECRET}
+      PGRST_DB_USE_LEGACY_GUCS: 'false'
+      PGRST_APP_SETTINGS_JWT_SECRET: ${SUPABASE_JWT_SECRET}
+      PGRST_APP_SETTINGS_JWT_EXP: ${SUPABASE_JWT_EXPIRY:-3600}
+    depends_on:
+      supabase-db:
+        condition: service_healthy
+
+  supabase-realtime:
+    image: supabase/realtime:v2.76.5
+    environment:
+      PORT: 4000
+      DB_HOST: supabase-db
+      DB_PORT: 5432
+      DB_USER: supabase_admin
+      DB_PASSWORD: ${SUPABASE_POSTGRES_PASSWORD:-supabase_dev_password}
+      DB_NAME: ${SUPABASE_POSTGRES_DB:-postgres}
+      DB_AFTER_CONNECT_QUERY: 'SET search_path TO _realtime'
+      DB_ENC_KEY: supabaserealtime
+      API_JWT_SECRET: ${SUPABASE_JWT_SECRET}
+      SECRET_KEY_BASE: ${SUPABASE_SECRET_KEY_BASE:-kudlit-local-secret-key-base-change-me}
+      ERL_AFLAGS: -proto_dist inet_tcp
+      DNS_NODES: "''"
+      APP_NAME: realtime
+      SEED_SELF_HOST: 'true'
+      RUN_JANITOR: 'true'
+    depends_on:
+      supabase-db:
+        condition: service_healthy
+
+  supabase-studio:
+    image: supabase/studio:2026.04.08-sha-205cbe7
+    environment:
+      HOSTNAME: 0.0.0.0
+      SUPABASE_URL: http://supabase-kong:8000
+      SUPABASE_PUBLIC_URL: ${SUPABASE_URL:-http://localhost:8000}
+      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
+      SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      POSTGRES_HOST: supabase-db
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${SUPABASE_POSTGRES_DB:-postgres}
+      POSTGRES_PASSWORD: ${SUPABASE_POSTGRES_PASSWORD:-supabase_dev_password}
+      DEFAULT_ORGANIZATION_NAME: Kudlit
+      DEFAULT_PROJECT_NAME: Kudlit Local
+    ports:
+      - '${SUPABASE_STUDIO_PORT:-3001}:3000'
+    depends_on:
+      supabase-kong:
+        condition: service_healthy
+
+volumes:
+  app-postgres-data:
+  supabase-db-data:

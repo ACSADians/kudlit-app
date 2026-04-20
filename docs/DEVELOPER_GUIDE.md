@@ -1,4 +1,3 @@
-# Kudlit Developer Guide
 
 This guide explains how to set up, run, test, and build the Kudlit Flutter
 application from a fresh checkout.

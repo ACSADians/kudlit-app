@@ -1,0 +1,13 @@
+.dart_tool/
+.git/
+.idea/
+.vscode/
+android/build/
+build/
+coverage/
+ios/Flutter/.last_build_id
+linux/flutter/ephemeral/
+macos/Flutter/ephemeral/
+windows/flutter/ephemeral/
+.env
+*.log

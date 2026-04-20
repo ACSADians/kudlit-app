@@ -36,7 +36,7 @@ flutter doctor
 ## Getting Started
 
 For the full local setup, run commands, build steps, and troubleshooting notes,
-see [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md).
+see [DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md).
 
 ```bash
 git clone <repo-url>
@@ -81,6 +81,40 @@ flutter test --name "should return translation"      # by name pattern
 # Format
 dart format lib/ test/
 ```
+
+---
+
+## Docker, Postgres, and Supabase
+
+The repository includes a Docker setup for the Flutter web app, a standalone
+Postgres database, and a local Supabase-compatible stack.
+
+```bash
+cp .env.example .env
+docker compose up --build
+```
+
+Services:
+
+| Service | URL / Port |
+|---|---|
+| Flutter web app | http://localhost:8080 |
+| Supabase API gateway | http://localhost:8000 |
+| Supabase Studio | http://localhost:3001 |
+| Standalone Postgres | localhost:5433 |
+| Supabase Postgres | localhost:5434 |
+
+For local Flutter development without Docker, pass the same Supabase values at
+runtime:
+
+```bash
+flutter run -d chrome \
+  --dart-define=SUPABASE_URL=http://localhost:8000 \
+  --dart-define=SUPABASE_ANON_KEY=<value from .env>
+```
+
+The `.env.example` values are for local development only. Replace secrets before
+using this stack outside your machine.
 
 ---
 

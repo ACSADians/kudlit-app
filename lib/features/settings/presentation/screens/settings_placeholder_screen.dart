@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/config/app_environment.dart';
 import '../../../shared/presentation/widgets/placeholder_feature_content.dart';
 
 class SettingsPlaceholderScreen extends StatelessWidget {
@@ -7,11 +8,13 @@ class SettingsPlaceholderScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const PlaceholderFeatureContent(
+    return PlaceholderFeatureContent(
       icon: Icons.settings_outlined,
       title: 'Settings',
       subtitle: 'App preferences',
-      body: 'Language, camera, and model settings will open here.',
+      body: AppEnvironment.hasSupabaseConfig
+          ? 'Supabase is configured for this build.'
+          : 'Supabase is not configured for this build.',
     );
   }
 }
