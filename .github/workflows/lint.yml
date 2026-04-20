@@ -1,0 +1,59 @@
+name: Lint
+
+on:
+  push:
+    branches:
+      - dev
+      - stg
+      - main
+  pull_request:
+    branches:
+      - dev
+      - stg
+      - main
+
+jobs:
+  lint:
+    name: flutter analyze
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version-file: pubspec.yaml
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        id: analyze
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          flutter analyze --fatal-infos 2>&1 | tee analyze_output.txt
+
+      - name: Comment lint issues on PR
+        if: steps.analyze.outcome == 'failure' && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const output = fs.readFileSync('analyze_output.txt', 'utf8');
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `### Lint failed\n\n\`\`\`\n${output}\n\`\`\``,
+            });
+
+      - name: Fail if analyze failed
+        if: steps.analyze.outcome == 'failure'
+        run: exit 1
