@@ -1,24 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-void main() {
-  runApp(const KudlitApp());
-}
+import 'package:kudlit_ph/app/app.dart';
+import 'package:kudlit_ph/core/config/supabase_config.dart';
 
-class KudlitApp extends StatelessWidget {
-  const KudlitApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Kudlit',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-      ),
-      home: const Scaffold(
-        body: Center(
-          child: Text('Kudlit'),
-        ),
-      ),
-    );
-  }
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load();
+  await Supabase.initialize(
+    url: SupabaseConfig.url,
+    anonKey: SupabaseConfig.anonKey,
+  );
+  runApp(const ProviderScope(child: KudlitApp()));
 }
