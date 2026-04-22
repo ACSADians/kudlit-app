@@ -12,6 +12,12 @@ abstract interface class SupabaseAuthDatasource {
     required String password,
   });
 
+  // Returns true when email confirmation is pending; false when auto-confirmed.
+  Future<bool> signUpWithEmail({
+    required String email,
+    required String password,
+  });
+
   Future<void> signOut();
 
   Future<void> resetPassword({required String email});
@@ -53,6 +59,30 @@ class SupabaseAuthDatasourceImpl implements SupabaseAuthDatasource {
         throw const ServerException(message: 'Sign in returned no user.');
       }
       return AuthUserModel.fromSupabaseUser(user);
+    } on AuthException catch (e) {
+      throw ServerException(
+        message: e.message,
+        statusCode: int.tryParse(e.statusCode ?? ''),
+      );
+    } on Exception catch (e) {
+      throw ServerException(message: e.toString());
+    }
+  }
+
+  @override
+  Future<bool> signUpWithEmail({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      final AuthResponse response = await _client.auth.signUp(
+        email: email,
+        password: password,
+      );
+      if (response.user == null) {
+        throw const ServerException(message: 'Sign up returned no user.');
+      }
+      return response.session == null;
     } on AuthException catch (e) {
       throw ServerException(
         message: e.message,

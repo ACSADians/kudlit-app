@@ -5,10 +5,12 @@ class EmailField extends StatelessWidget {
     super.key,
     required this.controller,
     this.errorText,
+    this.validator,
   });
 
   final TextEditingController controller;
   final String? errorText;
+  final String? Function(String?)? validator;
 
   @override
   Widget build(BuildContext context) {
@@ -16,6 +18,7 @@ class EmailField extends StatelessWidget {
       controller: controller,
       keyboardType: TextInputType.emailAddress,
       autocorrect: false,
+      validator: validator,
       decoration: InputDecoration(
         labelText: 'Email',
         errorText: errorText,

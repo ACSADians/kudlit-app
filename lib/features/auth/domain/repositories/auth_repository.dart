@@ -12,6 +12,12 @@ abstract interface class AuthRepository {
     required String password,
   });
 
+  // Returns true when email confirmation is pending; false when auto-confirmed.
+  Future<Either<Failure, bool>> signUpWithEmail({
+    required String email,
+    required String password,
+  });
+
   Future<Either<Failure, Unit>> signOut();
 
   Future<Either<Failure, Unit>> resetPassword({required String email});

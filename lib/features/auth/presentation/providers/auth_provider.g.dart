@@ -77,6 +77,23 @@ final signInWithEmailProvider = AutoDisposeProvider<SignInWithEmail>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef SignInWithEmailRef = AutoDisposeProviderRef<SignInWithEmail>;
+String _$signUpWithEmailHash() => r'043ba52f93860ffdb09536b33d9e02ab9ff53ded';
+
+/// See also [signUpWithEmail].
+@ProviderFor(signUpWithEmail)
+final signUpWithEmailProvider = AutoDisposeProvider<SignUpWithEmail>.internal(
+  signUpWithEmail,
+  name: r'signUpWithEmailProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$signUpWithEmailHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef SignUpWithEmailRef = AutoDisposeProviderRef<SignUpWithEmail>;
 String _$signOutHash() => r'10456630b32ae1cfab6e5b6295f6bb2e2b1ac376';
 
 /// See also [signOut].

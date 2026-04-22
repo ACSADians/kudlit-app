@@ -10,6 +10,7 @@ import 'package:kudlit_ph/features/auth/domain/repositories/auth_repository.dart
 import 'package:kudlit_ph/features/auth/domain/usecases/reset_password.dart';
 import 'package:kudlit_ph/features/auth/domain/usecases/sign_in_with_email.dart';
 import 'package:kudlit_ph/features/auth/domain/usecases/sign_out.dart';
+import 'package:kudlit_ph/features/auth/domain/usecases/sign_up_with_email.dart';
 import 'package:kudlit_ph/features/auth/presentation/providers/auth_provider.dart';
 
 part 'auth_notifier.g.dart';
@@ -48,6 +49,14 @@ class AuthNotifier extends _$AuthNotifier {
       (Failure failure) => state = AsyncError(failure, StackTrace.current),
       (AuthUser user) => state = AsyncData(user),
     );
+  }
+
+  Future<Either<Failure, bool>> signUp({
+    required String email,
+    required String password,
+  }) async {
+    final SignUpWithEmail useCase = ref.read(signUpWithEmailProvider);
+    return useCase(SignUpWithEmailParams(email: email, password: password));
   }
 
   Future<void> signOut() async {

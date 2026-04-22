@@ -48,3 +48,17 @@ app.*.map.json
 .env
 .env.*
 !.env.example
+
+# Node (not part of this project)
+node_modules/
+package.json
+package-lock.json
+
+# Claude Code memory (local only)
+.claude/
+
+# Supabase local temp files
+supabase/.temp/
+
+# Flutter DevTools (machine-specific)
+devtools_options.yaml

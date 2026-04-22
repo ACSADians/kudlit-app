@@ -35,6 +35,24 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<Either<Failure, bool>> signUpWithEmail({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      final bool needsConfirmation = await _datasource.signUpWithEmail(
+        email: email,
+        password: password,
+      );
+      return right(needsConfirmation);
+    } on ServerException catch (e) {
+      return left(_mapServerExceptionToFailure(e));
+    } on Exception {
+      return left(const Failure.network(message: 'Unexpected network error.'));
+    }
+  }
+
+  @override
   Future<Either<Failure, Unit>> signOut() async {
     try {
       await _datasource.signOut();

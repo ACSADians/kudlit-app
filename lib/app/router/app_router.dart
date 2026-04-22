@@ -7,6 +7,7 @@ import 'package:kudlit_ph/features/auth/domain/entities/auth_user.dart';
 import 'package:kudlit_ph/features/auth/presentation/screens/forgot_password_screen.dart';
 import 'package:kudlit_ph/features/auth/presentation/screens/home_screen.dart';
 import 'package:kudlit_ph/features/auth/presentation/screens/login_screen.dart';
+import 'package:kudlit_ph/features/auth/presentation/screens/sign_up_screen.dart';
 
 part 'app_router.g.dart';
 
@@ -27,6 +28,7 @@ GoRouter appRouter(Ref ref) {
           authState.hasValue && authState.value != null;
       final bool isOnAuthRoute =
           state.matchedLocation == '/login' ||
+          state.matchedLocation == '/sign-up' ||
           state.matchedLocation == '/forgot-password' ||
           state.matchedLocation == '/auth/reset';
 
@@ -39,6 +41,11 @@ GoRouter appRouter(Ref ref) {
         path: '/login',
         builder: (BuildContext context, GoRouterState state) =>
             const LoginScreen(),
+      ),
+      GoRoute(
+        path: '/sign-up',
+        builder: (BuildContext context, GoRouterState state) =>
+            const SignUpScreen(),
       ),
       GoRoute(
         path: '/forgot-password',

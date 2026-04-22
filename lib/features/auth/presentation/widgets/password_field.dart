@@ -17,10 +17,12 @@ class PasswordField extends ConsumerWidget {
     super.key,
     required this.controller,
     this.errorText,
+    this.validator,
   });
 
   final TextEditingController controller;
   final String? errorText;
+  final String? Function(String?)? validator;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -28,6 +30,7 @@ class PasswordField extends ConsumerWidget {
     return TextFormField(
       controller: controller,
       obscureText: !isVisible,
+      validator: validator,
       decoration: InputDecoration(
         labelText: 'Password',
         errorText: errorText,

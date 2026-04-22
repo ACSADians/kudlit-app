@@ -90,6 +90,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 isLoading: authState.isLoading,
                 onPressed: _onSignIn,
               ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text("Don't have an account?"),
+                  TextButton(
+                    onPressed: () => context.push('/sign-up'),
+                    child: const Text('Create one'),
+                  ),
+                ],
+              ),
             ],
           ),
         ),

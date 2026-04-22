@@ -1,4 +1,4 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' hide AuthUser;
 import 'package:kudlit_ph/features/auth/domain/entities/auth_user.dart';
 
 class AuthUserModel extends AuthUser {
