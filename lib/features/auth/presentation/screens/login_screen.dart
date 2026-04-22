@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:kudlit_ph/core/error/failures.dart';
 import 'package:kudlit_ph/features/auth/domain/entities/auth_user.dart';
 import 'package:kudlit_ph/features/auth/presentation/providers/auth_notifier.dart';
-import 'package:kudlit_ph/features/auth/presentation/widgets/auth_button.dart';
-import 'package:kudlit_ph/features/auth/presentation/widgets/email_field.dart';
-import 'package:kudlit_ph/features/auth/presentation/widgets/password_field.dart';
+import 'package:kudlit_ph/features/auth/presentation/widgets/login_form_body.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -58,50 +55,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text(
-                'Kudlit',
-                style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 32),
-              EmailField(controller: _emailController),
-              const SizedBox(height: 16),
-              PasswordField(controller: _passwordController),
-              const SizedBox(height: 8),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: () => context.push('/forgot-password'),
-                  child: const Text('Forgot password?'),
-                ),
-              ),
-              if (errorMessage != null) ...[
-                const SizedBox(height: 8),
-                Text(
-                  errorMessage,
-                  style: const TextStyle(color: Colors.red),
-                ),
-              ],
-              const SizedBox(height: 16),
-              AuthButton(
-                label: 'Sign In',
-                isLoading: authState.isLoading,
-                onPressed: _onSignIn,
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text("Don't have an account?"),
-                  TextButton(
-                    onPressed: () => context.push('/sign-up'),
-                    child: const Text('Create one'),
-                  ),
-                ],
-              ),
-            ],
+          child: LoginFormBody(
+            emailController: _emailController,
+            passwordController: _passwordController,
+            isLoading: authState.isLoading,
+            errorMessage: errorMessage,
+            onSignIn: _onSignIn,
           ),
         ),
       ),
