@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:kudlit_ph/core/error/exceptions.dart';
 import 'package:kudlit_ph/features/auth/data/models/auth_user_model.dart';
@@ -105,9 +106,14 @@ class SupabaseAuthDatasourceImpl implements SupabaseAuthDatasource {
   @override
   Future<void> resetPassword({required String email}) async {
     try {
+      // Web browsers cannot open custom URL schemes — fall back to null so
+      // Supabase uses the Site URL configured in the project dashboard.
+      // Mobile uses the deep link to re-open the app directly.
+      final String? redirectTo =
+          kIsWeb ? null : 'kudlit://auth/reset';
       await _client.auth.resetPasswordForEmail(
         email,
-        redirectTo: 'kudlit://auth/reset',
+        redirectTo: redirectTo,
       );
     } on AuthException catch (e) {
       throw ServerException(message: e.message);
