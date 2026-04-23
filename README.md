@@ -183,3 +183,12 @@ Domain use cases return `Either<Failure, T>`. Define typed `Failure` subclasses 
 ### Imports
 
 Order: `dart:` → `flutter:` → packages → local; blank line between groups. Use relative imports within the same feature; `package:kudlit_ph/...` across features.
+
+---
+
+## Commit Rules
+
+- **Branch from `dev`** — cut a new branch from `dev` before starting any work.
+- **Conventional prefix** — every commit message starts with a type: `feat:`, `fix:`, `chore:`, `refactor:`, `test:`, `docs:`, or `style:`.
+- **Atomic and concise** — one logical change per commit; subject line under 72 characters.
+- **Lint before committing** — run `flutter analyze` and fix all issues before committing.
