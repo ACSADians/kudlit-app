@@ -1,6 +1,7 @@
 import 'package:fpdart/fpdart.dart';
 import 'package:kudlit_ph/core/error/failures.dart';
 import 'package:kudlit_ph/features/auth/domain/entities/auth_user.dart';
+import 'package:kudlit_ph/features/auth/domain/entities/sign_up_status.dart';
 
 abstract interface class AuthRepository {
   Stream<AuthUser?> get authStateChanges;
@@ -12,8 +13,7 @@ abstract interface class AuthRepository {
     required String password,
   });
 
-  // Returns true when email confirmation is pending; false when auto-confirmed.
-  Future<Either<Failure, bool>> signUpWithEmail({
+  Future<Either<Failure, SignUpStatus>> signUpWithEmail({
     required String email,
     required String password,
   });

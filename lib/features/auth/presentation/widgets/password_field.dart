@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:kudlit_ph/app/constants.dart';
 
 part 'password_field.g.dart';
 
@@ -32,7 +33,7 @@ class PasswordField extends ConsumerWidget {
       obscureText: !isVisible,
       validator: validator,
       decoration: InputDecoration(
-        labelText: 'Password',
+        labelText: AppConstants.passwordLabel,
         errorText: errorText,
         prefixIcon: const Icon(Icons.lock_outlined),
         suffixIcon: IconButton(

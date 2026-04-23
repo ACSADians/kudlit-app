@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kudlit_ph/app/constants.dart';
 
 class EmailField extends StatelessWidget {
   const EmailField({
@@ -20,7 +21,7 @@ class EmailField extends StatelessWidget {
       autocorrect: false,
       validator: validator,
       decoration: InputDecoration(
-        labelText: 'Email',
+        labelText: AppConstants.emailLabel,
         errorText: errorText,
         prefixIcon: const Icon(Icons.email_outlined),
         border: const OutlineInputBorder(),

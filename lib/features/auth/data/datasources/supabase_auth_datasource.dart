@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:kudlit_ph/core/error/exceptions.dart';
 import 'package:kudlit_ph/features/auth/data/models/auth_user_model.dart';
+import 'package:kudlit_ph/features/auth/domain/entities/sign_up_status.dart';
 
 abstract interface class SupabaseAuthDatasource {
   Stream<AuthUserModel?> get authStateChanges;
@@ -13,8 +14,7 @@ abstract interface class SupabaseAuthDatasource {
     required String password,
   });
 
-  // Returns true when email confirmation is pending; false when auto-confirmed.
-  Future<bool> signUpWithEmail({
+  Future<SignUpStatus> signUpWithEmail({
     required String email,
     required String password,
   });
@@ -71,7 +71,7 @@ class SupabaseAuthDatasourceImpl implements SupabaseAuthDatasource {
   }
 
   @override
-  Future<bool> signUpWithEmail({
+  Future<SignUpStatus> signUpWithEmail({
     required String email,
     required String password,
   }) async {
@@ -83,7 +83,9 @@ class SupabaseAuthDatasourceImpl implements SupabaseAuthDatasource {
       if (response.user == null) {
         throw const ServerException(message: 'Sign up returned no user.');
       }
-      return response.session == null;
+      return response.session == null
+          ? SignUpStatus.confirmationPending
+          : SignUpStatus.autoConfirmed;
     } on AuthException catch (e) {
       throw ServerException(
         message: e.message,

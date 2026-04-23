@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kudlit_ph/app/constants.dart';
 import 'package:kudlit_ph/core/error/failures.dart';
 import 'package:kudlit_ph/features/auth/domain/entities/auth_user.dart';
 import 'package:kudlit_ph/features/auth/presentation/providers/auth_notifier.dart';
@@ -31,16 +32,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   String _mapFailureToMessage(Object? error) {
-    if (error is! Failure) return 'An unexpected error occurred.';
+    if (error is! Failure) return AppConstants.unexpectedErrorOccurred;
     return error.when(
-      network: (String msg) => 'Network error: $msg',
-      invalidCredentials: () => 'Invalid email or password.',
-      userNotFound: () => 'No account found with this email.',
-      emailAlreadyInUse: () => 'Email already in use.',
-      weakPassword: () => 'Password is too weak.',
-      tooManyRequests: () => 'Too many attempts. Please wait.',
-      sessionExpired: () => 'Session expired. Please sign in again.',
-      passwordResetEmailSent: () => 'Password reset email sent.',
+      network: (String msg) => '${AppConstants.networkErrorPrefix}$msg',
+      invalidCredentials: () => AppConstants.invalidCredentialsMessage,
+      userNotFound: () => AppConstants.noAccountFoundMessage,
+      emailAlreadyInUse: () => AppConstants.emailAlreadyInUseMessage,
+      weakPassword: () => AppConstants.weakPasswordShortMessage,
+      tooManyRequests: () => AppConstants.tooManyAttemptsMessage,
+      sessionExpired: () => AppConstants.sessionExpiredMessage,
+      passwordResetEmailSent: () => AppConstants.passwordResetEmailSentMessage,
       unknown: (String msg) => msg,
     );
   }

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:kudlit_ph/app/constants.dart';
 import 'package:kudlit_ph/core/error/failures.dart';
+import 'package:kudlit_ph/features/auth/domain/entities/sign_up_status.dart';
 import 'package:kudlit_ph/features/auth/presentation/providers/auth_notifier.dart';
 import 'package:kudlit_ph/features/auth/presentation/widgets/confirmation_sent_view.dart';
 import 'package:kudlit_ph/features/auth/presentation/widgets/sign_up_form_body.dart';
@@ -32,33 +34,39 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   }
 
   String? _validateEmail(String? value) {
-    if (value == null || value.trim().isEmpty) return 'Email is required.';
+    if (value == null || value.trim().isEmpty) {
+      return AppConstants.emailRequiredMessage;
+    }
     final bool valid =
         RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(value.trim());
-    if (!valid) return 'Enter a valid email address.';
+    if (!valid) return AppConstants.invalidEmailMessage;
     return null;
   }
 
   String? _validatePassword(String? value) {
-    if (value == null || value.isEmpty) return 'Password is required.';
-    if (value.length < 6) return 'Password must be at least 6 characters.';
+    if (value == null || value.isEmpty) {
+      return AppConstants.passwordRequiredMessage;
+    }
+    if (value.length < 6) return AppConstants.passwordTooShortMessage;
     return null;
   }
 
   String? _validateConfirm(String? value) {
-    if (value != _passwordController.text) return 'Passwords do not match.';
+    if (value != _passwordController.text) {
+      return AppConstants.passwordsDoNotMatchMessage;
+    }
     return null;
   }
 
   String _mapFailure(Failure f) => f.when(
-    network: (String msg) => 'Network error: $msg',
-    emailAlreadyInUse: () => 'An account with this email already exists.',
-    weakPassword: () => 'Password is too weak. Use at least 6 characters.',
-    tooManyRequests: () => 'Too many attempts. Please wait.',
-    invalidCredentials: () => 'Unexpected error. Please try again.',
-    userNotFound: () => 'Unexpected error. Please try again.',
-    sessionExpired: () => 'Unexpected error. Please try again.',
-    passwordResetEmailSent: () => 'Unexpected error. Please try again.',
+    network: (String msg) => '${AppConstants.networkErrorPrefix}$msg',
+    emailAlreadyInUse: () => AppConstants.emailAlreadyInUseMessage,
+    weakPassword: () => AppConstants.weakPasswordMessage,
+    tooManyRequests: () => AppConstants.tooManyAttemptsMessage,
+    invalidCredentials: () => AppConstants.unexpectedError,
+    userNotFound: () => AppConstants.unexpectedError,
+    sessionExpired: () => AppConstants.unexpectedError,
+    passwordResetEmailSent: () => AppConstants.unexpectedError,
     unknown: (String msg) => msg,
   );
 
@@ -68,7 +76,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
       _isLoading = true;
       _errorMessage = null;
     });
-    final Either<Failure, bool> result = await ref
+    final Either<Failure, SignUpStatus> result = await ref
         .read(authNotifierProvider.notifier)
         .signUp(
           email: _emailController.text.trim(),
@@ -80,8 +88,10 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
         _isLoading = false;
         _errorMessage = _mapFailure(f);
       }),
-      (bool needsConfirmation) {
-        if (needsConfirmation) setState(() => _confirmationSent = true);
+      (SignUpStatus signUpStatus) {
+        if (signUpStatus == SignUpStatus.confirmationPending) {
+          setState(() => _confirmationSent = true);
+        }
         // Auto-confirmed: auth stream emits and router redirects to /home.
       },
     );
@@ -92,7 +102,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     if (_confirmationSent) return const ConfirmationSentView();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Create Account')),
+      appBar: AppBar(title: const Text(AppConstants.createAccountTitle)),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),

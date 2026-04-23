@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:kudlit_ph/app/constants.dart';
 
 class ConfirmationSentView extends StatelessWidget {
   const ConfirmationSentView({super.key});
@@ -20,15 +21,14 @@ class ConfirmationSentView extends StatelessWidget {
               ),
               const SizedBox(height: 24),
               Text(
-                'Check your inbox',
+                AppConstants.confirmationTitle,
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 12),
               const Text(
-                'We sent a confirmation link to your email. '
-                'Click it to activate your account.',
+                AppConstants.confirmationMessage,
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 32),
@@ -36,8 +36,8 @@ class ConfirmationSentView extends StatelessWidget {
                 width: double.infinity,
                 height: 48,
                 child: OutlinedButton(
-                  onPressed: () => context.go('/login'),
-                  child: const Text('Back to Sign In'),
+                  onPressed: () => context.go(AppConstants.routeLogin),
+                  child: const Text(AppConstants.backToSignInAction),
                 ),
               ),
             ],

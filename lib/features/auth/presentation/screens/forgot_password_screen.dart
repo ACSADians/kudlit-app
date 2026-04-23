@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:go_router/go_router.dart';
+import 'package:kudlit_ph/app/constants.dart';
 import 'package:kudlit_ph/core/error/failures.dart';
 import 'package:kudlit_ph/features/auth/presentation/providers/auth_notifier.dart';
 import 'package:kudlit_ph/features/auth/presentation/widgets/auth_button.dart';
@@ -42,21 +43,21 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         _isLoading = false;
         _isSuccess = false;
         _message = f.when(
-          userNotFound: () => 'No account found with this email.',
-          tooManyRequests: () => 'Too many requests. Please wait.',
-          network: (String msg) => 'Network error: $msg',
+          userNotFound: () => AppConstants.noAccountFoundMessage,
+          tooManyRequests: () => AppConstants.tooManyRequestsMessage,
+          network: (String msg) => '${AppConstants.networkErrorPrefix}$msg',
           unknown: (String msg) => msg,
-          invalidCredentials: () => 'Unexpected error.',
-          emailAlreadyInUse: () => 'Unexpected error.',
-          weakPassword: () => 'Unexpected error.',
-          sessionExpired: () => 'Unexpected error.',
-          passwordResetEmailSent: () => 'Unexpected error.',
+          invalidCredentials: () => AppConstants.unexpectedError,
+          emailAlreadyInUse: () => AppConstants.unexpectedError,
+          weakPassword: () => AppConstants.unexpectedError,
+          sessionExpired: () => AppConstants.unexpectedError,
+          passwordResetEmailSent: () => AppConstants.unexpectedError,
         );
       }),
       (_) => setState(() {
         _isLoading = false;
         _isSuccess = true;
-        _message = 'Check your email for a reset link.';
+        _message = AppConstants.resetEmailSentSuccessMessage;
       }),
     );
   }
@@ -64,19 +65,19 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Reset Password')),
+      appBar: AppBar(title: const Text(AppConstants.resetPasswordTitle)),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Enter your email to receive a reset link.'),
+              const Text(AppConstants.resetPasswordSubtitle),
               const SizedBox(height: 24),
               EmailField(controller: _emailController),
               const SizedBox(height: 24),
               AuthButton(
-                label: 'Send Reset Email',
+                label: AppConstants.sendResetEmailAction,
                 isLoading: _isLoading,
                 onPressed: _onReset,
               ),
@@ -92,8 +93,8 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
               if (_isSuccess) ...[
                 const SizedBox(height: 8),
                 TextButton(
-                  onPressed: () => context.go('/login'),
-                  child: const Text('Back to login'),
+                  onPressed: () => context.go(AppConstants.routeLogin),
+                  child: const Text(AppConstants.backToLoginAction),
                 ),
               ],
             ],

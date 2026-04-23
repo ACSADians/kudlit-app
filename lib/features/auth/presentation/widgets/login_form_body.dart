@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:kudlit_ph/app/constants.dart';
 import 'package:kudlit_ph/features/auth/presentation/widgets/auth_button.dart';
 import 'package:kudlit_ph/features/auth/presentation/widgets/email_field.dart';
 import 'package:kudlit_ph/features/auth/presentation/widgets/password_field.dart';
@@ -26,7 +27,7 @@ class LoginFormBody extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         const Text(
-          'Kudlit',
+          AppConstants.loginTitle,
           style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 32),
@@ -37,8 +38,8 @@ class LoginFormBody extends StatelessWidget {
         Align(
           alignment: Alignment.centerRight,
           child: TextButton(
-            onPressed: () => context.push('/forgot-password'),
-            child: const Text('Forgot password?'),
+            onPressed: () => context.push(AppConstants.routeForgotPassword),
+            child: const Text(AppConstants.forgotPasswordAction),
           ),
         ),
         if (errorMessage != null) ...[
@@ -50,18 +51,23 @@ class LoginFormBody extends StatelessWidget {
         ],
         const SizedBox(height: 16),
         AuthButton(
-          label: 'Sign In',
+          label: AppConstants.loginAction,
           isLoading: isLoading,
           onPressed: onSignIn,
         ),
         const SizedBox(height: 16),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+        Wrap(
+          alignment: WrapAlignment.center,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 4,
           children: [
-            const Text("Don't have an account?"),
+            const Text(
+              AppConstants.noAccountPrompt,
+              textAlign: TextAlign.center,
+            ),
             TextButton(
-              onPressed: () => context.push('/sign-up'),
-              child: const Text('Create one'),
+              onPressed: () => context.push(AppConstants.routeSignUp),
+              child: const Text(AppConstants.createOneAction),
             ),
           ],
         ),

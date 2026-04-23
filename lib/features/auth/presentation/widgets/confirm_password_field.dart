@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kudlit_ph/app/constants.dart';
 
 class ConfirmPasswordField extends StatefulWidget {
   const ConfirmPasswordField({
@@ -26,7 +27,7 @@ class _ConfirmPasswordFieldState extends State<ConfirmPasswordField> {
       obscureText: !_visible,
       validator: widget.validator,
       decoration: InputDecoration(
-        labelText: 'Confirm Password',
+        labelText: AppConstants.confirmPasswordLabel,
         errorText: widget.errorText,
         prefixIcon: const Icon(Icons.lock_outlined),
         suffixIcon: IconButton(

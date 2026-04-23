@@ -1,0 +1,4 @@
+enum SignUpStatus {
+  confirmationPending,
+  autoConfirmed,
+}

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:kudlit_ph/app/constants.dart';
 import 'package:kudlit_ph/features/auth/presentation/widgets/auth_button.dart';
 import 'package:kudlit_ph/features/auth/presentation/widgets/confirm_password_field.dart';
 import 'package:kudlit_ph/features/auth/presentation/widgets/email_field.dart';
@@ -36,14 +37,14 @@ class SignUpFormBody extends StatelessWidget {
       children: [
         const SizedBox(height: 8),
         Text(
-          'Join Kudlit',
+          AppConstants.signUpHeading,
           style: Theme.of(
             context,
           ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         Text(
-          'Create an account to start translating Baybayin.',
+          AppConstants.signUpSubtitle,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
             color: Theme.of(
               context,
@@ -71,18 +72,23 @@ class SignUpFormBody extends StatelessWidget {
           const SizedBox(height: 16),
         ],
         AuthButton(
-          label: 'Create Account',
+          label: AppConstants.signUpAction,
           isLoading: isLoading,
           onPressed: onSignUp,
         ),
         const SizedBox(height: 16),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+        Wrap(
+          alignment: WrapAlignment.center,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 4,
           children: [
-            const Text('Already have an account?'),
+            const Text(
+              AppConstants.existingAccountPrompt,
+              textAlign: TextAlign.center,
+            ),
             TextButton(
-              onPressed: () => context.go('/login'),
-              child: const Text('Sign in'),
+              onPressed: () => context.go(AppConstants.routeLogin),
+              child: const Text(AppConstants.loginAction),
             ),
           ],
         ),

@@ -1,6 +1,7 @@
 import 'package:fpdart/fpdart.dart';
 import 'package:kudlit_ph/core/error/failures.dart';
 import 'package:kudlit_ph/core/usecases/usecase.dart';
+import 'package:kudlit_ph/features/auth/domain/entities/sign_up_status.dart';
 import 'package:kudlit_ph/features/auth/domain/repositories/auth_repository.dart';
 
 class SignUpWithEmailParams {
@@ -13,14 +14,13 @@ class SignUpWithEmailParams {
   final String password;
 }
 
-// Returns true when email confirmation is pending; false when auto-confirmed.
-class SignUpWithEmail implements UseCase<bool, SignUpWithEmailParams> {
+class SignUpWithEmail implements UseCase<SignUpStatus, SignUpWithEmailParams> {
   const SignUpWithEmail(this._repository);
 
   final AuthRepository _repository;
 
   @override
-  Future<Either<Failure, bool>> call(SignUpWithEmailParams params) {
+  Future<Either<Failure, SignUpStatus>> call(SignUpWithEmailParams params) {
     return _repository.signUpWithEmail(
       email: params.email,
       password: params.password,

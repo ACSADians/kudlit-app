@@ -6,6 +6,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:kudlit_ph/core/error/failures.dart';
 import 'package:kudlit_ph/core/usecases/usecase.dart';
 import 'package:kudlit_ph/features/auth/domain/entities/auth_user.dart';
+import 'package:kudlit_ph/features/auth/domain/entities/sign_up_status.dart';
 import 'package:kudlit_ph/features/auth/domain/repositories/auth_repository.dart';
 import 'package:kudlit_ph/features/auth/domain/usecases/reset_password.dart';
 import 'package:kudlit_ph/features/auth/domain/usecases/sign_in_with_email.dart';
@@ -51,7 +52,7 @@ class AuthNotifier extends _$AuthNotifier {
     );
   }
 
-  Future<Either<Failure, bool>> signUp({
+  Future<Either<Failure, SignUpStatus>> signUp({
     required String email,
     required String password,
   }) async {

@@ -3,6 +3,7 @@ import 'package:kudlit_ph/core/error/exceptions.dart';
 import 'package:kudlit_ph/core/error/failures.dart';
 import 'package:kudlit_ph/features/auth/data/datasources/supabase_auth_datasource.dart';
 import 'package:kudlit_ph/features/auth/domain/entities/auth_user.dart';
+import 'package:kudlit_ph/features/auth/domain/entities/sign_up_status.dart';
 import 'package:kudlit_ph/features/auth/domain/repositories/auth_repository.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
@@ -35,16 +36,16 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<Either<Failure, bool>> signUpWithEmail({
+  Future<Either<Failure, SignUpStatus>> signUpWithEmail({
     required String email,
     required String password,
   }) async {
     try {
-      final bool needsConfirmation = await _datasource.signUpWithEmail(
+      final SignUpStatus signUpStatus = await _datasource.signUpWithEmail(
         email: email,
         password: password,
       );
-      return right(needsConfirmation);
+      return right(signUpStatus);
     } on ServerException catch (e) {
       return left(_mapServerExceptionToFailure(e));
     } on Exception {
