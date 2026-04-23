@@ -7,7 +7,7 @@ class RouterListenable extends ChangeNotifier {
   RouterListenable(this._ref) {
     _ref.listen<AsyncValue<AuthUser?>>(
       authNotifierProvider,
-      (_, __) => notifyListeners(),
+      (previous, next) => notifyListeners(),
     );
   }
 
