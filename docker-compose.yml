@@ -1,0 +1,20 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      # Builds the correct image for the host machine automatically:
+      # linux/amd64  → Windows / Intel Mac
+      # linux/arm64  → Apple Silicon Mac (M1/M2/M3)
+      platforms:
+        - linux/amd64
+        - linux/arm64
+    image: kudlit-app:latest
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:80"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

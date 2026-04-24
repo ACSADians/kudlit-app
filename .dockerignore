@@ -1,0 +1,31 @@
+# Version control
+.git
+.gitignore
+
+# Flutter build output and tool cache — rebuilt inside Docker
+build/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# Native platform folders — not needed for web build
+android/
+ios/
+linux/
+macos/
+windows/
+
+# Node / package manager
+node_modules/
+package.json
+package-lock.json
+
+# Tests
+test/
+
+# Docs and config not needed in the image
+docs/
+*.md
+devtools_options.yaml
+analysis_options.yaml
+supabase/
