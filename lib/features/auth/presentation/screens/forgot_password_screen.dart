@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudlit_ph/app/constants.dart';
+import 'package:kudlit_ph/core/design_system/kudlit_colors.dart';
+import 'package:kudlit_ph/core/design_system/widgets/kudlit_auth_shell.dart';
 import 'package:kudlit_ph/core/error/failures.dart';
 import 'package:kudlit_ph/features/auth/presentation/providers/auth_notifier.dart';
 import 'package:kudlit_ph/features/auth/presentation/widgets/auth_button.dart';
@@ -64,42 +66,40 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text(AppConstants.resetPasswordTitle)),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(AppConstants.resetPasswordSubtitle),
-              const SizedBox(height: 24),
-              EmailField(controller: _emailController),
-              const SizedBox(height: 24),
-              AuthButton(
-                label: AppConstants.sendResetEmailAction,
-                isLoading: _isLoading,
-                onPressed: _onReset,
-              ),
-              if (_message != null) ...[
-                const SizedBox(height: 16),
-                Text(
-                  _message!,
-                  style: TextStyle(
-                    color: _isSuccess ? Colors.green : Colors.red,
-                  ),
-                ),
-              ],
-              if (_isSuccess) ...[
-                const SizedBox(height: 8),
-                TextButton(
-                  onPressed: () => context.go(AppConstants.routeLogin),
-                  child: const Text(AppConstants.backToLoginAction),
-                ),
-              ],
-            ],
+    return KudlitAuthShell(
+      title: AppConstants.resetPasswordTitle,
+      subtitle: AppConstants.resetPasswordSubtitle,
+      heroAsset: 'assets/brand/ButtyTextBubble.webp',
+      showBackButton: true,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          EmailField(controller: _emailController),
+          const SizedBox(height: 24),
+          AuthButton(
+            label: AppConstants.sendResetEmailAction,
+            isLoading: _isLoading,
+            onPressed: _onReset,
           ),
-        ),
+          if (_message != null) ...<Widget>[
+            const SizedBox(height: 16),
+            Text(
+              _message!,
+              style: TextStyle(
+                color: _isSuccess
+                    ? KudlitColors.success400
+                    : KudlitColors.danger400,
+              ),
+            ),
+          ],
+          if (_isSuccess) ...<Widget>[
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: () => context.go(AppConstants.routeLogin),
+              child: const Text(AppConstants.backToLoginAction),
+            ),
+          ],
+        ],
       ),
     );
   }

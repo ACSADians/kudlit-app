@@ -7,11 +7,15 @@ class EmailField extends StatelessWidget {
     required this.controller,
     this.errorText,
     this.validator,
+    this.textInputAction,
+    this.onSubmitted,
   });
 
   final TextEditingController controller;
   final String? errorText;
   final String? Function(String?)? validator;
+  final TextInputAction? textInputAction;
+  final ValueChanged<String>? onSubmitted;
 
   @override
   Widget build(BuildContext context) {
@@ -19,6 +23,8 @@ class EmailField extends StatelessWidget {
       controller: controller,
       keyboardType: TextInputType.emailAddress,
       autocorrect: false,
+      textInputAction: textInputAction,
+      onFieldSubmitted: onSubmitted,
       validator: validator,
       decoration: InputDecoration(
         labelText: AppConstants.emailLabel,

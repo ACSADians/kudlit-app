@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kudlit_ph/app/constants.dart';
+import 'package:kudlit_ph/core/design_system/widgets/kudlit_auth_shell.dart';
 import 'package:kudlit_ph/core/error/failures.dart';
 import 'package:kudlit_ph/features/auth/domain/entities/auth_user.dart';
 import 'package:kudlit_ph/features/auth/presentation/providers/auth_notifier.dart';
@@ -25,7 +26,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _onSignIn() async {
-    await ref.read(authNotifierProvider.notifier).signIn(
+    await ref
+        .read(authNotifierProvider.notifier)
+        .signIn(
           email: _emailController.text.trim(),
           password: _passwordController.text,
         );
@@ -49,21 +52,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final AsyncValue<AuthUser?> authState = ref.watch(authNotifierProvider);
-    final String? errorMessage =
-        authState.hasError ? _mapFailureToMessage(authState.error) : null;
+    final String? errorMessage = authState.hasError
+        ? _mapFailureToMessage(authState.error)
+        : null;
 
-    return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: LoginFormBody(
-            emailController: _emailController,
-            passwordController: _passwordController,
-            isLoading: authState.isLoading,
-            errorMessage: errorMessage,
-            onSignIn: _onSignIn,
-          ),
-        ),
+    return KudlitAuthShell(
+      title: AppConstants.loginTitle,
+      subtitle: AppConstants.loginSubtitle,
+      heroAsset: 'assets/brand/ButtyWave.webp',
+      child: LoginFormBody(
+        emailController: _emailController,
+        passwordController: _passwordController,
+        isLoading: authState.isLoading,
+        errorMessage: errorMessage,
+        onSignIn: _onSignIn,
       ),
     );
   }

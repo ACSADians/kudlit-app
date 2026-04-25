@@ -1,194 +1,117 @@
 # Kudlit
 
-A vision-based [Baybayin](https://en.wikipedia.org/wiki/Baybayin) translator and learning app. Point your camera at handwritten or printed Baybayin script — Kudlit detects characters on-device with a YOLO TFLite model and translates them to romanized/Filipino text via Gemma 4.
+Kudlit is a vision-based Baybayin translator and learning app built in Flutter. This repository now treats the bundled [`Kudlit Design System`](<Kudlit Design System/README.md>) as the visual source of truth and mirrors it through a Flutter theme, shared assets, and branded placeholder screens.
 
-Targets Android, iOS, and Web. Mobile-first.
+## Current Setup
 
----
+- App shell and auth flow use a shared Flutter design-system layer under `lib/core/design_system/`.
+- The bundled Baybayin display font and reference assets are copied into `assets/fonts/` and `assets/brand/` for normal Flutter usage.
+- The current home screen is a branded placeholder derived from the mobile UI kit while feature work for scanner, translator, and lessons continues.
+- The original design-system source remains in [`Kudlit Design System/`](<Kudlit Design System/>) for previews, reference JSX, and asset provenance.
 
 ## Tech Stack
 
 | Layer | Technology |
 |---|---|
 | Framework | Flutter (Dart) |
-| State management | Riverpod (`riverpod_annotation` code gen) |
+| State management | Riverpod (`riverpod_annotation`) |
+| Routing | `go_router` |
+| Backend auth | Supabase |
 | Character detection | YOLO → TFLite (`ultralytics_yolo`) |
 | Language understanding | Gemma 4 |
-| Error handling | `Either<Failure, T>` (fpdart/dartz) |
-
----
-
-## Prerequisites
-
-- Flutter SDK `^3.11.5` — install via [flutter.dev](https://flutter.dev/docs/get-started/install)
-- Dart SDK (bundled with Flutter)
-- Android Studio or Xcode for device targets
-- Chrome for web development
-
-Verify your setup:
-
-```bash
-flutter doctor
-```
-
----
+| Error handling | `Either<Failure, T>` via `fpdart` |
 
 ## Getting Started
 
 ```bash
-git clone <repo-url>
-cd kudlit_ph
+flutter doctor
 flutter pub get
-flutter run -d chrome   # web (primary dev target)
-```
-
-For device targets:
-
-```bash
-flutter run -d android
-flutter run -d ios
-```
-
----
-
-## Commands
-
-```bash
-# Install / update dependencies
-flutter pub get
-
-# Run (web — primary design target)
 flutter run -d chrome
+```
 
-# Run on connected Android device
-flutter run -d android
+Useful commands:
 
-# Build
-flutter build web
-flutter build apk --release
-
-# Lint
+```bash
 flutter analyze
-
-# Test
-flutter test                                          # all tests
-flutter test test/path/to/file_test.dart             # single file
-flutter test --name "should return translation"      # by name pattern
-
-# Format
+flutter test
+flutter build web
 dart format lib/ test/
 ```
 
----
+## Folder Structure
+
+```text
+lib/
+├── app/                        App bootstrapping, router, app constants
+├── core/
+│   ├── config/                 Environment and Supabase setup
+│   ├── design_system/          Flutter theme, color tokens, shared UI shells
+│   ├── error/                  Shared failures and exceptions
+│   └── usecases/               Base use case abstractions
+├── features/
+│   └── auth/                   Current implemented feature slice
+└── main.dart
+
+assets/
+├── brand/                      Copied Kudlit illustrations and reference art
+└── fonts/                      Baybayin display font used in the UI
+
+Kudlit Design System/           Reference docs, CSS tokens, previews, JSX UI kit
+```
 
 ## Architecture
 
-Feature-first Clean Architecture. Features are the top-level unit; inside each feature, layers follow Clean Architecture with a strict inward dependency rule.
+The app follows feature-first clean architecture:
 
-```
-lib/
-├── main.dart
-├── app/                        # App-wide setup: routing, theming, ProviderScope
-├── core/                       # Shared utilities, base classes, errors
-│   ├── error/                  # Failure types, exceptions
-│   ├── usecases/               # Base UseCase abstract class
-│   └── utils/
-└── features/
-    └── <feature_name>/
-        ├── domain/             # Pure Dart — entities, repository interfaces, use cases
-        │   ├── entities/
-        │   ├── repositories/   # Abstract interfaces only
-        │   └── usecases/
-        ├── data/               # Implementations — repos, data sources, models
-        │   ├── datasources/    # Local (TFLite, Hive) and remote (Gemma API)
-        │   ├── models/         # DTOs extending domain entities
-        │   └── repositories/   # Concrete implementations
-        └── presentation/       # Flutter — widgets, screens, Riverpod providers
-            ├── providers/
-            ├── screens/
-            └── widgets/
-```
+- `presentation -> domain <- data`
+- `domain` stays pure Dart
+- repositories are defined in `domain` and implemented in `data`
+- app-wide visual decisions live in `core/design_system/`, not inside feature widgets
 
-**Dependency rule:** `presentation` → `domain` ← `data`. The `domain` layer is pure Dart — zero Flutter dependencies. Use cases depend on repository interfaces, never concrete implementations.
+Current feature intent:
 
-### Planned Features
+- `auth`: implemented and now wrapped in the branded Kudlit auth shell
+- `scanner`: planned camera and image-upload recognition flow
+- `translator`: planned Baybayin transliteration and Gemma-assisted interpretation
+- `learn`: planned lessons, quizzes, and reference content
 
-| Feature | Description |
-|---|---|
-| `scanner` | Camera feed → YOLO TFLite inference → Baybayin character detection |
-| `translator` | Detected glyphs → romanized/Filipino text via Gemma 4 |
-| `learn` | Interactive lessons and character reference |
+## Design System Notes
 
----
+- Token source: [`Kudlit Design System/colors_and_type.css`](<Kudlit Design System/colors_and_type.css>)
+- Brand guidance: [`Kudlit Design System/README.md`](<Kudlit Design System/README.md>)
+- Local repo workflow notes: [SKILL.md](SKILL.md)
+- Gemini CLI entrypoint: [GEMINI.md](GEMINI.md)
+- Repo-local Gemini frontend skill: [skills/flutter-frontend/SKILL.md](skills/flutter-frontend/SKILL.md)
 
-## State Management
+Important limitation:
 
-All providers use `@riverpod` code generation.
+- The design docs specify Geist for the UI font, but this repository currently only bundles the Baybayin display font. The shared Flutter theme already applies the Kudlit color, radius, and spacing language, and Baybayin headings use the bundled font directly.
 
-- `AsyncNotifierProvider` — async state (e.g., inference results, translations)
-- `NotifierProvider` — sync state
-- Providers live in `presentation/providers/` within their feature
-- Repository and data source instances are exposed via providers in `data/` or `core/`
+## Gemini CLI Setup
 
----
+Install `obra/superpowers` in Gemini CLI:
 
-## Platform Notes
-
-- **Web** is the primary target during UI development — test layout in Chrome first
-- Camera and TFLite are unavailable on web; use `kIsWeb` guards and provide fallback UI (e.g., image upload instead of live camera)
-- ML models are bundled as assets (`flutter.assets` in `pubspec.yaml`)
-
----
-
-## Coding Conventions
-
-### Types and Variables
-
-```dart
-// Always explicit types — no var
-final String label = 'ᜊ';
-late final BaybayinRepository _repository;
-
-// dynamic only at interop boundaries (raw JSON before casting)
-final dynamic raw = json.decode(response.body);
-final TranslationModel model = TranslationModel.fromJson(raw as Map<String, dynamic>);
+```bash
+gemini extensions install https://github.com/obra/superpowers
 ```
 
-### Strings
+This repository also includes a local Gemini extension:
 
-Single quotes everywhere.
+- [gemini-extension.json](gemini-extension.json)
+- [GEMINI.md](GEMINI.md)
+- [skills/flutter-frontend/SKILL.md](skills/flutter-frontend/SKILL.md)
 
-### Widgets
+Recommended usage:
 
-- `build()` must not exceed 40 lines — extract if it does
-- Any subtree with 3+ nesting levels → extract into its own widget class in its own file
-- No private builder methods (`_buildSomething()`) — extract a real widget class
-- Prefer `const` constructors; prefer `StatelessWidget`; reach for Riverpod before `StatefulWidget`
-- Widgets are display only — no business logic or derived state in `build()`
+- Use `obra/superpowers` for process skills such as brainstorming, planning, debugging, TDD, and review
+- Use the local `flutter-frontend` skill for Kudlit-specific Flutter UI and design-system implementation
 
-### Error Handling
+## Working Rules
 
-Domain use cases return `Either<Failure, T>`. Define typed `Failure` subclasses in `core/error/`. Presentation maps failures to user-facing messages.
+- Keep UI mobile-first even when using Chrome as the design target.
+- Do not bypass `core/design_system/` for shared colors, type, surfaces, or brand assets.
+- Keep widgets focused on display; move business logic into Riverpod notifiers and use cases.
+- Prefer relative imports within a feature and `package:kudlit_ph/...` across features.
+- Use single quotes and explicit types.
 
-### Naming
-
-| Entity | Convention |
-|---|---|
-| Files | `snake_case.dart` |
-| Classes / enums | `PascalCase` |
-| Variables / functions | `camelCase` |
-| Private members | `_camelCase` |
-| Constants | `camelCase` (not `SCREAMING_SNAKE`) |
-
-### Imports
-
-Order: `dart:` → `flutter:` → packages → local; blank line between groups. Use relative imports within the same feature; `package:kudlit_ph/...` across features.
-
----
-
-## Commit Rules
-
-- **Branch from `dev`** — cut a new branch from `dev` before starting any work.
-- **Conventional prefix** — every commit message starts with a type: `feat:`, `fix:`, `chore:`, `refactor:`, `test:`, `docs:`, or `style:`.
-- **Atomic and concise** — one logical change per commit; subject line under 72 characters.
-- **Lint before committing** — run `flutter analyze` and fix all issues before committing.
+For repo-level coding rules and architecture constraints, read [CLAUDE.md](CLAUDE.md).

@@ -1,0 +1,18 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html, body { margin:0; padding:0; background: var(--neutral-white); }
+  body { padding:28px; display:flex; gap:28px; align-items:center; justify-content:center; }
+  .box { width:110px; height:80px; background: var(--neutral-white); border-radius:var(--radius-lg); display:flex; align-items:flex-end; padding:8px; font-family:var(--font-mono); font-size:10px; color:var(--grey-200); border:1px solid var(--border-soft); }
+  .s-sm { box-shadow: var(--shadow-sm); }
+  .s-md { box-shadow: var(--shadow-md); }
+  .s-lg { box-shadow: var(--shadow-lg); }
+  .s-card { box-shadow: var(--shadow-card); }
+</style>
+</head><body>
+<div class="box s-sm">shadow-sm</div>
+<div class="box s-md">shadow-md</div>
+<div class="box s-lg">shadow-lg</div>
+<div class="box s-card">shadow-card<br>(icon/logo)</div>
+</body></html>

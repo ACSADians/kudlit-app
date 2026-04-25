@@ -19,11 +19,15 @@ class PasswordField extends ConsumerWidget {
     required this.controller,
     this.errorText,
     this.validator,
+    this.textInputAction,
+    this.onSubmitted,
   });
 
   final TextEditingController controller;
   final String? errorText;
   final String? Function(String?)? validator;
+  final TextInputAction? textInputAction;
+  final ValueChanged<String>? onSubmitted;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -31,17 +35,16 @@ class PasswordField extends ConsumerWidget {
     return TextFormField(
       controller: controller,
       obscureText: !isVisible,
+      textInputAction: textInputAction,
+      onFieldSubmitted: onSubmitted,
       validator: validator,
       decoration: InputDecoration(
         labelText: AppConstants.passwordLabel,
         errorText: errorText,
         prefixIcon: const Icon(Icons.lock_outlined),
         suffixIcon: IconButton(
-          icon: Icon(
-            isVisible ? Icons.visibility_off : Icons.visibility,
-          ),
-          onPressed: () =>
-              ref.read(passwordVisibleProvider.notifier).toggle(),
+          icon: Icon(isVisible ? Icons.visibility_off : Icons.visibility),
+          onPressed: () => ref.read(passwordVisibleProvider.notifier).toggle(),
         ),
         border: const OutlineInputBorder(),
       ),

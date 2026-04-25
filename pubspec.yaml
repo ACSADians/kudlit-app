@@ -1,5 +1,5 @@
 name: kudlit_ph
-description: "A new Flutter project."
+description: "Kudlit mobile app with a shared Flutter design system."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -78,6 +78,14 @@ flutter:
 
   assets:
     - .env
+    - assets/brand/
+    - assets/brand/user.profile/
+    - assets/fonts/
+
+  fonts:
+    - family: Baybayin Simple TAWBID
+      fonts:
+        - asset: assets/fonts/BaybayinSimpleTAWBID.ttf
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
