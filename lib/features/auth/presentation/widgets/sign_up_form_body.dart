@@ -34,24 +34,7 @@ class SignUpFormBody extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const SizedBox(height: 8),
-        Text(
-          AppConstants.signUpHeading,
-          style: Theme.of(
-            context,
-          ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          AppConstants.signUpSubtitle,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: Theme.of(
-              context,
-            ).colorScheme.onSurface.withValues(alpha: 0.6),
-          ),
-        ),
-        const SizedBox(height: 32),
+      children: <Widget>[
         EmailField(controller: emailController, validator: validateEmail),
         const SizedBox(height: 16),
         PasswordField(
@@ -64,7 +47,7 @@ class SignUpFormBody extends StatelessWidget {
           validator: validateConfirm,
         ),
         const SizedBox(height: 24),
-        if (errorMessage != null) ...[
+        if (errorMessage != null) ...<Widget>[
           Text(
             errorMessage!,
             style: TextStyle(color: Theme.of(context).colorScheme.error),
@@ -81,7 +64,7 @@ class SignUpFormBody extends StatelessWidget {
           alignment: WrapAlignment.center,
           crossAxisAlignment: WrapCrossAlignment.center,
           spacing: 4,
-          children: [
+          children: <Widget>[
             const Text(
               AppConstants.existingAccountPrompt,
               textAlign: TextAlign.center,

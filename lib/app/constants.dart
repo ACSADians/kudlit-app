@@ -10,6 +10,11 @@ class AppConstants {
   static const String routeAuthReset = '/auth/reset';
 
   static const String loginTitle = appName;
+  static const String loginSubtitle =
+      'Read Baybayin, practice kudlit marks, and keep your progress ready '
+      'for every session.';
+  static const String loginHelper =
+      'Sign in to continue to the Kudlit learning and translation tools.';
   static const String loginAction = 'Sign In';
   static const String forgotPasswordAction = 'Forgot password?';
   static const String noAccountPrompt = "Don't have an account?";
@@ -53,8 +58,7 @@ class AppConstants {
       'Too many attempts. Please wait.';
   static const String tooManyRequestsMessage =
       'Too many requests. Please wait.';
-  static const String invalidCredentialsMessage =
-      'Invalid email or password.';
+  static const String invalidCredentialsMessage = 'Invalid email or password.';
   static const String sessionExpiredMessage =
       'Session expired. Please sign in again.';
   static const String passwordResetEmailSentMessage =
@@ -67,6 +71,5 @@ class AppConstants {
   static const String passwordRequiredMessage = 'Password is required.';
   static const String passwordTooShortMessage =
       'Password must be at least 6 characters.';
-  static const String passwordsDoNotMatchMessage =
-      'Passwords do not match.';
+  static const String passwordsDoNotMatchMessage = 'Passwords do not match.';
 }

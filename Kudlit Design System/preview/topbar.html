@@ -1,0 +1,19 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;padding:0;background:var(--blue-500);}
+  body{font-family:var(--font-sans); color:white;}
+  .topbar { height:64px; background:var(--blue-500); border-bottom:1.25px solid var(--blue-400); box-shadow:var(--shadow-topbar); display:flex; align-items:center; padding:0 12px; position:relative; }
+  .burger { width:32px; height:32px; border-radius:8px; background:var(--neutral-white); color:var(--blue-300); display:flex; align-items:center; justify-content:center; border:1.25px solid var(--blue-400);}
+  .logo { position:absolute; left:50%; transform:translateX(-50%); width:42px; height:42px; border-radius:10px; box-shadow:var(--shadow-card); overflow:hidden; }
+  .logo img { width:100%; height:100%; display:block; object-fit:cover; }
+  .pad { padding:20px; background:var(--blue-900); color:var(--blue-300); font-size:13px; }
+</style>
+</head><body>
+<div class="topbar">
+  <div class="burger">☰</div>
+  <div class="logo"><img src="../assets/BaybayInscribe-AppIcon.webp" alt=""></div>
+</div>
+<div class="pad">Topbar · 64px · <code style="font-family:var(--font-mono);">--blue-500</code> with 1.25px <code style="font-family:var(--font-mono);">--blue-400</code> bottom-border. Logo carries shadow-card.</div>
+</body></html>

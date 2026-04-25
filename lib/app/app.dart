@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudlit_ph/app/constants.dart';
 import 'package:kudlit_ph/app/router/app_router.dart';
+import 'package:kudlit_ph/core/design_system/kudlit_theme.dart';
 
 class KudlitApp extends ConsumerWidget {
   const KudlitApp({super.key});
@@ -14,10 +15,7 @@ class KudlitApp extends ConsumerWidget {
     return MaterialApp.router(
       title: AppConstants.appName,
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
+      theme: KudlitTheme.light,
       routerConfig: router,
     );
   }

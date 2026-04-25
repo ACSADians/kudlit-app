@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:kudlit_ph/app/constants.dart';
+import 'package:kudlit_ph/core/design_system/widgets/kudlit_auth_shell.dart';
 import 'package:kudlit_ph/core/error/failures.dart';
 import 'package:kudlit_ph/features/auth/domain/entities/sign_up_status.dart';
 import 'package:kudlit_ph/features/auth/presentation/providers/auth_notifier.dart';
@@ -37,8 +38,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     if (value == null || value.trim().isEmpty) {
       return AppConstants.emailRequiredMessage;
     }
-    final bool valid =
-        RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(value.trim());
+    final bool valid = RegExp(
+      r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
+    ).hasMatch(value.trim());
     if (!valid) return AppConstants.invalidEmailMessage;
     return null;
   }
@@ -101,25 +103,23 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   Widget build(BuildContext context) {
     if (_confirmationSent) return const ConfirmationSentView();
 
-    return Scaffold(
-      appBar: AppBar(title: const Text(AppConstants.createAccountTitle)),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Form(
-            key: _formKey,
-            child: SignUpFormBody(
-              emailController: _emailController,
-              passwordController: _passwordController,
-              confirmController: _confirmController,
-              isLoading: _isLoading,
-              errorMessage: _errorMessage,
-              onSignUp: _onSignUp,
-              validateEmail: _validateEmail,
-              validatePassword: _validatePassword,
-              validateConfirm: _validateConfirm,
-            ),
-          ),
+    return KudlitAuthShell(
+      title: AppConstants.signUpHeading,
+      subtitle: AppConstants.signUpSubtitle,
+      heroAsset: 'assets/brand/ButtyPaint.webp',
+      showBackButton: true,
+      child: Form(
+        key: _formKey,
+        child: SignUpFormBody(
+          emailController: _emailController,
+          passwordController: _passwordController,
+          confirmController: _confirmController,
+          isLoading: _isLoading,
+          errorMessage: _errorMessage,
+          onSignUp: _onSignUp,
+          validateEmail: _validateEmail,
+          validatePassword: _validatePassword,
+          validateConfirm: _validateConfirm,
         ),
       ),
     );

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudlit_ph/app/constants.dart';
+import 'package:kudlit_ph/core/design_system/kudlit_theme.dart';
 import 'package:kudlit_ph/features/auth/presentation/widgets/auth_button.dart';
 import 'package:kudlit_ph/features/auth/presentation/widgets/email_field.dart';
 import 'package:kudlit_ph/features/auth/presentation/widgets/password_field.dart';
@@ -24,13 +25,26 @@ class LoginFormBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const Text(
-          AppConstants.loginTitle,
-          style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Text(
+          'ᜃᜓᜇ᜔ᜎᜒᜆ᜔',
+          textAlign: TextAlign.center,
+          style: KudlitTheme.baybayinDisplay(context),
         ),
         const SizedBox(height: 32),
+        Text(
+          AppConstants.loginTitle,
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.headlineMedium,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          AppConstants.loginHelper,
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+        const SizedBox(height: 24),
         EmailField(controller: emailController),
         const SizedBox(height: 16),
         PasswordField(controller: passwordController),
@@ -42,11 +56,11 @@ class LoginFormBody extends StatelessWidget {
             child: const Text(AppConstants.forgotPasswordAction),
           ),
         ),
-        if (errorMessage != null) ...[
+        if (errorMessage != null) ...<Widget>[
           const SizedBox(height: 8),
           Text(
             errorMessage!,
-            style: const TextStyle(color: Colors.red),
+            style: TextStyle(color: Theme.of(context).colorScheme.error),
           ),
         ],
         const SizedBox(height: 16),
@@ -60,7 +74,7 @@ class LoginFormBody extends StatelessWidget {
           alignment: WrapAlignment.center,
           crossAxisAlignment: WrapCrossAlignment.center,
           spacing: 4,
-          children: [
+          children: <Widget>[
             const Text(
               AppConstants.noAccountPrompt,
               textAlign: TextAlign.center,

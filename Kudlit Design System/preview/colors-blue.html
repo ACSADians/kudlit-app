@@ -1,0 +1,27 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html, body { margin: 0; padding: 0; background: var(--neutral-white); }
+  body { padding: 20px; }
+  .card { padding: 0; font-family: var(--font-sans); color: var(--fg); }
+  .swatch-row { display: flex; gap: 8px; }
+  .swatch { flex: 1; height: 70px; border-radius: 10px; border: 1px solid rgba(14,20,37,.06); display: flex; flex-direction: column; justify-content: flex-end; padding: 8px; color: white; font-size: 10px; font-family: var(--font-mono); }
+  .swatch .name { font-weight: 600; font-size: 11px; }
+  .swatch.dark { color: rgba(14,20,37,.7); }
+</style>
+</head><body>
+<div class="card">
+  <div class="swatch-row">
+    <div class="swatch" style="background: var(--blue-900); color: var(--blue-300);"><div class="name">blue-900</div>227 92% 95%</div>
+    <div class="swatch" style="background: var(--blue-800); color: var(--blue-300);"><div class="name">blue-800</div>224 100% 85%</div>
+    <div class="swatch" style="background: var(--blue-700);"><div class="name">blue-700</div>225 65% 52%</div>
+    <div class="swatch" style="background: var(--blue-600);"><div class="name">blue-600</div>225 44% 60%</div>
+    <div class="swatch" style="background: var(--blue-500);"><div class="name">blue-500</div>225 39% 53%</div>
+    <div class="swatch" style="background: var(--blue-400);"><div class="name">blue-400</div>225 36% 39%</div>
+    <div class="swatch" style="background: var(--blue-300);"><div class="name">blue-300</div>226 65% 25%</div>
+    <div class="swatch" style="background: var(--blue-200);"><div class="name">blue-200</div>225 65% 20%</div>
+    <div class="swatch" style="background: var(--blue-100);"><div class="name">blue-100</div>225 22% 25%</div>
+  </div>
+</div>
+</body></html>
