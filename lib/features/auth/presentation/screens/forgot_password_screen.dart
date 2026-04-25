@@ -4,11 +4,12 @@ import 'package:fpdart/fpdart.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudlit_ph/app/constants.dart';
 import 'package:kudlit_ph/core/design_system/kudlit_colors.dart';
-import 'package:kudlit_ph/core/design_system/widgets/kudlit_auth_shell.dart';
 import 'package:kudlit_ph/core/error/failures.dart';
 import 'package:kudlit_ph/features/auth/presentation/providers/auth_notifier.dart';
-import 'package:kudlit_ph/features/auth/presentation/widgets/auth_button.dart';
+import 'package:kudlit_ph/features/auth/presentation/widgets/auth_screen_shell.dart';
+import 'package:kudlit_ph/features/auth/presentation/widgets/auth_submit_button.dart';
 import 'package:kudlit_ph/features/auth/presentation/widgets/email_field.dart';
+import 'package:kudlit_ph/features/auth/presentation/widgets/login_hero.dart';
 
 class ForgotPasswordScreen extends ConsumerStatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -66,40 +67,56 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return KudlitAuthShell(
-      title: AppConstants.resetPasswordTitle,
-      subtitle: AppConstants.resetPasswordSubtitle,
-      heroAsset: 'assets/brand/ButtyTextBubble.webp',
-      showBackButton: true,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          EmailField(controller: _emailController),
-          const SizedBox(height: 24),
-          AuthButton(
-            label: AppConstants.sendResetEmailAction,
-            isLoading: _isLoading,
-            onPressed: _onReset,
-          ),
-          if (_message != null) ...<Widget>[
-            const SizedBox(height: 16),
-            Text(
-              _message!,
-              style: TextStyle(
-                color: _isSuccess
-                    ? KudlitColors.success400
-                    : KudlitColors.danger400,
+    return AuthScreenShell(
+      heroFraction: 0.38,
+      hero: const LoginHero(
+        buttyAsset: 'assets/brand/ButtyTextBubble.webp',
+        bubbleText: "I'll help you get back in.",
+        showBackButton: true,
+        showLanguageToggle: false,
+      ),
+      sheet: AuthSheet(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            const AuthDragHandle(),
+            const SizedBox(height: 10),
+            AuthSheetHeadline(
+              title: _isSuccess
+                  ? 'Email sent!'
+                  : AppConstants.resetPasswordTitle,
+              subtitle: _isSuccess
+                  ? AppConstants.resetEmailSentSuccessMessage
+                  : AppConstants.resetPasswordSubtitle,
+            ),
+            const SizedBox(height: 20),
+            if (!_isSuccess) ...<Widget>[
+              EmailField(controller: _emailController),
+              if (_message != null) ...<Widget>[
+                const SizedBox(height: 12),
+                Text(
+                  _message!,
+                  style: const TextStyle(
+                    color: KudlitColors.danger400,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 16),
+              AuthSubmitButton(
+                label: AppConstants.sendResetEmailAction,
+                isLoading: _isLoading,
+                onTap: _onReset,
               ),
-            ),
+            ] else ...<Widget>[
+              AuthSubmitButton(
+                label: AppConstants.backToLoginAction,
+                isLoading: false,
+                onTap: () => context.go(AppConstants.routeLogin),
+              ),
+            ],
           ],
-          if (_isSuccess) ...<Widget>[
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: () => context.go(AppConstants.routeLogin),
-              child: const Text(AppConstants.backToLoginAction),
-            ),
-          ],
-        ],
+        ),
       ),
     );
   }

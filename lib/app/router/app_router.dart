@@ -33,7 +33,11 @@ GoRouter appRouter(Ref ref) {
           state.matchedLocation == AppConstants.routeForgotPassword ||
           state.matchedLocation == AppConstants.routeAuthReset;
 
-      if (!isAuthenticated && !isOnAuthRoute) return AppConstants.routeLogin;
+      if (!isAuthenticated &&
+          !isOnAuthRoute &&
+          state.matchedLocation != AppConstants.routeHome) {
+        return AppConstants.routeLogin;
+      }
       if (isAuthenticated && isOnAuthRoute) return AppConstants.routeHome;
       return null;
     },

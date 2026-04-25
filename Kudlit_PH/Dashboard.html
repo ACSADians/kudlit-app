@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Kudlit — App Screens</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link rel="stylesheet" href="ds/colors_and_type.css" />
+<style>
+  html, body { margin: 0; padding: 0; min-height: 100vh;
+    font-family: 'Geist', ui-sans-serif, system-ui, sans-serif; }
+  body {
+    background: radial-gradient(ellipse at top,
+      hsl(227, 92%, 95%) 0%,
+      hsl(226, 91%, 88%) 55%,
+      hsl(225, 39%, 72%) 100%);
+    min-height: 100vh;
+    display: flex; justify-content: center; align-items: flex-start;
+    padding: 40px 24px 60px; box-sizing: border-box;
+  }
+  .stage {
+    display: flex; flex-direction: column;
+    align-items: center; gap: 32px; width: 100%;
+  }
+  .frames-row {
+    display: flex; gap: 48px; align-items: flex-start;
+    justify-content: center; flex-wrap: wrap;
+  }
+  .frame-col { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .frame-label {
+    font-size: 11px; color: hsl(226, 65%, 25%);
+    font-weight: 600; opacity: .6;
+    letter-spacing: .08em; text-transform: uppercase;
+  }
+  .page-title {
+    text-align: center;
+  }
+  .page-title h1 {
+    margin: 0 0 4px; font-size: 22px; font-weight: 700;
+    color: hsl(226, 65%, 25%); letter-spacing: -0.02em;
+  }
+  .page-title p {
+    margin: 0; font-size: 13px; color: hsl(231, 15%, 45%);
+  }
+</style>
+</head>
+<body>
+<div id="root" class="stage"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+
+<script type="text/babel" src="android-frame.jsx"></script>
+<script type="text/babel" src="ios-frame.jsx"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="AppScreens.jsx"></script>
+
+<script type="text/babel">
+  const { useEffect } = React;
+
+  const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+    "startTab": "scan",
+    "isGuest": false
+  }/*EDITMODE-END*/;
+
+  function App() {
+    const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+
+    useEffect(() => {
+      if (window.lucide) setTimeout(() => window.lucide.createIcons(), 40);
+    }, [t]);
+
+    return (
+      <React.Fragment>
+        <div className="page-title">
+          <h1>Kudlit — Screen Explorer</h1>
+          <p>Use tweaks to switch screens. Shown in iOS and Android.</p>
+        </div>
+
+        <div className="frames-row">
+          {/* iOS */}
+          <div className="frame-col">
+            <IOSDevice width={390} height={844} dark={t.startTab === 'scan'}>
+              <KudlitApp platform="ios" t={t} />
+            </IOSDevice>
+            <div className="frame-label">iPhone 15 · iOS</div>
+          </div>
+
+          {/* Android */}
+          <div className="frame-col">
+            <AndroidDevice width={390} height={844} dark={t.startTab === 'scan'}>
+              <KudlitApp platform="android" t={t} />
+            </AndroidDevice>
+            <div className="frame-label">Pixel 8 · Android</div>
+          </div>
+        </div>
+
+        <TweaksPanel title="Tweaks">
+          <TweakSection label="Screen">
+            <TweakRadio label="Active tab"
+              value={t.startTab}
+              options={['scan', 'translate', 'learn']}
+              onChange={v => setTweak('startTab', v)} />
+          </TweakSection>
+          <TweakSection label="User">
+            <TweakToggle label="Guest mode"
+              value={t.isGuest}
+              onChange={v => setTweak('isGuest', v)} />
+          </TweakSection>
+        </TweaksPanel>
+      </React.Fragment>
+    );
+  }
+
+  ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

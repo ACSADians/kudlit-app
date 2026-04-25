@@ -2,12 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:kudlit_ph/app/constants.dart';
-import 'package:kudlit_ph/core/design_system/widgets/kudlit_auth_shell.dart';
+import 'package:kudlit_ph/core/design_system/kudlit_colors.dart';
 import 'package:kudlit_ph/core/error/failures.dart';
 import 'package:kudlit_ph/features/auth/domain/entities/sign_up_status.dart';
 import 'package:kudlit_ph/features/auth/presentation/providers/auth_notifier.dart';
+import 'package:kudlit_ph/features/auth/presentation/widgets/auth_screen_shell.dart';
+import 'package:kudlit_ph/features/auth/presentation/widgets/auth_submit_button.dart';
+import 'package:kudlit_ph/features/auth/presentation/widgets/confirm_password_field.dart';
 import 'package:kudlit_ph/features/auth/presentation/widgets/confirmation_sent_view.dart';
-import 'package:kudlit_ph/features/auth/presentation/widgets/sign_up_form_body.dart';
+import 'package:kudlit_ph/features/auth/presentation/widgets/email_field.dart';
+import 'package:kudlit_ph/features/auth/presentation/widgets/login_hero.dart';
+import 'package:kudlit_ph/features/auth/presentation/widgets/password_field.dart';
 
 class SignUpScreen extends ConsumerStatefulWidget {
   const SignUpScreen({super.key});
@@ -103,25 +108,102 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   Widget build(BuildContext context) {
     if (_confirmationSent) return const ConfirmationSentView();
 
-    return KudlitAuthShell(
-      title: AppConstants.signUpHeading,
-      subtitle: AppConstants.signUpSubtitle,
-      heroAsset: 'assets/brand/ButtyPaint.webp',
-      showBackButton: true,
-      child: Form(
-        key: _formKey,
-        child: SignUpFormBody(
-          emailController: _emailController,
-          passwordController: _passwordController,
-          confirmController: _confirmController,
-          isLoading: _isLoading,
-          errorMessage: _errorMessage,
-          onSignUp: _onSignUp,
-          validateEmail: _validateEmail,
-          validatePassword: _validatePassword,
-          validateConfirm: _validateConfirm,
+    return AuthScreenShell(
+      heroFraction: 0.38,
+      hero: const LoginHero(
+        buttyAsset: 'assets/brand/ButtyPaint.webp',
+        bubbleText: "Let's get you set up!",
+        showBackButton: true,
+        showLanguageToggle: false,
+      ),
+      sheet: AuthSheet(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            const AuthDragHandle(),
+            const SizedBox(height: 10),
+            const AuthSheetHeadline(
+              title: 'Create account',
+              subtitle: 'Start your Baybayin journey.',
+            ),
+            const SizedBox(height: 20),
+            Form(
+              key: _formKey,
+              child: AutofillGroup(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    EmailField(
+                      controller: _emailController,
+                      validator: _validateEmail,
+                      textInputAction: TextInputAction.next,
+                    ),
+                    const SizedBox(height: 12),
+                    PasswordField(
+                      controller: _passwordController,
+                      validator: _validatePassword,
+                      textInputAction: TextInputAction.next,
+                    ),
+                    const SizedBox(height: 12),
+                    ConfirmPasswordField(
+                      controller: _confirmController,
+                      validator: _validateConfirm,
+                    ),
+                    if (_errorMessage != null) ...<Widget>[
+                      const SizedBox(height: 12),
+                      Text(
+                        _errorMessage!,
+                        style: const TextStyle(
+                          color: KudlitColors.danger400,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 16),
+                    AuthSubmitButton(
+                      label: AppConstants.signUpAction,
+                      isLoading: _isLoading,
+                      onTap: _onSignUp,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            _SignInPrompt(),
+          ],
         ),
       ),
+    );
+  }
+}
+
+class _SignInPrompt extends StatelessWidget {
+  const _SignInPrompt();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: <Widget>[
+        const Text(
+          'Already have an account?  ',
+          style: TextStyle(fontSize: 12.5, color: KudlitColors.grey200),
+        ),
+        GestureDetector(
+          onTap: () => Navigator.of(context).pop(),
+          child: const Text(
+            'Sign in',
+            style: TextStyle(
+              fontSize: 12.5,
+              color: KudlitColors.blue300,
+              fontWeight: FontWeight.w600,
+              decoration: TextDecoration.underline,
+              decorationColor: KudlitColors.blue300,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

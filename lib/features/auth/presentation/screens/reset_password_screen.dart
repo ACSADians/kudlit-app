@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-
-import '../widgets/auth_form_scaffold.dart';
-import '../widgets/email_field.dart';
+import 'package:kudlit_ph/features/auth/presentation/widgets/auth_screen_shell.dart';
+import 'package:kudlit_ph/features/auth/presentation/widgets/auth_submit_button.dart';
+import 'package:kudlit_ph/features/auth/presentation/widgets/email_field.dart';
+import 'package:kudlit_ph/features/auth/presentation/widgets/login_hero.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
   const ResetPasswordScreen({super.key});
@@ -33,22 +34,42 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return AuthFormScaffold(
-      title: 'Reset password',
-      subtitle: 'Enter your email and we will prepare a reset flow.',
-      formKey: _formKey,
-      primaryActionLabel: _hasSent ? 'Send again' : 'Send reset link',
-      onPrimaryAction: _submit,
-      statusMessage: _hasSent
-          ? 'Reset flow preview sent. Backend email delivery is not connected yet.'
-          : null,
-      children: <Widget>[
-        EmailField(
-          controller: _emailController,
-          textInputAction: TextInputAction.done,
-          onSubmitted: (_) => _submit(),
+    return AuthScreenShell(
+      heroFraction: 0.38,
+      hero: const LoginHero(
+        buttyAsset: 'assets/brand/ButtyPhone.webp',
+        bubbleText: 'Almost there — enter your email.',
+        showBackButton: true,
+        showLanguageToggle: false,
+      ),
+      sheet: AuthSheet(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            const AuthDragHandle(),
+            const SizedBox(height: 10),
+            const AuthSheetHeadline(
+              title: 'Reset password',
+              subtitle: 'Enter your email and we will prepare a reset link.',
+            ),
+            const SizedBox(height: 20),
+            Form(
+              key: _formKey,
+              child: EmailField(
+                controller: _emailController,
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) => _submit(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            AuthSubmitButton(
+              label: _hasSent ? 'Send again' : 'Send reset link',
+              isLoading: false,
+              onTap: _submit,
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }

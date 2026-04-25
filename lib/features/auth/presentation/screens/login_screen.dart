@@ -1,71 +1,85 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:kudlit_ph/app/constants.dart';
-import 'package:kudlit_ph/core/design_system/widgets/kudlit_auth_shell.dart';
-import 'package:kudlit_ph/core/error/failures.dart';
-import 'package:kudlit_ph/features/auth/domain/entities/auth_user.dart';
-import 'package:kudlit_ph/features/auth/presentation/providers/auth_notifier.dart';
-import 'package:kudlit_ph/features/auth/presentation/widgets/login_form_body.dart';
+import 'package:go_router/go_router.dart';
 
-class LoginScreen extends ConsumerStatefulWidget {
+import 'package:kudlit_ph/app/constants.dart';
+
+import '../widgets/login_bottom_sheet.dart';
+import '../widgets/login_hero.dart';
+import 'phone_sign_in_screen.dart';
+import 'sign_in_screen.dart';
+
+/// Login / welcome screen. Shows the Butty hero and auth-method options.
+/// Tapping "Continue with Email" pushes [SignInScreen] via the Navigator.
+class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
 
-  @override
-  ConsumerState<LoginScreen> createState() => _LoginScreenState();
-}
-
-class _LoginScreenState extends ConsumerState<LoginScreen> {
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-
-  @override
-  void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _onSignIn() async {
-    await ref
-        .read(authNotifierProvider.notifier)
-        .signIn(
-          email: _emailController.text.trim(),
-          password: _passwordController.text,
-        );
-  }
-
-  String _mapFailureToMessage(Object? error) {
-    if (error is! Failure) return AppConstants.unexpectedErrorOccurred;
-    return error.when(
-      network: (String msg) => '${AppConstants.networkErrorPrefix}$msg',
-      invalidCredentials: () => AppConstants.invalidCredentialsMessage,
-      userNotFound: () => AppConstants.noAccountFoundMessage,
-      emailAlreadyInUse: () => AppConstants.emailAlreadyInUseMessage,
-      weakPassword: () => AppConstants.weakPasswordShortMessage,
-      tooManyRequests: () => AppConstants.tooManyAttemptsMessage,
-      sessionExpired: () => AppConstants.sessionExpiredMessage,
-      passwordResetEmailSent: () => AppConstants.passwordResetEmailSentMessage,
-      unknown: (String msg) => msg,
+  void _onContinueWithEmail(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (BuildContext ctx) => const SignInScreen(),
+      ),
     );
+  }
+
+  void _onContinueWithPhone(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (BuildContext ctx) => const PhoneSignInScreen(),
+      ),
+    );
+  }
+
+  void _onContinueWithGoogle(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Google sign-in — coming soon!')),
+    );
+  }
+
+  void _onCreateAccount(BuildContext context) {
+    context.go(AppConstants.routeSignUp);
+  }
+
+  void _onForgotPassword(BuildContext context) {
+    context.push(AppConstants.routeForgotPassword);
+  }
+
+  void _onContinueAsGuest(BuildContext context) {
+    context.go(AppConstants.routeHome);
   }
 
   @override
   Widget build(BuildContext context) {
-    final AsyncValue<AuthUser?> authState = ref.watch(authNotifierProvider);
-    final String? errorMessage = authState.hasError
-        ? _mapFailureToMessage(authState.error)
-        : null;
+    final double screenHeight = MediaQuery.sizeOf(context).height;
+    final double heroHeight = screenHeight * 0.52;
 
-    return KudlitAuthShell(
-      title: AppConstants.loginTitle,
-      subtitle: AppConstants.loginSubtitle,
-      heroAsset: 'assets/brand/ButtyWave.webp',
-      child: LoginFormBody(
-        emailController: _emailController,
-        passwordController: _passwordController,
-        isLoading: authState.isLoading,
-        errorMessage: errorMessage,
-        onSignIn: _onSignIn,
+    return Scaffold(
+      body: Stack(
+        // StackFit.expand ensures the stack fills the full screen so that
+        // Positioned(bottom: 0) means the bottom of the screen, not the hero.
+        fit: StackFit.expand,
+        children: <Widget>[
+          Positioned(
+            left: 0,
+            right: 0,
+            top: 0,
+            height: heroHeight,
+            child: const LoginHero(),
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            top: heroHeight - 22,
+            bottom: 0,
+            child: LoginBottomSheet(
+              onContinueWithPhone: () => _onContinueWithPhone(context),
+              onContinueWithEmail: () => _onContinueWithEmail(context),
+              onContinueWithGoogle: () => _onContinueWithGoogle(context),
+              onCreateAccount: () => _onCreateAccount(context),
+              onForgotPassword: () => _onForgotPassword(context),
+              onContinueAsGuest: () => _onContinueAsGuest(context),
+            ),
+          ),
+        ],
       ),
     );
   }
