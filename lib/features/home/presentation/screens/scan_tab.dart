@@ -1,43 +1,66 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:kudlit_ph/features/home/presentation/widgets/yolo_sim_overlay.dart';
+import 'package:kudlit_ph/features/scanner/domain/entities/baybayin_detection.dart';
+import 'package:kudlit_ph/features/scanner/presentation/providers/scanner_provider.dart';
+import 'package:kudlit_ph/features/scanner/presentation/widgets/aggregated_bounding_box.dart';
+import 'package:kudlit_ph/features/scanner/presentation/widgets/detection_overlay.dart';
+import 'package:kudlit_ph/features/scanner/presentation/widgets/scanner_camera.dart';
 
 /// Baybayin scanner screen.
-/// On web: shows a simulated scanner UI with upload placeholder.
-/// On mobile: YOLO on-device inference will be wired here.
-class ScanTab extends StatefulWidget {
+///
+/// Embeds [ScannerCamera] (which owns the YOLO inference), reads the latest
+/// detections from [ScannerNotifier], and renders the controls + result panel.
+class ScanTab extends ConsumerStatefulWidget {
   const ScanTab({super.key});
 
   @override
-  State<ScanTab> createState() => _ScanTabState();
+  ConsumerState<ScanTab> createState() => _ScanTabState();
 }
 
-class _ScanTabState extends State<ScanTab> {
+class _ScanTabState extends ConsumerState<ScanTab> {
   bool _resultVisible = false;
+  bool _flashOn = false;
+
+  Future<void> _toggleFlash() async {
+    final bool next = !_flashOn;
+    setState(() => _flashOn = next);
+    await ref.read(baybayinDetectorProvider).toggleTorch(enabled: next);
+  }
 
   @override
   Widget build(BuildContext context) {
     final double safeBottom = MediaQuery.paddingOf(context).bottom;
     final double controlsBottom = safeBottom + 20;
+    final List<BaybayinDetection> detections = ref.watch(
+      scannerNotifierProvider,
+    );
 
     return Stack(
       fit: StackFit.expand,
       children: <Widget>[
-        const _ScanBackground(),
+        _ScanCameraStack(
+          detections: detections,
+          flashOn: _flashOn,
+          onDetections: (List<BaybayinDetection> d) =>
+              ref.read(scannerNotifierProvider.notifier).update(d),
+          onFlashToggle: kIsWeb ? null : _toggleFlash,
+        ),
         const Positioned(
           top: 0,
           left: 0,
           right: 0,
           child: SafeArea(bottom: false, child: _ScanningIndicator()),
         ),
-        const YoloSimOverlay(),
         Positioned(
           left: 0,
           right: 0,
           bottom: controlsBottom,
           child: _ScanControls(
+            flashOn: _flashOn,
             onShutter: () => setState(() => _resultVisible = !_resultVisible),
+            onFlashToggle: kIsWeb ? null : _toggleFlash,
           ),
         ),
         if (_resultVisible)
@@ -54,21 +77,34 @@ class _ScanTabState extends State<ScanTab> {
   }
 }
 
-// ── Background ────────────────────────────────────────────────────────────────
+// ── Camera + overlays ────────────────────────────────────────────────────────
 
-class _ScanBackground extends StatelessWidget {
-  const _ScanBackground();
+class _ScanCameraStack extends StatelessWidget {
+  const _ScanCameraStack({
+    required this.detections,
+    required this.flashOn,
+    required this.onDetections,
+    required this.onFlashToggle,
+  });
+
+  final List<BaybayinDetection> detections;
+  final bool flashOn;
+  final void Function(List<BaybayinDetection>) onDetections;
+  final VoidCallback? onFlashToggle;
 
   @override
   Widget build(BuildContext context) {
-    return const DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: <Color>[Color(0xFF0F1520), Color(0xFF080C18)],
+    return Stack(
+      fit: StackFit.expand,
+      children: <Widget>[
+        ScannerCamera(
+          flashOn: flashOn,
+          onDetections: onDetections,
+          onFlashToggle: onFlashToggle,
         ),
-      ),
+        AggregatedBoundingBox(detections: detections),
+        DetectionOverlay(detections: detections),
+      ],
     );
   }
 }
@@ -80,55 +116,22 @@ class _ScanningIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 10),
-      child: Center(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-          decoration: BoxDecoration(
-            color: Colors.white10,
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: Colors.white12),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Container(
-                width: 6,
-                height: 6,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Color(0xE664D2FF),
-                  boxShadow: <BoxShadow>[
-                    BoxShadow(color: Color(0xB364D2FF), blurRadius: 6),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 7),
-              const Text(
-                kIsWeb
-                    ? 'Web preview  ·  Tap shutter to simulate'
-                    : 'Scanning…',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Color(0x8CFFFFFF),
-                  letterSpacing: 0.4,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+    return const Padding(padding: EdgeInsets.only(top: 10), child: Center());
   }
 }
 
 // ── Controls ──────────────────────────────────────────────────────────────────
 
 class _ScanControls extends StatelessWidget {
-  const _ScanControls({required this.onShutter});
+  const _ScanControls({
+    required this.flashOn,
+    required this.onShutter,
+    required this.onFlashToggle,
+  });
 
+  final bool flashOn;
   final VoidCallback onShutter;
+  final VoidCallback? onFlashToggle;
 
   @override
   Widget build(BuildContext context) {
@@ -143,10 +146,19 @@ class _ScanControls extends StatelessWidget {
               padding: const EdgeInsets.only(left: 32),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
-                children: const <Widget>[
-                  _ControlIcon(icon: Icons.image_outlined),
-                  SizedBox(width: 18),
-                  _ControlIcon(icon: Icons.flash_off_rounded),
+                children: <Widget>[
+                  const _ControlIcon(icon: Icons.image_outlined),
+                  if (onFlashToggle != null) ...<Widget>[
+                    const SizedBox(width: 18),
+                    GestureDetector(
+                      onTap: onFlashToggle,
+                      child: _ControlIcon(
+                        icon: flashOn
+                            ? Icons.flash_on_rounded
+                            : Icons.flash_off_rounded,
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -165,7 +177,7 @@ class _ControlIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Icon(icon, size: 26, color: Colors.white70);
+    return Icon(icon, size: 26, color: Colors.white.withAlpha(180));
   }
 }
 
@@ -183,7 +195,7 @@ class _ShutterButton extends StatelessWidget {
         height: 68,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.white54, width: 2),
+          border: Border.all(color: Colors.white.withAlpha(140), width: 2),
         ),
         child: Center(
           child: Container(
@@ -212,12 +224,13 @@ class _ScanResultPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
       decoration: BoxDecoration(
-        color: const Color(0xD20C0F1C),
+        color: cs.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white12),
+        border: Border.all(color: cs.outline),
         boxShadow: const <BoxShadow>[
           BoxShadow(
             color: Color(0x59000000),
@@ -255,7 +268,7 @@ class _ResultHandle extends StatelessWidget {
         width: 28,
         height: 3,
         decoration: BoxDecoration(
-          color: Colors.white24,
+          color: Theme.of(context).colorScheme.onSurface.withAlpha(60),
           borderRadius: BorderRadius.circular(99),
         ),
       ),
@@ -268,7 +281,8 @@ class _ResultText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Column(
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text(
@@ -276,18 +290,18 @@ class _ResultText extends StatelessWidget {
           style: TextStyle(
             fontFamily: 'Baybayin Simple TAWBID',
             fontSize: 28,
-            color: Colors.white,
+            color: cs.onSurface,
             letterSpacing: 6,
             height: 1.1,
           ),
         ),
-        SizedBox(height: 2),
+        const SizedBox(height: 2),
         Text(
           'Mahal kita',
           style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w600,
-            color: Color(0xD9FFFFFF),
+            color: cs.onSurface.withAlpha(217),
             letterSpacing: -0.15,
           ),
         ),
@@ -324,17 +338,18 @@ class _ActionChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: 34,
         height: 34,
         decoration: BoxDecoration(
-          color: Colors.white10,
+          color: cs.surfaceContainer,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: Colors.white12),
+          border: Border.all(color: cs.outline),
         ),
-        child: Icon(icon, size: 15, color: Colors.white60),
+        child: Icon(icon, size: 15, color: cs.onSurface.withAlpha(150)),
       ),
     );
   }

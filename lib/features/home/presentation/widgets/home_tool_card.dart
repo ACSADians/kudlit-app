@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'package:kudlit_ph/core/design_system/kudlit_colors.dart';
-
 /// Large tool card used in the Home tab for Scanner and Transliterator.
 class HomeToolCard extends StatelessWidget {
   const HomeToolCard({
@@ -21,14 +19,15 @@ class HomeToolCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: KudlitColors.paper,
+          color: cs.surface,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: KudlitColors.grey400, width: 1.25),
+          border: Border.all(color: cs.outline, width: 1.25),
           boxShadow: const <BoxShadow>[
             BoxShadow(
               color: Color(0x1A0E1425),
@@ -61,6 +60,7 @@ class _ToolIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
     return Container(
       width: 46,
       height: 46,
@@ -75,7 +75,7 @@ class _ToolIcon extends StatelessWidget {
           ),
         ],
       ),
-      child: Icon(icon, size: 24, color: KudlitColors.blue900),
+      child: Icon(icon, size: 24, color: cs.onPrimary),
     );
   }
 }
@@ -88,23 +88,24 @@ class _ToolText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w700,
-            color: KudlitColors.blue300,
+            color: cs.onSurface,
           ),
         ),
         const SizedBox(height: 3),
         Text(
           description,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 11.5,
-            color: KudlitColors.grey300,
+            color: cs.onSurface.withAlpha(170),
             height: 1.4,
           ),
         ),
@@ -118,7 +119,8 @@ class _OpenLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Row(
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    return Row(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
         Text(
@@ -126,14 +128,10 @@ class _OpenLabel extends StatelessWidget {
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: KudlitColors.blue400,
+            color: cs.primary,
           ),
         ),
-        Icon(
-          Icons.arrow_forward_rounded,
-          size: 13,
-          color: KudlitColors.blue400,
-        ),
+        Icon(Icons.arrow_forward_rounded, size: 13, color: cs.primary),
       ],
     );
   }

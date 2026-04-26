@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'package:kudlit_ph/core/design_system/kudlit_colors.dart';
-
 class HomeSectionHeader extends StatelessWidget {
   const HomeSectionHeader({required this.title, this.action, super.key});
 
@@ -10,6 +8,7 @@ class HomeSectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(14, 18, 14, 8),
       child: Row(
@@ -19,19 +18,19 @@ class HomeSectionHeader extends StatelessWidget {
         children: <Widget>[
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w700,
-              color: KudlitColors.blue300,
+              color: cs.onSurface,
               letterSpacing: -0.15,
             ),
           ),
           if (action != null)
             Text(
               '$action ›',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
-                color: KudlitColors.blue400,
+                color: cs.primary,
                 fontWeight: FontWeight.w500,
               ),
             ),

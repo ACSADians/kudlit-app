@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 const double kFloatingNavClearance = 56.0;
 
 /// The three primary app tabs.
-enum AppTab { scan, translate, learn }
+enum AppTab { scan, translate, learn, butty }
 
 /// Dark floating pill at the bottom-right corner.
 /// Tapping it expands to reveal all three tabs; tapping again collapses.
@@ -38,8 +38,8 @@ class _FloatingTabNavState extends State<FloatingTabNav> {
 
   @override
   Widget build(BuildContext context) {
-    final double pillWidth = MediaQuery.sizeOf(context).width * 0.42;
-    const double collapsedSize = 54.0;
+    final double screenWidth = MediaQuery.sizeOf(context).width;
+    final double pillWidth = (screenWidth * 0.88).clamp(280.0, 360.0);
 
     return TapRegion(
       onTapOutside: (_) {
@@ -47,73 +47,120 @@ class _FloatingTabNavState extends State<FloatingTabNav> {
       },
       child: GestureDetector(
         onTap: _expanded ? null : _toggle,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(999),
-            boxShadow: const <BoxShadow>[
-              BoxShadow(
-                color: Color(0x55000000),
-                blurRadius: 36,
-                spreadRadius: -4,
-                offset: Offset(0, 12),
-              ),
-              BoxShadow(
-                color: Color(0x22000000),
-                blurRadius: 10,
-                offset: Offset(0, 2),
-              ),
-            ],
+        child: _NavPillSurface(
+          expanded: _expanded,
+          pillWidth: pillWidth,
+          activeTab: widget.activeTab,
+          onSelect: _select,
+        ),
+      ),
+    );
+  }
+}
+
+// ── Pill surface (blurred glass container with collapsed/expanded slots) ─────
+
+class _NavPillSurface extends StatelessWidget {
+  const _NavPillSurface({
+    required this.expanded,
+    required this.pillWidth,
+    required this.activeTab,
+    required this.onSelect,
+  });
+
+  final bool expanded;
+  final double pillWidth;
+  final AppTab activeTab;
+  final ValueChanged<AppTab> onSelect;
+
+  static const double _collapsedSize = 64.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(999),
+        boxShadow: const <BoxShadow>[
+          BoxShadow(
+            color: Color(0x55000000),
+            blurRadius: 36,
+            spreadRadius: -4,
+            offset: Offset(0, 12),
           ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(999),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOutCubic,
-                width: _expanded ? pillWidth : collapsedSize,
-                height: collapsedSize,
-                padding: const EdgeInsets.all(5),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: <Color>[Color(0xCC0E1730), Color(0xBB07091A)],
-                  ),
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: Color(0x28FFFFFF), width: 1.0),
-                ),
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: <Widget>[
-                    IgnorePointer(
-                      ignoring: _expanded,
-                      child: AnimatedOpacity(
-                        opacity: _expanded ? 0.0 : 1.0,
-                        duration: const Duration(milliseconds: 180),
-                        curve: Curves.easeOut,
-                        child: _CollapsedPill(activeTab: widget.activeTab),
-                      ),
-                    ),
-                    IgnorePointer(
-                      ignoring: !_expanded,
-                      child: AnimatedOpacity(
-                        opacity: _expanded ? 1.0 : 0.0,
-                        duration: const Duration(milliseconds: 180),
-                        curve: Curves.easeOut,
-                        child: _ExpandedItems(
-                          activeTab: widget.activeTab,
-                          onSelect: _select,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+          BoxShadow(
+            color: Color(0x22000000),
+            blurRadius: 10,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(999),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOutCubic,
+            width: expanded ? pillWidth : _collapsedSize,
+            height: _collapsedSize,
+            padding: const EdgeInsets.all(5),
+            decoration: BoxDecoration(
+              color: cs.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: cs.outline, width: 1.0),
+            ),
+            child: _NavPillContents(
+              expanded: expanded,
+              activeTab: activeTab,
+              onSelect: onSelect,
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+// ── Stacked collapsed/expanded contents with crossfade ──────────────────────
+
+class _NavPillContents extends StatelessWidget {
+  const _NavPillContents({
+    required this.expanded,
+    required this.activeTab,
+    required this.onSelect,
+  });
+
+  final bool expanded;
+  final AppTab activeTab;
+  final ValueChanged<AppTab> onSelect;
+
+  static const Duration _fade = Duration(milliseconds: 180);
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      alignment: Alignment.center,
+      children: <Widget>[
+        IgnorePointer(
+          ignoring: expanded,
+          child: AnimatedOpacity(
+            opacity: expanded ? 0.0 : 1.0,
+            duration: _fade,
+            curve: Curves.easeOut,
+            child: _CollapsedPill(activeTab: activeTab),
+          ),
+        ),
+        IgnorePointer(
+          ignoring: !expanded,
+          child: AnimatedOpacity(
+            opacity: expanded ? 1.0 : 0.0,
+            duration: _fade,
+            curve: Curves.easeOut,
+            child: _ExpandedItems(activeTab: activeTab, onSelect: onSelect),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -129,12 +176,17 @@ class _CollapsedPill extends StatelessWidget {
     AppTab.scan: Icons.qr_code_scanner,
     AppTab.translate: Icons.g_translate,
     AppTab.learn: Icons.auto_stories_rounded,
+    AppTab.butty: Icons.chat_bubble_outline_rounded,
   };
 
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Icon(_icons[activeTab]!, size: 22, color: Colors.white),
+      child: Icon(
+        _icons[activeTab]!,
+        size: 22,
+        color: Theme.of(context).colorScheme.onSurface,
+      ),
     );
   }
 }
@@ -176,6 +228,14 @@ class _ExpandedItems extends StatelessWidget {
             onTap: () => onSelect(AppTab.learn),
           ),
         ),
+        Expanded(
+          child: _NavPill(
+            icon: Icons.chat_bubble_outline_rounded,
+            label: 'Butty',
+            active: activeTab == AppTab.butty,
+            onTap: () => onSelect(AppTab.butty),
+          ),
+        ),
       ],
     );
   }
@@ -196,40 +256,28 @@ class _NavPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    final Color activeFg = cs.onPrimary;
+    final Color inactiveFg = cs.onSurface.withAlpha(180);
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: active ? Colors.white : Colors.transparent,
+          color: active ? cs.primary : Colors.transparent,
           borderRadius: BorderRadius.circular(999),
-          boxShadow: active
-              ? const <BoxShadow>[
-                  BoxShadow(
-                    color: Color(0x33FFFFFF),
-                    blurRadius: 12,
-                    spreadRadius: 0,
-                  ),
-                ]
-              : null,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            Icon(
-              icon,
-              size: 17,
-              color: active ? const Color(0xFF080C18) : const Color(0xBBFFFFFF),
-            ),
+            Icon(icon, size: 17, color: active ? activeFg : inactiveFg),
             const SizedBox(height: 3),
             Text(
               label,
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-                color: active
-                    ? const Color(0xFF080C18)
-                    : const Color(0xBBFFFFFF),
+                color: active ? activeFg : inactiveFg,
                 letterSpacing: 0.2,
               ),
             ),

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:kudlit_ph/features/home/presentation/screens/butty_chat_screen.dart';
 import 'package:kudlit_ph/features/home/presentation/screens/learn_tab.dart';
 import 'package:kudlit_ph/features/home/presentation/screens/scan_tab.dart';
 import 'package:kudlit_ph/features/home/presentation/screens/translate_screen.dart';
+import 'package:kudlit_ph/features/home/presentation/widgets/app_header/app_header.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/floating_tab_nav.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -44,24 +46,64 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final double navBottom = MediaQuery.paddingOf(context).bottom + 20;
 
     return Scaffold(
-      body: Stack(
-        fit: StackFit.expand,
+      body: Column(
         children: <Widget>[
-          PageView(
-            controller: _pageController,
-            physics: const NeverScrollableScrollPhysics(),
-            children: const <Widget>[ScanTab(), TranslateScreen(), LearnTab()],
-          ),
-          Positioned(
-            right: 18,
-            bottom: navBottom,
-            child: FloatingTabNav(
-              activeTab: _activeTab,
-              onTabSelected: _onTabSelected,
+          const AppHeader(),
+          Expanded(
+            child: MediaQuery.removePadding(
+              context: context,
+              removeTop: true,
+              child: _HomeBody(
+                pageController: _pageController,
+                activeTab: _activeTab,
+                onTabSelected: _onTabSelected,
+                navBottom: navBottom,
+              ),
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _HomeBody extends StatelessWidget {
+  const _HomeBody({
+    required this.pageController,
+    required this.activeTab,
+    required this.onTabSelected,
+    required this.navBottom,
+  });
+
+  final PageController pageController;
+  final AppTab activeTab;
+  final ValueChanged<AppTab> onTabSelected;
+  final double navBottom;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: <Widget>[
+        PageView(
+          controller: pageController,
+          physics: const NeverScrollableScrollPhysics(),
+          children: <Widget>[
+            const ScanTab(),
+            const TranslateScreen(),
+            LearnTab(onSwitchToButty: () => onTabSelected(AppTab.butty)),
+            const ButtyChatScreen(),
+          ],
+        ),
+        Positioned(
+          right: 18,
+          bottom: navBottom,
+          child: FloatingTabNav(
+            activeTab: activeTab,
+            onTabSelected: onTabSelected,
+          ),
+        ),
+      ],
     );
   }
 }

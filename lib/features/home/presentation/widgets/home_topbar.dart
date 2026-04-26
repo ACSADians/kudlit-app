@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'package:kudlit_ph/core/design_system/kudlit_colors.dart';
-
 /// App top bar shown on the home/dashboard screen.
 class HomeTopbar extends StatelessWidget {
   const HomeTopbar({required this.isGuest, super.key});
@@ -10,15 +8,20 @@ class HomeTopbar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme cs = theme.colorScheme;
+    final Color bg =
+        theme.appBarTheme.backgroundColor ?? cs.surfaceContainerHigh;
+
     return Container(
       height: 56,
       padding: const EdgeInsets.symmetric(horizontal: 14),
-      decoration: const BoxDecoration(
-        color: KudlitColors.blue500,
+      decoration: BoxDecoration(
+        color: bg,
         border: Border(
-          bottom: BorderSide(color: KudlitColors.blue400, width: 1.25),
+          bottom: BorderSide(color: cs.outlineVariant, width: 1.25),
         ),
-        boxShadow: <BoxShadow>[
+        boxShadow: const <BoxShadow>[
           BoxShadow(
             color: Color(0x1A0E1425),
             blurRadius: 8,
@@ -46,19 +49,16 @@ class _MenuButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
     return Container(
       width: 32,
       height: 32,
       decoration: BoxDecoration(
-        color: KudlitColors.paper,
+        color: cs.surface,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: KudlitColors.blue400, width: 1.25),
+        border: Border.all(color: cs.outline, width: 1.25),
       ),
-      child: const Icon(
-        Icons.menu_rounded,
-        size: 18,
-        color: KudlitColors.blue300,
-      ),
+      child: Icon(Icons.menu_rounded, size: 18, color: cs.primary),
     );
   }
 }
@@ -85,24 +85,25 @@ class _SignInButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
       decoration: BoxDecoration(
-        color: KudlitColors.paper,
+        color: cs.surface,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: KudlitColors.blue400, width: 1.25),
+        border: Border.all(color: cs.outline, width: 1.25),
       ),
-      child: const Row(
+      child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Icon(Icons.login_rounded, size: 13, color: KudlitColors.blue300),
-          SizedBox(width: 5),
+          Icon(Icons.login_rounded, size: 13, color: cs.primary),
+          const SizedBox(width: 5),
           Text(
             'Sign In',
             style: TextStyle(
               fontSize: 11.5,
               fontWeight: FontWeight.w600,
-              color: KudlitColors.blue300,
+              color: cs.primary,
             ),
           ),
         ],
@@ -116,12 +117,13 @@ class _AvatarButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
     return Container(
       width: 34,
       height: 34,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(color: KudlitColors.blue800, width: 2),
+        border: Border.all(color: cs.primary, width: 2),
       ),
       child: ClipOval(
         child: Image.asset(

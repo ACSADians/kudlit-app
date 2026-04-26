@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'package:kudlit_ph/core/design_system/kudlit_colors.dart';
-
 /// Shared scaffold for all auth sub-screens: a hero panel overlaid by
 /// a rounded bottom-sheet card. Both panels are sized from [heroFraction].
 class AuthScreenShell extends StatelessWidget {
@@ -56,11 +54,13 @@ class AuthSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final Color surface = Theme.of(context).colorScheme.surface;
+
     return Container(
-      decoration: const BoxDecoration(
-        color: KudlitColors.paper,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-        boxShadow: <BoxShadow>[
+      decoration: BoxDecoration(
+        color: surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+        boxShadow: const <BoxShadow>[
           BoxShadow(
             color: Color(0x260E1425),
             blurRadius: 24,
@@ -90,7 +90,7 @@ class AuthDragHandle extends StatelessWidget {
         width: 40,
         height: 4,
         decoration: BoxDecoration(
-          color: KudlitColors.grey400,
+          color: Theme.of(context).colorScheme.outlineVariant,
           borderRadius: BorderRadius.circular(2),
         ),
       ),
@@ -111,13 +111,15 @@ class AuthSheetHeadline extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+
     return Column(
       children: <Widget>[
         Text(
           title,
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: KudlitColors.blue300,
+          style: TextStyle(
+            color: cs.onSurface,
             fontSize: 18,
             fontWeight: FontWeight.w700,
             letterSpacing: -0.3,
@@ -128,8 +130,8 @@ class AuthSheetHeadline extends StatelessWidget {
         Text(
           subtitle,
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: KudlitColors.grey200,
+          style: TextStyle(
+            color: cs.onSurface.withAlpha(153),
             fontSize: 12,
             height: 1.35,
           ),

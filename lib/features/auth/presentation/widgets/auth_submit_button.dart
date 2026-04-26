@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'package:kudlit_ph/core/design_system/kudlit_colors.dart';
-
 /// Primary action button for all auth forms. Matches the visual weight of
 /// the welcome screen's [PrimaryAuthOptionButton].
 class AuthSubmitButton extends StatelessWidget {
@@ -18,12 +16,14 @@ class AuthSubmitButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+
     return GestureDetector(
       onTap: isLoading ? null : onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 13),
         decoration: BoxDecoration(
-          color: isLoading ? KudlitColors.blue400 : KudlitColors.blue300,
+          color: isLoading ? cs.primary.withAlpha(153) : cs.primary,
           borderRadius: BorderRadius.circular(12),
           boxShadow: const <BoxShadow>[
             BoxShadow(
@@ -36,18 +36,18 @@ class AuthSubmitButton extends StatelessWidget {
         ),
         alignment: Alignment.center,
         child: isLoading
-            ? const SizedBox(
+            ? SizedBox(
                 width: 20,
                 height: 20,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: KudlitColors.blue900,
+                  color: cs.onPrimary,
                 ),
               )
             : Text(
                 label,
-                style: const TextStyle(
-                  color: KudlitColors.blue900,
+                style: TextStyle(
+                  color: cs.onPrimary,
                   fontSize: 14.5,
                   fontWeight: FontWeight.w600,
                   height: 1.2,

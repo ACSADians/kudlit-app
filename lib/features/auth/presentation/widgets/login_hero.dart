@@ -8,7 +8,7 @@ import 'login_hero_content.dart';
 class LoginHero extends StatelessWidget {
   const LoginHero({
     this.buttyAsset = 'assets/brand/ButtyWave.webp',
-    this.bubbleText = "Kumusta! I'm Butty. Let's learn Baybayin together!",
+    this.bubbleText = 'Kumusta! I\'m Butty. Let\'s learn Baybayin together!',
     this.showBackButton = false,
     this.showLanguageToggle = true,
     super.key,

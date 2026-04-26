@@ -1,7 +1,9 @@
 // ignore: unnecessary_import — flutter_riverpod is needed for Ref resolution
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
 import 'package:kudlit_ph/features/auth/data/datasources/supabase_auth_datasource.dart';
 import 'package:kudlit_ph/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:kudlit_ph/features/auth/domain/repositories/auth_repository.dart';

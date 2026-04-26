@@ -111,39 +111,16 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
         showLanguageToggle: false,
       ),
       sheet: AuthSheet(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            const AuthDragHandle(),
-            const SizedBox(height: 10),
-            AuthSheetHeadline(
-              title: 'Enter the code',
-              subtitle: 'Sent to $maskedNumber',
-            ),
-            const SizedBox(height: 24),
-            _OtpRow(
-              controllers: _controllers,
-              focusNodes: _focusNodes,
-              hasError: _hasError,
-              onChanged: _onDigitChanged,
-            ),
-            if (_hasError) ...<Widget>[
-              const SizedBox(height: 12),
-              const Text(
-                'Incorrect code. Please try again.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: KudlitColors.danger400, fontSize: 12),
-              ),
-            ],
-            const SizedBox(height: 24),
-            AuthSubmitButton(
-              label: 'Verify',
-              isLoading: _isLoading,
-              onTap: _submit,
-            ),
-            const SizedBox(height: 20),
-            _ResendRow(cooldown: _resendCooldown, onResend: _clearOtp),
-          ],
+        child: _OtpSheetBody(
+          maskedNumber: maskedNumber,
+          controllers: _controllers,
+          focusNodes: _focusNodes,
+          hasError: _hasError,
+          isLoading: _isLoading,
+          resendCooldown: _resendCooldown,
+          onDigitChanged: _onDigitChanged,
+          onSubmit: _submit,
+          onResend: _clearOtp,
         ),
       ),
     );
@@ -155,6 +132,70 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
     final String last4 = phone.substring(phone.length - 4);
     final String prefix = phone.substring(0, phone.length - 7);
     return '$prefix *** $last4';
+  }
+}
+
+// ── Sheet body ───────────────────────────────────────────────────────────────
+
+class _OtpSheetBody extends StatelessWidget {
+  const _OtpSheetBody({
+    required this.maskedNumber,
+    required this.controllers,
+    required this.focusNodes,
+    required this.hasError,
+    required this.isLoading,
+    required this.resendCooldown,
+    required this.onDigitChanged,
+    required this.onSubmit,
+    required this.onResend,
+  });
+
+  final String maskedNumber;
+  final List<TextEditingController> controllers;
+  final List<FocusNode> focusNodes;
+  final bool hasError;
+  final bool isLoading;
+  final int resendCooldown;
+  final void Function(int index, String value) onDigitChanged;
+  final VoidCallback onSubmit;
+  final VoidCallback onResend;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        const AuthDragHandle(),
+        const SizedBox(height: 10),
+        AuthSheetHeadline(
+          title: 'Enter the code',
+          subtitle: 'Sent to $maskedNumber',
+        ),
+        const SizedBox(height: 24),
+        _OtpRow(
+          controllers: controllers,
+          focusNodes: focusNodes,
+          hasError: hasError,
+          onChanged: onDigitChanged,
+        ),
+        if (hasError) ...<Widget>[
+          const SizedBox(height: 12),
+          const Text(
+            'Incorrect code. Please try again.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: KudlitColors.danger400, fontSize: 12),
+          ),
+        ],
+        const SizedBox(height: 24),
+        AuthSubmitButton(
+          label: 'Verify',
+          isLoading: isLoading,
+          onTap: onSubmit,
+        ),
+        const SizedBox(height: 20),
+        _ResendRow(cooldown: resendCooldown, onResend: onResend),
+      ],
+    );
   }
 }
 
@@ -207,9 +248,8 @@ class _OtpBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color borderColor = hasError
-        ? KudlitColors.danger400
-        : KudlitColors.blue400;
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    final Color borderColor = hasError ? KudlitColors.danger400 : cs.primary;
 
     return SizedBox(
       width: 44,
@@ -224,34 +264,38 @@ class _OtpBox extends StatelessWidget {
         inputFormatters: <TextInputFormatter>[
           FilteringTextInputFormatter.digitsOnly,
         ],
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 22,
           fontWeight: FontWeight.w700,
-          color: KudlitColors.blue300,
+          color: cs.onSurface,
           height: 1,
         ),
-        decoration: InputDecoration(
-          counterText: '',
-          contentPadding: EdgeInsets.zero,
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: BorderSide(color: borderColor, width: 1.5),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(color: KudlitColors.blue300, width: 2),
-          ),
-          errorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(
-              color: KudlitColors.danger400,
-              width: 1.5,
-            ),
-          ),
-          filled: true,
-          fillColor: KudlitColors.blue900,
-        ),
+        decoration: _otpDecoration(cs: cs, borderColor: borderColor),
       ),
+    );
+  }
+
+  InputDecoration _otpDecoration({
+    required ColorScheme cs,
+    required Color borderColor,
+  }) {
+    return InputDecoration(
+      counterText: '',
+      contentPadding: EdgeInsets.zero,
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(color: borderColor, width: 1.5),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(color: cs.primary, width: 2),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: KudlitColors.danger400, width: 1.5),
+      ),
+      filled: true,
+      fillColor: cs.surface,
     );
   }
 }
@@ -266,29 +310,31 @@ class _ResendRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: <Widget>[
-        const Text(
-          "Didn't get a code?  ",
-          style: TextStyle(fontSize: 12.5, color: KudlitColors.grey200),
+        Text(
+          'Didn\'t get a code?  ',
+          style: TextStyle(fontSize: 12.5, color: cs.onSurface.withAlpha(153)),
         ),
         if (cooldown > 0)
           Text(
             'Resend in ${cooldown}s',
-            style: const TextStyle(fontSize: 12.5, color: KudlitColors.grey400),
+            style: TextStyle(fontSize: 12.5, color: cs.onSurface.withAlpha(80)),
           )
         else
           GestureDetector(
             onTap: onResend,
-            child: const Text(
+            child: Text(
               'Resend code',
               style: TextStyle(
                 fontSize: 12.5,
-                color: KudlitColors.blue300,
+                color: cs.primary,
                 fontWeight: FontWeight.w600,
                 decoration: TextDecoration.underline,
-                decorationColor: KudlitColors.blue300,
+                decorationColor: cs.primary,
               ),
             ),
           ),

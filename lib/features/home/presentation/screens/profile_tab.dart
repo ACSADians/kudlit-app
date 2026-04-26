@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:kudlit_ph/app/constants.dart';
-import 'package:kudlit_ph/core/design_system/kudlit_colors.dart';
 import 'package:kudlit_ph/features/auth/domain/entities/auth_user.dart';
 
 /// Profile tab — shows user info when authenticated, or a sign-in prompt for guests.
@@ -13,8 +12,8 @@ class ProfileTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: KudlitColors.blue900,
+    return ColoredBox(
+      color: Theme.of(context).colorScheme.surface,
       child: SafeArea(
         child: user == null
             ? _GuestProfile(onSignIn: () => context.go(AppConstants.routeLogin))
@@ -31,6 +30,7 @@ class _GuestProfile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -38,22 +38,22 @@ class _GuestProfile extends StatelessWidget {
         children: <Widget>[
           Image.asset('assets/brand/ButtyWave.webp', width: 120, height: 120),
           const SizedBox(height: 20),
-          const Text(
+          Text(
             'Kumusta, Bisita!',
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w700,
-              color: KudlitColors.blue300,
+              color: cs.onSurface,
               letterSpacing: -0.3,
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Create an account to save your progress\nand access your profile.',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 13.5,
-              color: KudlitColors.grey200,
+              color: cs.onSurface.withAlpha(180),
               height: 1.5,
             ),
           ),
@@ -63,24 +63,16 @@ class _GuestProfile extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 13),
               decoration: BoxDecoration(
-                color: KudlitColors.blue300,
+                color: cs.primary,
                 borderRadius: BorderRadius.circular(12),
-                boxShadow: const <BoxShadow>[
-                  BoxShadow(
-                    color: Color(0x40172F69),
-                    blurRadius: 10,
-                    offset: Offset(0, 4),
-                    spreadRadius: -2,
-                  ),
-                ],
               ),
-              child: const Center(
+              child: Center(
                 child: Text(
                   'Sign In or Create Account',
                   style: TextStyle(
                     fontSize: 14.5,
                     fontWeight: FontWeight.w600,
-                    color: KudlitColors.blue900,
+                    color: cs.onPrimary,
                   ),
                 ),
               ),
@@ -99,6 +91,7 @@ class _UserProfile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -109,7 +102,7 @@ class _UserProfile extends StatelessWidget {
             height: 80,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: KudlitColors.blue400, width: 2.5),
+              border: Border.all(color: cs.primary, width: 2.5),
             ),
             child: ClipOval(
               child: Image.asset(
@@ -121,16 +114,19 @@ class _UserProfile extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             user.email,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: KudlitColors.blue300,
+              color: cs.onSurface,
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             'Logged in',
-            style: TextStyle(fontSize: 12.5, color: KudlitColors.grey200),
+            style: TextStyle(
+              fontSize: 12.5,
+              color: cs.onSurface.withAlpha(160),
+            ),
           ),
         ],
       ),

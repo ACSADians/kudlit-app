@@ -3,10 +3,12 @@ class AppConstants {
 
   static const String appName = 'Kudlit';
 
+  static const String routeSplash = '/';
   static const String routeLogin = '/login';
   static const String routeSignUp = '/sign-up';
   static const String routeForgotPassword = '/forgot-password';
   static const String routeHome = '/home';
+  static const String routeSettings = '/settings';
   static const String routeAuthReset = '/auth/reset';
 
   static const String loginTitle = appName;
@@ -17,7 +19,7 @@ class AppConstants {
       'Sign in to continue to the Kudlit learning and translation tools.';
   static const String loginAction = 'Sign In';
   static const String forgotPasswordAction = 'Forgot password?';
-  static const String noAccountPrompt = "Don't have an account?";
+  static const String noAccountPrompt = 'Don\'t have an account?';
   static const String createOneAction = 'Create one';
 
   static const String signUpHeading = 'Join Kudlit';

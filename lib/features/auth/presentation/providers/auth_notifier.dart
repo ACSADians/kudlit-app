@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:fpdart/fpdart.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+
 import 'package:kudlit_ph/core/error/failures.dart';
 import 'package:kudlit_ph/core/usecases/usecase.dart';
 import 'package:kudlit_ph/features/auth/domain/entities/auth_user.dart';
@@ -17,26 +18,26 @@ part 'auth_notifier.g.dart';
 
 @Riverpod(keepAlive: true)
 class AuthNotifier extends _$AuthNotifier {
-  StreamSubscription<AuthUser?>? _subscription;
-
   @override
-  AsyncValue<AuthUser?> build() {
+  Future<AuthUser?> build() {
     final AuthRepository repository = ref.watch(authRepositoryProvider);
 
-    _subscription?.cancel();
-    _subscription = repository.authStateChanges.listen(
-      (AuthUser? user) => state = AsyncData(user),
-      onError: (Object error) =>
-          state = AsyncError(error, StackTrace.current),
-    );
+    final StreamSubscription<AuthUser?> sub = repository.authStateChanges
+        .listen(
+          (AuthUser? user) => state = AsyncData(user),
+          onError: (Object error, StackTrace stack) =>
+              state = AsyncError(error, stack),
+        );
 
-    ref.onDispose(() => _subscription?.cancel());
+    ref.onDispose(sub.cancel);
 
-    // Return current user synchronously to avoid loading flash
-    return AsyncData(repository.currentUser);
+    // After Supabase.initialize(), setInitialSession() has already populated
+    // currentUser synchronously. The async wrapper gives the router an
+    // AsyncLoading window so it never fires a premature redirect.
+    return Future.value(repository.currentUser);
   }
 
-  Future<void> signIn({
+  Future<Either<Failure, AuthUser>> signIn({
     required String email,
     required String password,
   }) async {
@@ -49,6 +50,7 @@ class AuthNotifier extends _$AuthNotifier {
       (Failure failure) => state = AsyncError(failure, StackTrace.current),
       (AuthUser user) => state = AsyncData(user),
     );
+    return result;
   }
 
   Future<Either<Failure, SignUpStatus>> signUp({

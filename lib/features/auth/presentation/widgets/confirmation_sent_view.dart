@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kudlit_ph/app/constants.dart';
-import 'package:kudlit_ph/core/design_system/kudlit_colors.dart';
 import 'package:kudlit_ph/features/auth/presentation/widgets/auth_screen_shell.dart';
 import 'package:kudlit_ph/features/auth/presentation/widgets/auth_submit_button.dart';
 import 'package:kudlit_ph/features/auth/presentation/widgets/login_hero.dart';
@@ -30,10 +29,10 @@ class ConfirmationSentView extends StatelessWidget {
               subtitle: AppConstants.confirmationMessage,
             ),
             const SizedBox(height: 24),
-            const Icon(
+            Icon(
               Icons.mark_email_read_outlined,
               size: 56,
-              color: KudlitColors.blue400,
+              color: Theme.of(context).colorScheme.primary,
             ),
             const SizedBox(height: 24),
             AuthSubmitButton(

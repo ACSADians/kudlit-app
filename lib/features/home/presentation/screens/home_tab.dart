@@ -47,9 +47,9 @@ class _HomeBackground extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        color: KudlitColors.blue900,
-        image: DecorationImage(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        image: const DecorationImage(
           image: AssetImage('assets/brand/BaybayInscribe-BackgroundImage.webp'),
           fit: BoxFit.cover,
           opacity: 0.12,

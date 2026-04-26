@@ -25,13 +25,14 @@ class LessonDetailCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: cs.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: KudlitColors.grey400, width: 1.25),
+          border: Border.all(color: cs.outline, width: 1.25),
           boxShadow: const <BoxShadow>[
             BoxShadow(
               color: Color(0x140E1425),
@@ -193,9 +194,9 @@ class _DetailBody extends StatelessWidget {
           Expanded(
             child: Text(
               description,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12.5,
-                color: KudlitColors.grey200,
+                color: Theme.of(context).colorScheme.onSurface.withAlpha(180),
                 height: 1.45,
               ),
             ),
@@ -204,14 +205,14 @@ class _DetailBody extends StatelessWidget {
           Container(
             width: 34,
             height: 34,
-            decoration: const BoxDecoration(
-              color: KudlitColors.blue300,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary,
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.chevron_right_rounded,
               size: 18,
-              color: KudlitColors.blue900,
+              color: Theme.of(context).colorScheme.onPrimary,
             ),
           ),
         ],

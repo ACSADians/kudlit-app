@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'package:kudlit_ph/core/design_system/kudlit_colors.dart';
-
 /// Footer section of the login bottom sheet: remember-me toggle,
 /// forgot password, create account prompt, and guest access link.
 class LoginFooterLinks extends StatefulWidget {
@@ -25,6 +23,10 @@ class _LoginFooterLinksState extends State<LoginFooterLinks> {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    final Color muted = cs.onSurface.withAlpha(153);
+    final Color subtle = cs.onSurface.withAlpha(102);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
@@ -37,20 +39,20 @@ class _LoginFooterLinksState extends State<LoginFooterLinks> {
                 children: <Widget>[
                   _CheckBox(checked: _rememberMe),
                   const SizedBox(width: 7),
-                  const Text(
+                  Text(
                     'Remember me',
-                    style: TextStyle(fontSize: 12, color: KudlitColors.grey200),
+                    style: TextStyle(fontSize: 12, color: muted),
                   ),
                 ],
               ),
             ),
             GestureDetector(
               onTap: widget.onForgotPassword,
-              child: const Text(
+              child: Text(
                 'Forgot password?',
                 style: TextStyle(
                   fontSize: 11.5,
-                  color: KudlitColors.blue400,
+                  color: cs.primary,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -61,19 +63,19 @@ class _LoginFooterLinksState extends State<LoginFooterLinks> {
         Text.rich(
           TextSpan(
             text: 'New here?  ',
-            style: const TextStyle(fontSize: 12.5, color: KudlitColors.grey200),
+            style: TextStyle(fontSize: 12.5, color: muted),
             children: <InlineSpan>[
               WidgetSpan(
                 child: GestureDetector(
                   onTap: widget.onCreateAccount,
-                  child: const Text(
+                  child: Text(
                     'Create an account',
                     style: TextStyle(
                       fontSize: 12.5,
-                      color: KudlitColors.blue300,
+                      color: cs.primary,
                       fontWeight: FontWeight.w600,
                       decoration: TextDecoration.underline,
-                      decorationColor: KudlitColors.blue300,
+                      decorationColor: cs.primary,
                     ),
                   ),
                 ),
@@ -87,13 +89,13 @@ class _LoginFooterLinksState extends State<LoginFooterLinks> {
           onTap: widget.onContinueAsGuest,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: const <Widget>[
+            children: <Widget>[
               Text(
                 'Continue as guest',
-                style: TextStyle(fontSize: 11.5, color: KudlitColors.grey300),
+                style: TextStyle(fontSize: 11.5, color: subtle),
               ),
-              SizedBox(width: 4),
-              Icon(Icons.arrow_forward, size: 11, color: KudlitColors.grey300),
+              const SizedBox(width: 4),
+              Icon(Icons.arrow_forward, size: 11, color: subtle),
             ],
           ),
         ),
@@ -109,20 +111,20 @@ class _CheckBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+
     return Container(
       width: 15,
       height: 15,
       decoration: BoxDecoration(
-        color: checked ? KudlitColors.blue300 : Colors.white,
+        color: checked ? cs.primary : cs.surface,
         borderRadius: BorderRadius.circular(4),
         border: Border.all(
-          color: checked ? KudlitColors.blue300 : KudlitColors.grey400,
+          color: checked ? cs.primary : cs.outlineVariant,
           width: 1.25,
         ),
       ),
-      child: checked
-          ? const Icon(Icons.check, size: 10, color: KudlitColors.blue900)
-          : null,
+      child: checked ? Icon(Icons.check, size: 10, color: cs.onPrimary) : null,
     );
   }
 }

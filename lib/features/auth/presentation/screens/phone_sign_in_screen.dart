@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'package:kudlit_ph/core/design_system/kudlit_colors.dart';
 import 'package:kudlit_ph/features/auth/presentation/widgets/auth_screen_shell.dart';
 import 'package:kudlit_ph/features/auth/presentation/widgets/auth_submit_button.dart';
 import 'package:kudlit_ph/features/auth/presentation/widgets/login_hero.dart';
@@ -40,7 +39,7 @@ class _PhoneSignInScreenState extends State<PhoneSignInScreen> {
   void _pickCountry() {
     showModalBottomSheet<_CountryCode>(
       context: context,
-      backgroundColor: KudlitColors.paper,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -80,42 +79,75 @@ class _PhoneSignInScreenState extends State<PhoneSignInScreen> {
       heroFraction: 0.38,
       hero: const LoginHero(
         buttyAsset: 'assets/brand/ButtyPhone.webp',
-        bubbleText: "What's your number?",
+        bubbleText: 'What\'s your number?',
         showBackButton: true,
         showLanguageToggle: false,
       ),
       sheet: AuthSheet(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            const AuthDragHandle(),
-            const SizedBox(height: 10),
-            const AuthSheetHeadline(
-              title: 'Sign in with phone',
-              subtitle: "We'll text you a one-time code.",
-            ),
-            const SizedBox(height: 20),
-            Form(
-              key: _formKey,
-              child: _PhoneField(
-                controller: _phoneController,
-                country: _country,
-                onPickCountry: _pickCountry,
-                validator: _validatePhone,
-                onSubmitted: (_) => _submit(),
-              ),
-            ),
-            const SizedBox(height: 20),
-            AuthSubmitButton(
-              label: 'Send OTP',
-              isLoading: _isLoading,
-              onTap: _submit,
-            ),
-            const SizedBox(height: 20),
-            _EmailSignInPrompt(),
-          ],
+        child: _PhoneSignInSheetBody(
+          formKey: _formKey,
+          phoneController: _phoneController,
+          country: _country,
+          onPickCountry: _pickCountry,
+          validatePhone: _validatePhone,
+          isLoading: _isLoading,
+          onSubmit: _submit,
         ),
       ),
+    );
+  }
+}
+
+class _PhoneSignInSheetBody extends StatelessWidget {
+  const _PhoneSignInSheetBody({
+    required this.formKey,
+    required this.phoneController,
+    required this.country,
+    required this.onPickCountry,
+    required this.validatePhone,
+    required this.isLoading,
+    required this.onSubmit,
+  });
+
+  final GlobalKey<FormState> formKey;
+  final TextEditingController phoneController;
+  final _CountryCode country;
+  final VoidCallback onPickCountry;
+  final String? Function(String?) validatePhone;
+  final bool isLoading;
+  final VoidCallback onSubmit;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        const AuthDragHandle(),
+        const SizedBox(height: 10),
+        const AuthSheetHeadline(
+          title: 'Sign in with phone',
+          subtitle: 'We\'ll text you a one-time code.',
+        ),
+        const SizedBox(height: 20),
+        Form(
+          key: formKey,
+          child: _PhoneField(
+            controller: phoneController,
+            country: country,
+            onPickCountry: onPickCountry,
+            validator: validatePhone,
+            onSubmitted: (_) => onSubmit(),
+          ),
+        ),
+        const SizedBox(height: 20),
+        AuthSubmitButton(
+          label: 'Send OTP',
+          isLoading: isLoading,
+          onTap: onSubmit,
+        ),
+        const SizedBox(height: 20),
+        _EmailSignInPrompt(),
+      ],
     );
   }
 }
@@ -165,6 +197,8 @@ class _CountryCodeButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -176,20 +210,20 @@ class _CountryCodeButton extends StatelessWidget {
             const SizedBox(width: 4),
             Text(
               country.dialCode,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
-                color: KudlitColors.blue300,
+                color: cs.onSurface,
                 fontWeight: FontWeight.w600,
               ),
             ),
             const SizedBox(width: 4),
-            const Icon(
+            Icon(
               Icons.arrow_drop_down,
               size: 18,
-              color: KudlitColors.grey200,
+              color: cs.onSurface.withAlpha(128),
             ),
             const SizedBox(width: 4),
-            Container(width: 1, height: 20, color: KudlitColors.grey400),
+            Container(width: 1, height: 20, color: cs.outline),
           ],
         ),
       ),
@@ -211,51 +245,91 @@ class _CountryPickerSheet extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
         const SizedBox(height: 12),
-        Container(
-          width: 40,
-          height: 4,
-          decoration: BoxDecoration(
-            color: KudlitColors.grey400,
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
+        const _CountryPickerHandle(),
         const SizedBox(height: 16),
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 20),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              'Select country code',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                color: KudlitColors.blue300,
-              ),
-            ),
-          ),
-        ),
+        const _CountryPickerHeader(),
         const SizedBox(height: 8),
         for (final _CountryCode code in _CountryCode.values)
-          ListTile(
-            leading: Text(code.flag, style: const TextStyle(fontSize: 22)),
-            title: Text(
-              code.name,
-              style: const TextStyle(
-                fontSize: 14,
-                color: KudlitColors.blue300,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            trailing: Text(
-              code.dialCode,
-              style: const TextStyle(fontSize: 13, color: KudlitColors.grey200),
-            ),
+          _CountryPickerTile(
+            code: code,
             selected: code == selected,
-            selectedTileColor: KudlitColors.blue900.withAlpha(128),
             onTap: () => onSelect(code),
           ),
         const SizedBox(height: 16),
       ],
+    );
+  }
+}
+
+class _CountryPickerHandle extends StatelessWidget {
+  const _CountryPickerHandle();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 40,
+      height: 4,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.outlineVariant,
+        borderRadius: BorderRadius.circular(2),
+      ),
+    );
+  }
+}
+
+class _CountryPickerHeader extends StatelessWidget {
+  const _CountryPickerHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          'Select country code',
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CountryPickerTile extends StatelessWidget {
+  const _CountryPickerTile({
+    required this.code,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final _CountryCode code;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    return ListTile(
+      leading: Text(code.flag, style: const TextStyle(fontSize: 22)),
+      title: Text(
+        code.name,
+        style: TextStyle(
+          fontSize: 14,
+          color: cs.onSurface,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      trailing: Text(
+        code.dialCode,
+        style: TextStyle(fontSize: 13, color: cs.onSurface.withAlpha(153)),
+      ),
+      selected: selected,
+      selectedTileColor: cs.primary.withAlpha(30),
+      onTap: onTap,
     );
   }
 }
@@ -287,23 +361,25 @@ class _EmailSignInPrompt extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: <Widget>[
-        const Text(
+        Text(
           'Prefer email?  ',
-          style: TextStyle(fontSize: 12.5, color: KudlitColors.grey200),
+          style: TextStyle(fontSize: 12.5, color: cs.onSurface.withAlpha(153)),
         ),
         GestureDetector(
           onTap: () => Navigator.of(context).pop(),
-          child: const Text(
+          child: Text(
             'Sign in with email',
             style: TextStyle(
               fontSize: 12.5,
-              color: KudlitColors.blue300,
+              color: cs.primary,
               fontWeight: FontWeight.w600,
               decoration: TextDecoration.underline,
-              decorationColor: KudlitColors.blue300,
+              decorationColor: cs.primary,
             ),
           ),
         ),

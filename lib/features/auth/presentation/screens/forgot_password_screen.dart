@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:go_router/go_router.dart';
+
 import 'package:kudlit_ph/app/constants.dart';
 import 'package:kudlit_ph/core/design_system/kudlit_colors.dart';
 import 'package:kudlit_ph/core/error/failures.dart';
@@ -71,7 +73,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
       heroFraction: 0.38,
       hero: const LoginHero(
         buttyAsset: 'assets/brand/ButtyTextBubble.webp',
-        bubbleText: "I'll help you get back in.",
+        bubbleText: 'I\'ll help you get back in.',
         showBackButton: true,
         showLanguageToggle: false,
       ),

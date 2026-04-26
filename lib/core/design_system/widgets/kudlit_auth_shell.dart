@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'package:kudlit_ph/app/constants.dart';
 import 'package:kudlit_ph/core/design_system/kudlit_colors.dart';
 import 'package:kudlit_ph/core/design_system/kudlit_theme.dart';
@@ -37,51 +38,83 @@ class KudlitAuthShell extends StatelessWidget {
         child: SafeArea(
           child: LayoutBuilder(
             builder: (BuildContext context, BoxConstraints constraints) {
-              final bool wideLayout = constraints.maxWidth >= 900;
-
               return Padding(
                 padding: const EdgeInsets.all(24),
-                child: wideLayout
-                    ? Row(
-                        children: <Widget>[
-                          Expanded(
-                            child: _KudlitAuthHero(
-                              title: title,
-                              subtitle: subtitle,
-                              heroAsset: heroAsset,
-                            ),
-                          ),
-                          const SizedBox(width: 24),
-                          Expanded(
-                            child: _KudlitAuthCard(
-                              bottomText: bottomText,
-                              showBackButton: showBackButton,
-                              child: child,
-                            ),
-                          ),
-                        ],
-                      )
-                    : _KudlitAuthCard(
-                        bottomText: bottomText,
-                        showBackButton: showBackButton,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: <Widget>[
-                            _KudlitAuthHero(
-                              title: title,
-                              subtitle: subtitle,
-                              heroAsset: heroAsset,
-                              compact: true,
-                            ),
-                            const SizedBox(height: 24),
-                            child,
-                          ],
-                        ),
-                      ),
+                child: _KudlitAuthLayout(
+                  wide: constraints.maxWidth >= 900,
+                  title: title,
+                  subtitle: subtitle,
+                  heroAsset: heroAsset,
+                  showBackButton: showBackButton,
+                  bottomText: bottomText,
+                  child: child,
+                ),
               );
             },
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _KudlitAuthLayout extends StatelessWidget {
+  const _KudlitAuthLayout({
+    required this.wide,
+    required this.title,
+    required this.subtitle,
+    required this.heroAsset,
+    required this.showBackButton,
+    required this.bottomText,
+    required this.child,
+  });
+
+  final bool wide;
+  final String title;
+  final String subtitle;
+  final String heroAsset;
+  final bool showBackButton;
+  final String? bottomText;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (wide) {
+      return Row(
+        children: <Widget>[
+          Expanded(
+            child: _KudlitAuthHero(
+              title: title,
+              subtitle: subtitle,
+              heroAsset: heroAsset,
+            ),
+          ),
+          const SizedBox(width: 24),
+          Expanded(
+            child: _KudlitAuthCard(
+              bottomText: bottomText,
+              showBackButton: showBackButton,
+              child: child,
+            ),
+          ),
+        ],
+      );
+    }
+    return _KudlitAuthCard(
+      bottomText: bottomText,
+      showBackButton: showBackButton,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          _KudlitAuthHero(
+            title: title,
+            subtitle: subtitle,
+            heroAsset: heroAsset,
+            compact: true,
+          ),
+          const SizedBox(height: 24),
+          child,
+        ],
       ),
     );
   }
@@ -103,6 +136,7 @@ class _KudlitAuthHero extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final TextTheme textTheme = Theme.of(context).textTheme;
+    final TextAlign align = compact ? TextAlign.center : TextAlign.start;
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -112,39 +146,48 @@ class _KudlitAuthHero extends StatelessWidget {
       children: <Widget>[
         Text(
           'ᜃᜓᜇ᜔ᜎᜒᜆ᜔',
-          textAlign: compact ? TextAlign.center : TextAlign.start,
+          textAlign: align,
           style: KudlitTheme.baybayinDisplay(context),
         ),
         const SizedBox(height: 12),
-        Text(
-          title,
-          textAlign: compact ? TextAlign.center : TextAlign.start,
-          style: textTheme.headlineLarge,
-        ),
+        Text(title, textAlign: align, style: textTheme.headlineLarge),
         const SizedBox(height: 12),
         ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 440),
           child: Text(
             subtitle,
-            textAlign: compact ? TextAlign.center : TextAlign.start,
+            textAlign: align,
             style: textTheme.bodyLarge?.copyWith(
               color: KudlitColors.mutedForeground,
             ),
           ),
         ),
         const SizedBox(height: 24),
-        Container(
-          width: compact ? 180 : 260,
-          height: compact ? 180 : 260,
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.45),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: KudlitColors.borderSoft),
-          ),
-          padding: const EdgeInsets.all(16),
-          child: Image.asset(heroAsset, fit: BoxFit.contain),
-        ),
+        _KudlitAuthHeroImage(asset: heroAsset, compact: compact),
       ],
+    );
+  }
+}
+
+class _KudlitAuthHeroImage extends StatelessWidget {
+  const _KudlitAuthHeroImage({required this.asset, required this.compact});
+
+  final String asset;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final double size = compact ? 180 : 260;
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: KudlitColors.borderSoft),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Image.asset(asset, fit: BoxFit.contain),
     );
   }
 }

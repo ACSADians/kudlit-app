@@ -6,9 +6,9 @@ class YoloSimOverlay extends StatelessWidget {
   const YoloSimOverlay({super.key});
 
   static const List<YoloDetection> _detections = <YoloDetection>[
-    YoloDetection(conf: 0.96, top: 0.22, left: 0.08, width: 190, height: 58),
-    YoloDetection(conf: 0.89, top: 0.42, left: 0.20, width: 230, height: 62),
-    YoloDetection(conf: 0.83, top: 0.62, left: 0.12, width: 160, height: 54),
+    // YoloDetection(conf: 0.96, top: 0.22, left: 0.08, width: 190, height: 58),
+    // YoloDetection(conf: 0.89, top: 0.42, left: 0.20, width: 230, height: 62),
+    // YoloDetection(conf: 0.83, top: 0.62, left: 0.12, width: 160, height: 54),
   ];
 
   @override

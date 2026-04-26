@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'package:kudlit_ph/core/design_system/kudlit_colors.dart';
-
 /// Outline secondary auth option button (e.g. "Email", "Google").
 class SecondaryAuthOptionButton extends StatelessWidget {
   const SecondaryAuthOptionButton({
@@ -19,14 +17,16 @@ class SecondaryAuthOptionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: cs.surface,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: KudlitColors.grey400, width: 1.25),
+          border: Border.all(color: cs.outline, width: 1.25),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -34,12 +34,12 @@ class SecondaryAuthOptionButton extends StatelessWidget {
             if (imagePath != null)
               Image.asset(imagePath!, width: 16, height: 16)
             else if (icon != null)
-              Icon(icon, color: KudlitColors.blue300, size: 16),
+              Icon(icon, color: cs.primary, size: 16),
             const SizedBox(width: 8),
             Text(
               label,
-              style: const TextStyle(
-                color: KudlitColors.blue300,
+              style: TextStyle(
+                color: cs.primary,
                 fontSize: 13.5,
                 fontWeight: FontWeight.w500,
                 height: 1.2,

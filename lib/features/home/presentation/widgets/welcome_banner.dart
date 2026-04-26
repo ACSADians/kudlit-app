@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:kudlit_ph/core/design_system/kudlit_colors.dart';
 
 /// Gradient hero card at the top of the home tab.
+/// The gradient is part of the brand identity and is theme-independent.
 class WelcomeBanner extends StatelessWidget {
   const WelcomeBanner({required this.isGuest, this.userName, super.key});
 

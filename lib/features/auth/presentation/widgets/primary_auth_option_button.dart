@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'package:kudlit_ph/core/design_system/kudlit_colors.dart';
-
 /// Full-width primary auth action button (e.g. "Continue with Phone Number").
 class PrimaryAuthOptionButton extends StatelessWidget {
   const PrimaryAuthOptionButton({
@@ -22,12 +20,14 @@ class PrimaryAuthOptionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: KudlitColors.blue300,
+          color: cs.primary,
           borderRadius: BorderRadius.circular(12),
           boxShadow: const <BoxShadow>[
             BoxShadow(
@@ -44,12 +44,12 @@ class PrimaryAuthOptionButton extends StatelessWidget {
             if (imagePath != null)
               Image.asset(imagePath!, width: 18, height: 18)
             else
-              Icon(icon, color: KudlitColors.blue900, size: 18),
+              Icon(icon, color: cs.onPrimary, size: 18),
             const SizedBox(width: 10),
             Text(
               label,
-              style: const TextStyle(
-                color: KudlitColors.blue900,
+              style: TextStyle(
+                color: cs.onPrimary,
                 fontSize: 14.5,
                 fontWeight: FontWeight.w600,
                 height: 1.2,
