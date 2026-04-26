@@ -177,7 +177,15 @@ class _ControlIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Icon(icon, size: 26, color: Colors.white.withAlpha(180));
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: const Color(0xFF0E1425).withAlpha(160),
+      ),
+      child: Icon(icon, size: 22, color: Colors.white.withAlpha(220)),
+    );
   }
 }
 
@@ -191,16 +199,20 @@ class _ShutterButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 68,
-        height: 68,
+        width: 72,
+        height: 72,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.white.withAlpha(140), width: 2),
+          color: const Color(0xFF0E1425).withAlpha(100),
+          border: Border.all(
+            color: Colors.white.withAlpha(180),
+            width: 2.5,
+          ),
         ),
         child: Center(
           child: Container(
-            width: 54,
-            height: 54,
+            width: 56,
+            height: 56,
             decoration: const BoxDecoration(
               shape: BoxShape.circle,
               color: Colors.white,
