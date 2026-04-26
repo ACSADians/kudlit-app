@@ -204,10 +204,7 @@ class _ShutterButton extends StatelessWidget {
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: const Color(0xFF0E1425).withAlpha(100),
-          border: Border.all(
-            color: Colors.white.withAlpha(180),
-            width: 2.5,
-          ),
+          border: Border.all(color: Colors.white.withAlpha(180), width: 2.5),
         ),
         child: Center(
           child: Container(
