@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,6 +12,8 @@ import 'package:kudlit_ph/features/auth/presentation/screens/forgot_password_scr
 import 'package:kudlit_ph/features/auth/presentation/screens/home_screen.dart';
 import 'package:kudlit_ph/features/auth/presentation/screens/login_screen.dart';
 import 'package:kudlit_ph/features/auth/presentation/screens/sign_up_screen.dart';
+import 'package:kudlit_ph/features/home/presentation/providers/app_preferences_provider.dart';
+import 'package:kudlit_ph/features/home/presentation/screens/model_setup_screen.dart';
 import 'package:kudlit_ph/features/home/presentation/screens/settings_screen.dart';
 import 'package:kudlit_ph/features/home/presentation/screens/splash_screen.dart';
 
@@ -25,15 +28,41 @@ GoRouter appRouter(Ref ref) {
     refreshListenable: listenable,
     redirect: (BuildContext context, GoRouterState state) {
       final AsyncValue<AuthUser?> authState = listenable.authState;
+      final AsyncValue<AppPreferences> prefsState = listenable.prefsState;
       final bool isAuthenticated =
           authState.hasValue && authState.value != null;
 
       // Splash: hold while loading, then route to correct destination.
       if (state.matchedLocation == AppConstants.routeSplash) {
-        if (authState.isLoading) return null;
+        if (authState.isLoading || prefsState.isLoading) return null;
+        final AppPreferences? prefs = prefsState.valueOrNull;
+        // Show model setup if: on mobile, models not yet downloaded, and the
+        // user hasn't already acknowledged the prompt (legacy skip or download).
+        final bool needsModelSetup = !kIsWeb &&
+            !(prefs?.hasDownloadedModels ?? false) &&
+            !(prefs?.hasSeenModelPrompt ?? false) &&
+            !listenable.sessionSkipped;
+        if (needsModelSetup) return AppConstants.routeModelSetup;
         return isAuthenticated
             ? AppConstants.routeHome
             : AppConstants.routeLogin;
+      }
+
+      // Model setup: hold if loading; skip if already handled.
+      if (state.matchedLocation == AppConstants.routeModelSetup) {
+        if (authState.isLoading || prefsState.isLoading) {
+          return AppConstants.routeSplash;
+        }
+        final AppPreferences? prefs = prefsState.valueOrNull;
+        final bool handled = (prefs?.hasDownloadedModels ?? false) ||
+            (prefs?.hasSeenModelPrompt ?? false) ||
+            listenable.sessionSkipped;
+        if (handled) {
+          return isAuthenticated
+              ? AppConstants.routeHome
+              : AppConstants.routeLogin;
+        }
+        return null; // stay on setup
       }
 
       // Still loading auth on other routes — don't redirect.
@@ -59,6 +88,11 @@ GoRouter appRouter(Ref ref) {
         path: AppConstants.routeSplash,
         builder: (BuildContext context, GoRouterState state) =>
             const SplashScreen(),
+      ),
+      GoRoute(
+        path: AppConstants.routeModelSetup,
+        builder: (BuildContext context, GoRouterState state) =>
+            const ModelSetupScreen(),
       ),
       GoRoute(
         path: AppConstants.routeLogin,

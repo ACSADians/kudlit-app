@@ -59,6 +59,13 @@ dependencies:
   flutter_dotenv: ^5.2.1
   flutter_gemma: ^0.13.6
 
+  # Local SQLite for chat history
+  sqflite: ^2.4.1
+  path: ^1.9.0
+
+  # File system paths (app support / documents directories)
+  path_provider: ^2.1.5
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -86,7 +93,6 @@ flutter:
     - assets/brand/
     - assets/brand/user.profile/
     - assets/fonts/
-    - assets/models/
 
   fonts:
     - family: Baybayin Simple TAWBID

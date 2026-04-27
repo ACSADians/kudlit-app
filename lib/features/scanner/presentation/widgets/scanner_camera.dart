@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,18 +6,29 @@ import 'package:ultralytics_yolo/ultralytics_yolo.dart';
 import 'package:kudlit_ph/features/scanner/data/datasources/yolo_baybayin_detector.dart';
 import 'package:kudlit_ph/features/scanner/domain/entities/baybayin_detection.dart';
 import 'package:kudlit_ph/features/scanner/presentation/providers/scanner_provider.dart';
+import 'package:kudlit_ph/features/scanner/presentation/providers/yolo_model_path_provider.dart';
 import 'package:kudlit_ph/features/scanner/presentation/widgets/model_not_ready_screen.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/yolo_sim_overlay.dart';
 
-/// Whether the Baybayin model is bundled for the current platform.
-/// - Android: `assets/models/baybayin_yolo.tflite` ✅ available
-/// - iOS    : `assets/models/baybayin_yolo.mlpackage.zip` ✅ available
-bool get _kModelAvailable => !kIsWeb;
+/// How often the detection output is forwarded to [ScannerCamera.onDetections].
+/// The YOLO model keeps running every frame; only the UI updates are throttled.
+const Duration _kDetectionInterval = Duration(milliseconds: 500);
 
-/// Flutter asset path for the bundled model (per platform).
-String get _kModelPath => Platform.isIOS
-    ? 'assets/models/baybayin_yolo.mlpackage.zip'
-    : 'assets/models/baybayin_yolo.tflite';
+/// Minimum confidence required for a detection to be surfaced.
+/// Raised to 0.65 — the Baybayin model is domain-specific so anything below
+/// this is almost certainly a false positive on non-Baybayin scenes.
+const double _kConfidenceThreshold = 0.65;
+
+/// IoU threshold for non-max suppression.
+const double _kIoUThreshold = 0.45;
+
+/// Minimum normalised bounding-box area (width × height in 0–1 space).
+/// Boxes smaller than ~1.5 % of the frame are typically noise or partial hits.
+const double _kMinBoxArea = 0.015;
+
+/// How many consecutive throttle intervals a detection must appear before it
+/// is surfaced to the UI. Prevents one-frame phantom detections.
+const int _kRequiredConsecutiveHits = 2;
 
 /// A self-contained camera widget with YOLO inference baked in.
 ///
@@ -27,8 +36,11 @@ String get _kModelPath => Platform.isIOS
 /// is shared and survives tab switches — the splash screen pre-warms it
 /// at startup to avoid first-load delay when the scan tab opens.
 ///
+/// Detection output is throttled to once every [_kDetectionInterval] so the
+/// overlay updates are visible without thrashing the widget tree.
+///
 /// On web shows a design-preview gradient; [onDetections] is never called.
-class ScannerCamera extends ConsumerWidget {
+class ScannerCamera extends ConsumerStatefulWidget {
   const ScannerCamera({
     required this.onDetections,
     this.flashOn = false,
@@ -36,7 +48,7 @@ class ScannerCamera extends ConsumerWidget {
     super.key,
   });
 
-  /// Called every time the model produces a new batch of detections.
+  /// Called at most once per [_kDetectionInterval] with the latest detections.
   final void Function(List<BaybayinDetection> detections) onDetections;
 
   /// Whether the torch is currently on. Ignored on web.
@@ -47,42 +59,91 @@ class ScannerCamera extends ConsumerWidget {
   final VoidCallback? onFlashToggle;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ScannerCamera> createState() => _ScannerCameraState();
+}
+
+class _ScannerCameraState extends ConsumerState<ScannerCamera> {
+  final Stopwatch _throttle = Stopwatch()..start();
+
+  /// How many consecutive throttle intervals the current set of detections
+  /// has been seen. Resets to 0 when a frame comes back empty.
+  int _consecutiveHits = 0;
+
+  void _onYoloResult(List<YOLOResult> results) {
+    if (_throttle.elapsed < _kDetectionInterval) return;
+    _throttle.reset();
+
+    // 1. Confidence filter (native threshold should already handle this,
+    //    but we double-check client-side).
+    // 2. Minimum box area filter — eliminates tiny noise boxes.
+    final List<YOLOResult> filtered = results.where((YOLOResult r) {
+      if (r.confidence < _kConfidenceThreshold) return false;
+      final double area =
+          r.normalizedBox.width * r.normalizedBox.height;
+      return area >= _kMinBoxArea;
+    }).toList();
+
+    if (filtered.isEmpty) {
+      _consecutiveHits = 0;
+      // Surface the empty list so the overlay clears immediately.
+      _dispatch(filtered);
+      return;
+    }
+
+    // 3. Temporal persistence — require N consecutive non-empty intervals
+    //    before surfacing to the UI. Eliminates single-frame phantoms.
+    _consecutiveHits++;
+    debugPrint(
+      '[ScannerCamera] ${filtered.length} hit(s) '
+      '(consecutive: $_consecutiveHits/$_kRequiredConsecutiveHits)',
+    );
+    if (_consecutiveHits >= _kRequiredConsecutiveHits) {
+      _dispatch(filtered);
+    }
+  }
+
+  void _dispatch(List<YOLOResult> results) {
+    final YoloBaybayinDetector detector =
+        ref.read(baybayinDetectorProvider) as YoloBaybayinDetector;
+    detector.onYoloResults(results);
+    widget.onDetections(
+      results
+          .map(
+            (YOLOResult r) => BaybayinDetection(
+              label: r.className,
+              confidence: r.confidence,
+              left: r.normalizedBox.left,
+              top: r.normalizedBox.top,
+              width: r.normalizedBox.width,
+              height: r.normalizedBox.height,
+            ),
+          )
+          .toList(),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     if (kIsWeb) {
       return const _WebCameraFallback();
     }
 
-    if (!_kModelAvailable) {
-      return const ModelNotReadyScreen();
-    }
-
-    // Reads from the keepAlive provider — pre-warmed by SplashScreen.
-    final YoloBaybayinDetector detector =
-        ref.watch(baybayinDetectorProvider) as YoloBaybayinDetector;
-
-    debugPrint('[ScannerCamera] building YOLOView — modelPath: $_kModelPath');
-    return YOLOView(
-      modelPath: _kModelPath,
-      task: YOLOTask.detect,
-      controller: detector.controller,
-      onResult: (List<YOLOResult> results) {
-        debugPrint(
-          '[ScannerCamera] YOLOView.onResult: ${results.length} result(s)',
-        );
-        detector.onYoloResults(results);
-        onDetections(
-          results
-              .map(
-                (YOLOResult r) => BaybayinDetection(
-                  label: r.className,
-                  confidence: r.confidence,
-                  left: r.normalizedBox.left,
-                  top: r.normalizedBox.top,
-                  width: r.normalizedBox.width,
-                  height: r.normalizedBox.height,
-                ),
-              )
-              .toList(),
+    // Resolve whether to use the downloaded model or the bundled asset.
+    final AsyncValue<String> pathAsync = ref.watch(yoloModelPathProvider);
+    return pathAsync.when(
+      loading: () => const ModelNotReadyScreen(),
+      error: (_, __) => const ModelNotReadyScreen(),
+      data: (String modelPath) {
+        final YoloBaybayinDetector detector =
+            ref.watch(baybayinDetectorProvider) as YoloBaybayinDetector;
+        debugPrint('[ScannerCamera] building YOLOView — modelPath: $modelPath');
+        return YOLOView(
+          modelPath: modelPath,
+          task: YOLOTask.detect,
+          controller: detector.controller,
+          confidenceThreshold: _kConfidenceThreshold,
+          iouThreshold: _kIoUThreshold,
+          onResult: _onYoloResult,
         );
       },
     );

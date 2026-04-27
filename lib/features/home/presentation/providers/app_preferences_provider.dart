@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -12,15 +13,42 @@ class AppPreferences {
   const AppPreferences({
     this.themeMode = ThemeMode.system,
     this.aiPreference = AiPreference.cloud,
+    this.selectedModelId,
+    this.hasSeenModelPrompt = false,
+    this.hasDownloadedModels = false,
   });
 
   final ThemeMode themeMode;
   final AiPreference aiPreference;
 
-  AppPreferences copyWith({ThemeMode? themeMode, AiPreference? aiPreference}) {
+  /// Supabase row id of the user-chosen model. Null = use default
+  /// (median of `sort_order ASC`).
+  final String? selectedModelId;
+
+  /// Whether the user has already seen the AI model download prompt.
+  /// Legacy: kept for backward-compat so existing users who already saw/skipped
+  /// the prompt don't see it again.
+  final bool hasSeenModelPrompt;
+
+  /// Whether the user has successfully downloaded the AI models.
+  /// Only set to true after a completed download — not on skip.
+  /// When false (and [hasSeenModelPrompt] is also false), the
+  /// `/model-setup` screen is shown on the next cold launch.
+  final bool hasDownloadedModels;
+
+  AppPreferences copyWith({
+    ThemeMode? themeMode,
+    AiPreference? aiPreference,
+    String? selectedModelId,
+    bool? hasSeenModelPrompt,
+    bool? hasDownloadedModels,
+  }) {
     return AppPreferences(
       themeMode: themeMode ?? this.themeMode,
       aiPreference: aiPreference ?? this.aiPreference,
+      selectedModelId: selectedModelId ?? this.selectedModelId,
+      hasSeenModelPrompt: hasSeenModelPrompt ?? this.hasSeenModelPrompt,
+      hasDownloadedModels: hasDownloadedModels ?? this.hasDownloadedModels,
     );
   }
 }
@@ -29,6 +57,9 @@ class AppPreferences {
 
 const String _kThemeKey = 'pref_theme';
 const String _kAiKey = 'pref_ai';
+const String _kSelectedModelKey = 'pref_selected_model';
+const String _kModelPromptSeenKey = 'pref_model_prompt_seen';
+const String _kModelsDownloadedKey = 'pref_models_downloaded';
 
 ThemeMode _themeFromString(String? value) {
   switch (value) {
@@ -68,6 +99,9 @@ class AppPreferencesNotifier extends _$AppPreferencesNotifier {
     return AppPreferences(
       themeMode: _themeFromString(_prefs.getString(_kThemeKey)),
       aiPreference: _aiFromString(_prefs.getString(_kAiKey)),
+      selectedModelId: _prefs.getString(_kSelectedModelKey),
+      hasSeenModelPrompt: _prefs.getBool(_kModelPromptSeenKey) ?? false,
+      hasDownloadedModels: _prefs.getBool(_kModelsDownloadedKey) ?? false,
     );
   }
 
@@ -80,4 +114,34 @@ class AppPreferencesNotifier extends _$AppPreferencesNotifier {
     state = AsyncData(state.requireValue.copyWith(aiPreference: pref));
     await _prefs.setString(_kAiKey, pref.name);
   }
+
+  Future<void> setSelectedModel(String modelId) async {
+    state = AsyncData(state.requireValue.copyWith(selectedModelId: modelId));
+    await _prefs.setString(_kSelectedModelKey, modelId);
+  }
+
+  Future<void> markModelPromptSeen() async {
+    state = AsyncData(state.requireValue.copyWith(hasSeenModelPrompt: true));
+    await _prefs.setBool(_kModelPromptSeenKey, true);
+  }
+
+  /// Called after a successful AI model download.
+  /// Once set, the `/model-setup` screen is never shown again on cold launch.
+  Future<void> markModelsDownloaded() async {
+    state = AsyncData(
+      state.requireValue.copyWith(
+        hasSeenModelPrompt: true,
+        hasDownloadedModels: true,
+      ),
+    );
+    await _prefs.setBool(_kModelPromptSeenKey, true);
+    await _prefs.setBool(_kModelsDownloadedKey, true);
+  }
 }
+
+// ─── Session-only skip flag ───────────────────────────────────────────────────
+
+/// In-memory flag set when the user taps "Not now" on the model setup screen.
+/// Allows the router to navigate away for this session only — resets on next
+/// cold launch so the setup screen is shown again until models are downloaded.
+final modelSetupSkippedProvider = StateProvider<bool>((Ref ref) => false);

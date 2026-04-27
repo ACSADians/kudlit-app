@@ -4,6 +4,7 @@ class AppConstants {
   static const String appName = 'Kudlit';
 
   static const String routeSplash = '/';
+  static const String routeModelSetup = '/model-setup';
   static const String routeLogin = '/login';
   static const String routeSignUp = '/sign-up';
   static const String routeForgotPassword = '/forgot-password';

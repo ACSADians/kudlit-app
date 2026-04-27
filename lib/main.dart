@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_gemma/core/api/flutter_gemma.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -12,6 +13,10 @@ Future<void> main() async {
   await Supabase.initialize(
     url: SupabaseConfig.url,
     anonKey: SupabaseConfig.anonKey,
+  );
+  final String hfToken = dotenv.env['HUGGINGFACE_TOKEN'] ?? '';
+  await FlutterGemma.initialize(
+    huggingFaceToken: hfToken.isEmpty ? null : hfToken,
   );
   runApp(const ProviderScope(child: KudlitApp()));
 }

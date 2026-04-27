@@ -1,32 +1,20 @@
 import 'dart:async';
-import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:ultralytics_yolo/ultralytics_yolo.dart';
 
+import 'package:kudlit_ph/features/scanner/data/datasources/yolo_model_cache.dart';
 import 'package:kudlit_ph/features/scanner/domain/entities/baybayin_detection.dart';
 import 'package:kudlit_ph/features/scanner/domain/repositories/baybayin_detector.dart';
 
-/// Asset path to the bundled Baybayin model, resolved per platform.
-///
-/// - iOS  : `assets/models/baybayin_yolo.mlpackage.zip` (Core ML, NMS=true)
-/// - Android: `assets/models/baybayin_yolo.tflite`
-///
-/// Until the model is exported, the official placeholder `'yolo26n'` is used
-/// so the code compiles; [_kModelAvailable] in scanner_camera.dart gates
-/// whether the view is actually shown.
-String get _kModelPath => Platform.isIOS
-    ? 'assets/models/baybayin_yolo.mlpackage.zip'
-    : 'assets/models/baybayin_yolo.tflite';
-
 /// On-device YOLO implementation of [BaybayinDetector] for iOS and Android.
 ///
-/// Pass the [controller] from the [YOLOView] after it is created so the
-/// detector can toggle the torch and capture frames.
+/// The model path is always resolved from [YoloModelCache] — no bundled asset
+/// fallback. The scanner UI gates this via `yoloModelPathProvider`, which
+/// surfaces [ModelNotReadyScreen] until the model has been downloaded.
 class YoloBaybayinDetector implements BaybayinDetector {
   YoloBaybayinDetector() : _controller = YOLOViewController() {
-    debugPrint('[YOLO] YoloBaybayinDetector created — modelPath: $_kModelPath');
+    debugPrint('[YOLO] YoloBaybayinDetector created');
   }
 
   final YOLOViewController _controller;
@@ -64,8 +52,10 @@ class YoloBaybayinDetector implements BaybayinDetector {
 
   @override
   Future<List<BaybayinDetection>> detectImage(Uint8List imageBytes) async {
-    debugPrint('[YOLO] detectImage: loading model from $_kModelPath …');
-    final YOLO yolo = YOLO(modelPath: _kModelPath, task: YOLOTask.detect);
+    // Prefer the downloaded model; fall back to the bundled asset.
+    final String modelPath = await YoloModelCache.instance.resolvedModelPath();
+    debugPrint('[YOLO] detectImage: loading model from $modelPath …');
+    final YOLO yolo = YOLO(modelPath: modelPath, task: YOLOTask.detect);
     await yolo.loadModel();
     debugPrint(
       '[YOLO] detectImage: model loaded — running predict on '
