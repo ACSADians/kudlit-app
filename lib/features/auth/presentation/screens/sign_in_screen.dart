@@ -8,11 +8,13 @@ import 'package:kudlit_ph/core/error/failures.dart';
 import 'package:kudlit_ph/features/auth/domain/entities/auth_user.dart';
 import 'package:kudlit_ph/features/auth/presentation/providers/auth_notifier.dart';
 
+import '../widgets/auth_drag_handle.dart';
 import '../widgets/auth_screen_shell.dart';
-import '../widgets/auth_submit_button.dart';
-import '../widgets/email_field.dart';
+import '../widgets/auth_sheet.dart';
+import '../widgets/auth_sheet_headline.dart';
 import '../widgets/login_hero.dart';
-import '../widgets/password_field.dart';
+import '../widgets/sign_in_form.dart';
+import '../widgets/sign_up_prompt.dart';
 import 'reset_password_screen.dart';
 import 'sign_up_screen.dart';
 
@@ -115,7 +117,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
               subtitle: 'Sign in to continue your Baybayin practice.',
             ),
             const SizedBox(height: 20),
-            _SignInForm(
+            SignInForm(
               formKey: _formKey,
               emailController: _emailController,
               passwordController: _passwordController,
@@ -125,132 +127,10 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
               onForgotPassword: _openResetPassword,
             ),
             const SizedBox(height: 20),
-            _SignUpPrompt(onCreateAccount: _openSignUp),
+            SignUpPrompt(onCreateAccount: _openSignUp),
           ],
         ),
       ),
-    );
-  }
-}
-
-class _SignInForm extends StatelessWidget {
-  const _SignInForm({
-    required this.formKey,
-    required this.emailController,
-    required this.passwordController,
-    required this.isLoading,
-    required this.errorMessage,
-    required this.onSubmit,
-    required this.onForgotPassword,
-  });
-
-  final GlobalKey<FormState> formKey;
-  final TextEditingController emailController;
-  final TextEditingController passwordController;
-  final bool isLoading;
-  final String? errorMessage;
-  final VoidCallback onSubmit;
-  final VoidCallback onForgotPassword;
-
-  @override
-  Widget build(BuildContext context) {
-    return Form(
-      key: formKey,
-      child: AutofillGroup(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            EmailField(
-              controller: emailController,
-              textInputAction: TextInputAction.next,
-            ),
-            const SizedBox(height: 12),
-            PasswordField(
-              controller: passwordController,
-              textInputAction: TextInputAction.done,
-              onSubmitted: (_) => onSubmit(),
-            ),
-            _ForgotPasswordLink(onTap: onForgotPassword),
-            const SizedBox(height: 4),
-            if (errorMessage != null) ...<Widget>[
-              Text(
-                errorMessage!,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Theme.of(context).colorScheme.error,
-                ),
-              ),
-              const SizedBox(height: 8),
-            ],
-            AuthSubmitButton(
-              label: 'Sign in',
-              isLoading: isLoading,
-              onTap: onSubmit,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ForgotPasswordLink extends StatelessWidget {
-  const _ForgotPasswordLink({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.centerRight,
-      child: TextButton(
-        onPressed: onTap,
-        style: TextButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-        ),
-        child: Text(
-          'Forgot password?',
-          style: TextStyle(
-            fontSize: 11.5,
-            color: Theme.of(context).colorScheme.primary,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SignUpPrompt extends StatelessWidget {
-  const _SignUpPrompt({required this.onCreateAccount});
-
-  final VoidCallback onCreateAccount;
-
-  @override
-  Widget build(BuildContext context) {
-    final ColorScheme cs = Theme.of(context).colorScheme;
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: <Widget>[
-        Text(
-          'New here?  ',
-          style: TextStyle(fontSize: 12.5, color: cs.onSurface.withAlpha(153)),
-        ),
-        GestureDetector(
-          onTap: onCreateAccount,
-          child: Text(
-            'Create an account',
-            style: TextStyle(
-              fontSize: 12.5,
-              color: cs.primary,
-              fontWeight: FontWeight.w600,
-              decoration: TextDecoration.underline,
-              decorationColor: cs.primary,
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

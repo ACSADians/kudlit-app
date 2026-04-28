@@ -9,15 +9,15 @@ class RouterListenable extends ChangeNotifier {
   RouterListenable(this._ref) {
     _ref.listen<AsyncValue<AuthUser?>>(
       authNotifierProvider,
-      (_, __) => notifyListeners(),
+      (previous, next) => notifyListeners(),
     );
     _ref.listen<AsyncValue<AppPreferences>>(
       appPreferencesNotifierProvider,
-      (_, __) => notifyListeners(),
+      (previous, next) => notifyListeners(),
     );
     _ref.listen<bool>(
       modelSetupSkippedProvider,
-      (_, __) => notifyListeners(),
+      (previous, next) => notifyListeners(),
     );
   }
 

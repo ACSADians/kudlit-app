@@ -62,9 +62,10 @@ class AuthNotifier extends _$AuthNotifier {
   }
 
   Future<void> signOut() async {
+    state = const AsyncLoading<AuthUser?>();
     final SignOut useCase = ref.read(signOutProvider);
     await useCase(const NoParams());
-    // Auth stream emits null and updates state automatically
+    // Auth stream emits null and updates state automatically via listener
   }
 
   Future<Either<Failure, Unit>> resetPassword({required String email}) async {

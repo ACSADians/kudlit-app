@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 
 import 'package:kudlit_ph/features/scanner/domain/entities/baybayin_detection.dart';
 import 'package:kudlit_ph/features/scanner/presentation/providers/scanner_provider.dart';
@@ -22,11 +23,45 @@ class ScanTab extends ConsumerStatefulWidget {
 class _ScanTabState extends ConsumerState<ScanTab> {
   bool _resultVisible = false;
   bool _flashOn = false;
+  Uint8List? _selectedImageBytes;
+  bool _isLoadingImage = false;
 
   Future<void> _toggleFlash() async {
     final bool next = !_flashOn;
     setState(() => _flashOn = next);
     await ref.read(baybayinDetectorProvider).toggleTorch(enabled: next);
+  }
+
+  Future<void> _pickImageFromGallery() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+    if (image == null) return;
+    
+    setState(() {
+      _isLoadingImage = true;
+    });
+
+    final Uint8List bytes = await image.readAsBytes();
+    
+    setState(() {
+      _selectedImageBytes = bytes;
+      _isLoadingImage = false;
+      _resultVisible = true;
+    });
+
+    final List<BaybayinDetection> results = await ref.read(baybayinDetectorProvider).detectImage(bytes);
+    
+    if (mounted) {
+      ref.read(scannerNotifierProvider.notifier).update(results);
+    }
+  }
+
+  void _clearSelectedImage() {
+    setState(() {
+      _selectedImageBytes = null;
+      _resultVisible = false;
+    });
+    ref.read(scannerNotifierProvider.notifier).update(<BaybayinDetection>[]);
   }
 
   @override
@@ -43,10 +78,20 @@ class _ScanTabState extends ConsumerState<ScanTab> {
         _ScanCameraStack(
           detections: detections,
           flashOn: _flashOn,
-          onDetections: (List<BaybayinDetection> d) =>
-              ref.read(scannerNotifierProvider.notifier).update(d),
+          onDetections: (List<BaybayinDetection> d) {
+             if (_selectedImageBytes == null) {
+               ref.read(scannerNotifierProvider.notifier).update(d);
+             }
+          },
           onFlashToggle: kIsWeb ? null : _toggleFlash,
+          selectedImageBytes: _selectedImageBytes,
         ),
+        if (_isLoadingImage)
+          const Positioned.fill(
+            child: Center(
+              child: CircularProgressIndicator(),
+            ),
+          ),
         const Positioned(
           top: 0,
           left: 0,
@@ -61,6 +106,7 @@ class _ScanTabState extends ConsumerState<ScanTab> {
             flashOn: _flashOn,
             onShutter: () => setState(() => _resultVisible = !_resultVisible),
             onFlashToggle: kIsWeb ? null : _toggleFlash,
+            onGalleryTap: _pickImageFromGallery,
           ),
         ),
         if (_resultVisible)
@@ -69,7 +115,12 @@ class _ScanTabState extends ConsumerState<ScanTab> {
             right: 14,
             bottom: controlsBottom + 96,
             child: _ScanResultPanel(
-              onDismiss: () => setState(() => _resultVisible = false),
+              onDismiss: () {
+                setState(() => _resultVisible = false);
+                if (_selectedImageBytes != null) {
+                  _clearSelectedImage();
+                }
+              },
             ),
           ),
       ],
@@ -85,23 +136,28 @@ class _ScanCameraStack extends StatelessWidget {
     required this.flashOn,
     required this.onDetections,
     required this.onFlashToggle,
+    this.selectedImageBytes,
   });
 
   final List<BaybayinDetection> detections;
   final bool flashOn;
   final void Function(List<BaybayinDetection>) onDetections;
   final VoidCallback? onFlashToggle;
+  final Uint8List? selectedImageBytes;
 
   @override
   Widget build(BuildContext context) {
     return Stack(
       fit: StackFit.expand,
       children: <Widget>[
-        ScannerCamera(
-          flashOn: flashOn,
-          onDetections: onDetections,
-          onFlashToggle: onFlashToggle,
-        ),
+        if (selectedImageBytes != null)
+          Image.memory(selectedImageBytes!, fit: BoxFit.cover)
+        else
+          ScannerCamera(
+            flashOn: flashOn,
+            onDetections: onDetections,
+            onFlashToggle: onFlashToggle,
+          ),
         AggregatedBoundingBox(detections: detections),
         DetectionOverlay(detections: detections),
       ],
@@ -127,11 +183,13 @@ class _ScanControls extends StatelessWidget {
     required this.flashOn,
     required this.onShutter,
     required this.onFlashToggle,
+    required this.onGalleryTap,
   });
 
   final bool flashOn;
   final VoidCallback onShutter;
   final VoidCallback? onFlashToggle;
+  final VoidCallback onGalleryTap;
 
   @override
   Widget build(BuildContext context) {
@@ -147,7 +205,10 @@ class _ScanControls extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
-                  const _ControlIcon(icon: Icons.image_outlined),
+                  GestureDetector(
+                    onTap: onGalleryTap,
+                    child: const _ControlIcon(icon: Icons.image_outlined),
+                  ),
                   if (onFlashToggle != null) ...<Widget>[
                     const SizedBox(width: 18),
                     GestureDetector(

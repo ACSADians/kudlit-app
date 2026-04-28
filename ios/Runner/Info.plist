@@ -49,6 +49,9 @@
 	</dict>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<!-- Permission for image_picker to access the gallery -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Kudlit needs access to your photo library to pick images containing Baybayin text for scanning.</string>
 	<!-- Deep link URL scheme for Supabase auth (password reset, callback) -->
 	<key>CFBundleURLTypes</key>
 	<array>
