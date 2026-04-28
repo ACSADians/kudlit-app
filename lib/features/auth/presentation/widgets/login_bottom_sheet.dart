@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
+import 'package:kudlit_ph/app/constants.dart';
 
 import 'login_auth_or_divider.dart';
 import 'login_bottom_sheet_headline.dart';
@@ -48,7 +51,8 @@ class LoginBottomSheet extends StatelessWidget {
         child: SingleChildScrollView(
           child: ConstrainedBox(
             constraints: BoxConstraints(
-              minHeight: MediaQuery.sizeOf(context).height * 0.48 -
+              minHeight:
+                  MediaQuery.sizeOf(context).height * 0.48 -
                   MediaQuery.paddingOf(context).bottom -
                   24,
             ),
@@ -102,13 +106,46 @@ class _TermsText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      'By continuing you agree to our Terms and Privacy Policy.',
-      textAlign: TextAlign.center,
-      style: TextStyle(
-        fontSize: 10,
-        color: Theme.of(context).colorScheme.onSurface.withAlpha(102),
-        height: 1.45,
+    final Color baseColor = Theme.of(
+      context,
+    ).colorScheme.onSurface.withAlpha(102);
+    final Color linkColor = Theme.of(context).colorScheme.primary;
+    const TextStyle baseStyle = TextStyle(fontSize: 10, height: 1.45);
+
+    return Center(
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: <Widget>[
+          Text(
+            'By continuing you agree to our ',
+            style: baseStyle.copyWith(color: baseColor),
+          ),
+          GestureDetector(
+            onTap: () => context.push(AppConstants.routeTerms),
+            child: Text(
+              'Terms',
+              style: baseStyle.copyWith(
+                color: linkColor,
+                decoration: TextDecoration.underline,
+                decorationColor: linkColor,
+              ),
+            ),
+          ),
+          Text(' and ', style: baseStyle.copyWith(color: baseColor)),
+          GestureDetector(
+            onTap: () => context.push(AppConstants.routePrivacyPolicy),
+            child: Text(
+              'Privacy Policy',
+              style: baseStyle.copyWith(
+                color: linkColor,
+                decoration: TextDecoration.underline,
+                decorationColor: linkColor,
+              ),
+            ),
+          ),
+          Text('.', style: baseStyle.copyWith(color: baseColor)),
+        ],
       ),
     );
   }

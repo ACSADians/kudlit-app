@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:fpdart/fpdart.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:kudlit_ph/app/constants.dart';
+import 'package:kudlit_ph/core/error/failures.dart';
+import 'package:kudlit_ph/features/auth/presentation/providers/auth_notifier.dart';
 
 import '../widgets/login_bottom_sheet.dart';
 import '../widgets/login_hero.dart';
@@ -10,8 +14,27 @@ import 'sign_in_screen.dart';
 
 /// Login / welcome screen. Shows the Butty hero and auth-method options.
 /// Tapping "Continue with Email" pushes [SignInScreen] via the Navigator.
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
+
+  @override
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends ConsumerState<LoginScreen> {
+  bool _isGoogleLoading = false;
+
+  String _mapFailure(Failure failure) => failure.when(
+    network: (String msg) => '${AppConstants.networkErrorPrefix}$msg',
+    emailAlreadyInUse: () => AppConstants.unexpectedError,
+    weakPassword: () => AppConstants.unexpectedError,
+    tooManyRequests: () => AppConstants.tooManyAttemptsMessage,
+    invalidCredentials: () => AppConstants.invalidCredentialsMessage,
+    userNotFound: () => AppConstants.noAccountFoundMessage,
+    sessionExpired: () => AppConstants.sessionExpiredMessage,
+    passwordResetEmailSent: () => AppConstants.unexpectedError,
+    unknown: (String msg) => msg,
+  );
 
   void _onContinueWithEmail(BuildContext context) {
     Navigator.of(context).push(
@@ -29,10 +52,19 @@ class LoginScreen extends StatelessWidget {
     );
   }
 
-  void _onContinueWithGoogle(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Google sign-in — coming soon!')),
-    );
+  Future<void> _onContinueWithGoogle(BuildContext context) async {
+    if (_isGoogleLoading) return;
+    setState(() => _isGoogleLoading = true);
+    final Either<Failure, Unit> result = await ref
+        .read(authNotifierProvider.notifier)
+        .signInWithGoogle();
+    if (!mounted) return;
+    setState(() => _isGoogleLoading = false);
+    result.match((Failure failure) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(_mapFailure(failure))));
+    }, (_) {});
   }
 
   void _onCreateAccount(BuildContext context) {
