@@ -45,43 +45,52 @@ class LoginBottomSheet extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(20, 14, 20, 10),
       child: SafeArea(
         top: false,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 10),
-                decoration: BoxDecoration(
-                  color: cs.outlineVariant,
-                  borderRadius: BorderRadius.circular(2),
+        child: SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: MediaQuery.sizeOf(context).height * 0.48 -
+                  MediaQuery.paddingOf(context).bottom -
+                  24,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 10),
+                    decoration: BoxDecoration(
+                      color: cs.outlineVariant,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
                 ),
-              ),
+                const LoginBottomSheetHeadline(),
+                const SizedBox(height: 12),
+                PrimaryAuthOptionButton(
+                  icon: Icons.smartphone_outlined,
+                  label: 'Continue with Phone Number',
+                  onTap: onContinueWithPhone,
+                ),
+                const LoginAuthOrDivider(),
+                LoginSecondaryAuthRow(
+                  onContinueWithEmail: onContinueWithEmail,
+                  onContinueWithGoogle: onContinueWithGoogle,
+                ),
+                const SizedBox(height: 10),
+                LoginFooterLinks(
+                  onCreateAccount: onCreateAccount,
+                  onForgotPassword: onForgotPassword,
+                  onContinueAsGuest: onContinueAsGuest,
+                ),
+                const SizedBox(height: 24),
+                const _TermsText(),
+                const SizedBox(height: 2),
+                const _VersionLabel(),
+              ],
             ),
-            const LoginBottomSheetHeadline(),
-            const SizedBox(height: 12),
-            PrimaryAuthOptionButton(
-              icon: Icons.smartphone_outlined,
-              label: 'Continue with Phone Number',
-              onTap: onContinueWithPhone,
-            ),
-            const LoginAuthOrDivider(),
-            LoginSecondaryAuthRow(
-              onContinueWithEmail: onContinueWithEmail,
-              onContinueWithGoogle: onContinueWithGoogle,
-            ),
-            const SizedBox(height: 10),
-            LoginFooterLinks(
-              onCreateAccount: onCreateAccount,
-              onForgotPassword: onForgotPassword,
-              onContinueAsGuest: onContinueAsGuest,
-            ),
-            const Spacer(),
-            const _TermsText(),
-            const SizedBox(height: 2),
-            const _VersionLabel(),
-          ],
+          ),
         ),
       ),
     );

@@ -104,34 +104,38 @@ class _ToolsRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14),
-      child: Row(
-        children: <Widget>[
-          Expanded(
-            child: HomeToolCard(
-              icon: Icons.document_scanner_outlined,
-              title: 'Baybayin Scanner',
-              description:
-                  'Point your camera at Baybayin script for an instant reading.',
-              accentColor: KudlitColors.blue300,
-              onTap: onScanTap,
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Expanded(
+              child: HomeToolCard(
+                icon: Icons.document_scanner_outlined,
+                title: 'Baybayin Scanner',
+                description:
+                    'Point your camera at Baybayin script for an instant reading.',
+                accentColor: KudlitColors.blue300,
+                onTap: onScanTap,
+              ),
             ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: HomeToolCard(
-              icon: Icons.translate_rounded,
-              title: 'Transliterator',
-              description:
-                  'Type in Latin script and see it in Baybayin — and back.',
-              accentColor: KudlitColors.blue500,
-              onTap: onTranslateTap,
+            const SizedBox(width: 10),
+            Expanded(
+              child: HomeToolCard(
+                icon: Icons.translate_rounded,
+                title: 'Transliterator',
+                description:
+                    'Type in Latin script and see it in Baybayin — and back.',
+                accentColor: KudlitColors.blue500,
+                onTap: onTranslateTap,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
+
 
 class _LessonsGrid extends StatelessWidget {
   const _LessonsGrid();

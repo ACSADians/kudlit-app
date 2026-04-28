@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:flutter_gemma/core/api/flutter_gemma.dart';
 import 'package:flutter_gemma/flutter_gemma.dart';
 
 import 'package:kudlit_ph/core/error/exceptions.dart';

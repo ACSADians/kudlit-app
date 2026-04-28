@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
+import 'package:kudlit_ph/features/auth/domain/entities/country_code.dart';
+import 'package:kudlit_ph/features/auth/presentation/widgets/auth_drag_handle.dart';
 import 'package:kudlit_ph/features/auth/presentation/widgets/auth_screen_shell.dart';
+import 'package:kudlit_ph/features/auth/presentation/widgets/auth_sheet.dart';
+import 'package:kudlit_ph/features/auth/presentation/widgets/auth_sheet_headline.dart';
 import 'package:kudlit_ph/features/auth/presentation/widgets/auth_submit_button.dart';
+import 'package:kudlit_ph/features/auth/presentation/widgets/country_picker_sheet.dart';
 import 'package:kudlit_ph/features/auth/presentation/widgets/login_hero.dart';
+import 'package:kudlit_ph/features/auth/presentation/widgets/phone_field.dart';
 
 import 'phone_otp_screen.dart';
 
@@ -20,7 +25,7 @@ class PhoneSignInScreen extends StatefulWidget {
 class _PhoneSignInScreenState extends State<PhoneSignInScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _phoneController = TextEditingController();
-  _CountryCode _country = _CountryCode.ph;
+  CountryCode _country = CountryCode.ph;
   bool _isLoading = false;
 
   @override
@@ -37,15 +42,15 @@ class _PhoneSignInScreenState extends State<PhoneSignInScreen> {
   }
 
   void _pickCountry() {
-    showModalBottomSheet<_CountryCode>(
+    showModalBottomSheet<CountryCode>(
       context: context,
       backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (_) => _CountryPickerSheet(
+      builder: (_) => CountryPickerSheet(
         selected: _country,
-        onSelect: (final _CountryCode code) {
+        onSelect: (final CountryCode code) {
           setState(() => _country = code);
           Navigator.of(context).pop();
         },
@@ -84,274 +89,39 @@ class _PhoneSignInScreenState extends State<PhoneSignInScreen> {
         showLanguageToggle: false,
       ),
       sheet: AuthSheet(
-        child: _PhoneSignInSheetBody(
-          formKey: _formKey,
-          phoneController: _phoneController,
-          country: _country,
-          onPickCountry: _pickCountry,
-          validatePhone: _validatePhone,
-          isLoading: _isLoading,
-          onSubmit: _submit,
-        ),
-      ),
-    );
-  }
-}
-
-class _PhoneSignInSheetBody extends StatelessWidget {
-  const _PhoneSignInSheetBody({
-    required this.formKey,
-    required this.phoneController,
-    required this.country,
-    required this.onPickCountry,
-    required this.validatePhone,
-    required this.isLoading,
-    required this.onSubmit,
-  });
-
-  final GlobalKey<FormState> formKey;
-  final TextEditingController phoneController;
-  final _CountryCode country;
-  final VoidCallback onPickCountry;
-  final String? Function(String?) validatePhone;
-  final bool isLoading;
-  final VoidCallback onSubmit;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        const AuthDragHandle(),
-        const SizedBox(height: 10),
-        const AuthSheetHeadline(
-          title: 'Sign in with phone',
-          subtitle: 'We\'ll text you a one-time code.',
-        ),
-        const SizedBox(height: 20),
-        Form(
-          key: formKey,
-          child: _PhoneField(
-            controller: phoneController,
-            country: country,
-            onPickCountry: onPickCountry,
-            validator: validatePhone,
-            onSubmitted: (_) => onSubmit(),
-          ),
-        ),
-        const SizedBox(height: 20),
-        AuthSubmitButton(
-          label: 'Send OTP',
-          isLoading: isLoading,
-          onTap: onSubmit,
-        ),
-        const SizedBox(height: 20),
-        _EmailSignInPrompt(),
-      ],
-    );
-  }
-}
-
-// ── Phone field ──────────────────────────────────────────────────────────────
-
-class _PhoneField extends StatelessWidget {
-  const _PhoneField({
-    required this.controller,
-    required this.country,
-    required this.onPickCountry,
-    this.validator,
-    this.onSubmitted,
-  });
-
-  final TextEditingController controller;
-  final _CountryCode country;
-  final VoidCallback onPickCountry;
-  final String? Function(String?)? validator;
-  final ValueChanged<String>? onSubmitted;
-
-  @override
-  Widget build(BuildContext context) {
-    return TextFormField(
-      controller: controller,
-      keyboardType: TextInputType.phone,
-      textInputAction: TextInputAction.done,
-      onFieldSubmitted: onSubmitted,
-      validator: validator,
-      inputFormatters: <TextInputFormatter>[
-        FilteringTextInputFormatter.digitsOnly,
-      ],
-      decoration: InputDecoration(
-        labelText: 'Phone number',
-        border: const OutlineInputBorder(),
-        prefixIcon: _CountryCodeButton(country: country, onTap: onPickCountry),
-      ),
-    );
-  }
-}
-
-class _CountryCodeButton extends StatelessWidget {
-  const _CountryCodeButton({required this.country, required this.onTap});
-
-  final _CountryCode country;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final ColorScheme cs = Theme.of(context).colorScheme;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            Text(country.flag, style: const TextStyle(fontSize: 18)),
-            const SizedBox(width: 4),
-            Text(
-              country.dialCode,
-              style: TextStyle(
-                fontSize: 14,
-                color: cs.onSurface,
-                fontWeight: FontWeight.w600,
+            const AuthDragHandle(),
+            const SizedBox(height: 10),
+            const AuthSheetHeadline(
+              title: 'Sign in with phone',
+              subtitle: 'We\'ll text you a one-time code.',
+            ),
+            const SizedBox(height: 20),
+            Form(
+              key: _formKey,
+              child: PhoneField(
+                controller: _phoneController,
+                country: _country,
+                onPickCountry: _pickCountry,
+                validator: _validatePhone,
+                onSubmitted: (_) => _submit(),
               ),
             ),
-            const SizedBox(width: 4),
-            Icon(
-              Icons.arrow_drop_down,
-              size: 18,
-              color: cs.onSurface.withAlpha(128),
+            const SizedBox(height: 20),
+            AuthSubmitButton(
+              label: 'Send OTP',
+              isLoading: _isLoading,
+              onTap: _submit,
             ),
-            const SizedBox(width: 4),
-            Container(width: 1, height: 20, color: cs.outline),
+            const SizedBox(height: 20),
+            const _EmailSignInPrompt(),
           ],
         ),
       ),
     );
   }
-}
-
-// ── Country picker ───────────────────────────────────────────────────────────
-
-class _CountryPickerSheet extends StatelessWidget {
-  const _CountryPickerSheet({required this.selected, required this.onSelect});
-
-  final _CountryCode selected;
-  final ValueChanged<_CountryCode> onSelect;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        const SizedBox(height: 12),
-        const _CountryPickerHandle(),
-        const SizedBox(height: 16),
-        const _CountryPickerHeader(),
-        const SizedBox(height: 8),
-        for (final _CountryCode code in _CountryCode.values)
-          _CountryPickerTile(
-            code: code,
-            selected: code == selected,
-            onTap: () => onSelect(code),
-          ),
-        const SizedBox(height: 16),
-      ],
-    );
-  }
-}
-
-class _CountryPickerHandle extends StatelessWidget {
-  const _CountryPickerHandle();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 40,
-      height: 4,
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.outlineVariant,
-        borderRadius: BorderRadius.circular(2),
-      ),
-    );
-  }
-}
-
-class _CountryPickerHeader extends StatelessWidget {
-  const _CountryPickerHeader();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: Text(
-          'Select country code',
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w700,
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _CountryPickerTile extends StatelessWidget {
-  const _CountryPickerTile({
-    required this.code,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final _CountryCode code;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final ColorScheme cs = Theme.of(context).colorScheme;
-    return ListTile(
-      leading: Text(code.flag, style: const TextStyle(fontSize: 22)),
-      title: Text(
-        code.name,
-        style: TextStyle(
-          fontSize: 14,
-          color: cs.onSurface,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-      trailing: Text(
-        code.dialCode,
-        style: TextStyle(fontSize: 13, color: cs.onSurface.withAlpha(153)),
-      ),
-      selected: selected,
-      selectedTileColor: cs.primary.withAlpha(30),
-      onTap: onTap,
-    );
-  }
-}
-
-// ── Country code data ────────────────────────────────────────────────────────
-
-enum _CountryCode {
-  ph('Philippines', '🇵🇭', '+63'),
-  us('United States', '🇺🇸', '+1'),
-  sg('Singapore', '🇸🇬', '+65'),
-  au('Australia', '🇦🇺', '+61'),
-  gb('United Kingdom', '🇬🇧', '+44'),
-  jp('Japan', '🇯🇵', '+81'),
-  kr('South Korea', '🇰🇷', '+82'),
-  hk('Hong Kong', '🇭🇰', '+852'),
-  ca('Canada', '🇨🇦', '+1');
-
-  const _CountryCode(this.name, this.flag, this.dialCode);
-
-  final String name;
-  final String flag;
-  final String dialCode;
 }
 
 // ── Sign-in prompt ───────────────────────────────────────────────────────────

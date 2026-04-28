@@ -92,23 +92,27 @@ class _ToolText extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
-            color: cs.onSurface,
-          ),
+      Text(
+        title,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          color: cs.onSurface,
         ),
-        const SizedBox(height: 3),
-        Text(
-          description,
-          style: TextStyle(
-            fontSize: 11.5,
-            color: cs.onSurface.withAlpha(170),
-            height: 1.4,
-          ),
+      ),
+      const SizedBox(height: 3),
+      Text(
+        description,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          fontSize: 11.5,
+          color: cs.onSurface.withAlpha(170),
+          height: 1.4,
         ),
+      ),
       ],
     );
   }

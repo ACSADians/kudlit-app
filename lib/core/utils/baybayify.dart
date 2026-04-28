@@ -1,7 +1,7 @@
-/// Baybayin transliteration utilities.
-///
-/// Ported from the TypeScript implementation in the design reference.
-/// All functions operate on plain strings — no Flutter dependencies.
+// Baybayin transliteration utilities.
+//
+// Ported from the TypeScript implementation in the design reference.
+// All functions operate on plain strings — no Flutter dependencies.
 
 const List<String> _vowels = <String>['a', 'e', 'i', 'o', 'u'];
 final RegExp _consonantRe = RegExp(r'^[bcdfghjklmnpqrstvwxyz]$');

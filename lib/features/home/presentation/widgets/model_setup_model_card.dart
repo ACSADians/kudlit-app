@@ -127,18 +127,21 @@ class _CardSkeleton extends StatelessWidget {
       children: <Widget>[
         const _SkeletonBox(width: 44, height: 44, radius: 10),
         const SizedBox(width: 14),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: const <Widget>[
-            _SkeletonBox(width: 140, height: 14, radius: 4),
-            SizedBox(height: 8),
-            _SkeletonBox(width: 200, height: 12, radius: 4),
-          ],
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: const <Widget>[
+              _SkeletonBox(width: 140, height: 14, radius: 4),
+              SizedBox(height: 8),
+              _SkeletonBox(width: double.infinity, height: 12, radius: 4),
+            ],
+          ),
         ),
       ],
     );
   }
 }
+
 
 class _SkeletonBox extends StatelessWidget {
   const _SkeletonBox({

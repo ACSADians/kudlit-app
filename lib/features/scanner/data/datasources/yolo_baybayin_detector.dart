@@ -26,10 +26,6 @@ class YoloBaybayinDetector implements BaybayinDetector {
 
   /// Called by [YOLOView.onResult] to push detections into the stream.
   void onYoloResults(List<YOLOResult> results) {
-    debugPrint(
-      '[YOLO] onYoloResults: ${results.length} detection(s) — '
-      '${results.map((YOLOResult r) => '${r.className}(${(r.confidence * 100).toStringAsFixed(1)}%)').join(', ')}',
-    );
     final List<BaybayinDetection> detections = results
         .map(
           (YOLOResult r) => BaybayinDetection(
@@ -46,6 +42,7 @@ class YoloBaybayinDetector implements BaybayinDetector {
       _streamController.add(detections);
     }
   }
+
 
   @override
   Stream<List<BaybayinDetection>> get detections => _streamController.stream;

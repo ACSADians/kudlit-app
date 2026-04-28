@@ -15,7 +15,8 @@ class SettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final AuthUser? user = ref.watch(authNotifierProvider).valueOrNull;
+    final AsyncValue<AuthUser?> authState = ref.watch(authNotifierProvider);
+    final AuthUser? user = authState.valueOrNull;
     final double bottom = MediaQuery.paddingOf(context).bottom;
 
     return Scaffold(
@@ -31,9 +32,10 @@ class SettingsScreen extends ConsumerWidget {
                   AccountSection(user: user),
                   const SizedBox(height: 24),
                   const PreferencesSection(),
-                  if (user != null) ...<Widget>[
+                  if (user != null || authState.isLoading) ...<Widget>[
                     const SizedBox(height: 24),
                     SignOutTile(
+                      isLoading: authState.isLoading,
                       onTap: () async {
                         await ref.read(authNotifierProvider.notifier).signOut();
                         if (context.mounted) {
