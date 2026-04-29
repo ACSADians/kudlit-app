@@ -15,6 +15,13 @@ abstract interface class AuthRepository {
 
   Future<Either<Failure, Unit>> signInWithGoogle();
 
+  Future<Either<Failure, Unit>> sendPhoneOtp({required String phoneNumber});
+
+  Future<Either<Failure, Unit>> verifyPhoneOtp({
+    required String phoneNumber,
+    required String token,
+  });
+
   Future<Either<Failure, SignUpStatus>> signUpWithEmail({
     required String email,
     required String password,
