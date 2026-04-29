@@ -4,9 +4,7 @@ part 'failures.freezed.dart';
 
 @freezed
 sealed class Failure with _$Failure {
-  const factory Failure.network({
-    required String message,
-  }) = NetworkFailure;
+  const factory Failure.network({required String message}) = NetworkFailure;
 
   const factory Failure.invalidCredentials() = InvalidCredentialsFailure;
 
@@ -20,9 +18,8 @@ sealed class Failure with _$Failure {
 
   const factory Failure.sessionExpired() = SessionExpiredFailure;
 
-  const factory Failure.passwordResetEmailSent() = PasswordResetEmailSentFailure;
+  const factory Failure.passwordResetEmailSent() =
+      PasswordResetEmailSentFailure;
 
-  const factory Failure.unknown({
-    required String message,
-  }) = UnknownFailure;
+  const factory Failure.unknown({required String message}) = UnknownFailure;
 }

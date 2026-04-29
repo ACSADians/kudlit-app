@@ -136,7 +136,7 @@ GoRouter appRouter(Ref ref) {
         builder: (BuildContext context, GoRouterState state) =>
             LessonStageScreen(lessonId: state.pathParameters['id']!),
       ),
-            GoRoute(
+      GoRoute(
         path: AppConstants.routeTerms,
         builder: (BuildContext context, GoRouterState state) =>
             const TermsScreen(),

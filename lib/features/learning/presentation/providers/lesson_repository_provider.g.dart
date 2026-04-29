@@ -6,8 +6,9 @@ part of 'lesson_repository_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$lessonDataSourceHash() => r'd0000000000000000000000000000000000000d1';
+String _$lessonDataSourceHash() => r'42dd5551898bf2ca0f35362cb3d1a9da5a71fa44';
 
+/// See also [lessonDataSource].
 @ProviderFor(lessonDataSource)
 final lessonDataSourceProvider = Provider<LessonDataSource>.internal(
   lessonDataSource,
@@ -22,9 +23,9 @@ final lessonDataSourceProvider = Provider<LessonDataSource>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef LessonDataSourceRef = ProviderRef<LessonDataSource>;
+String _$lessonRepositoryHash() => r'498204548892059219cd9c54a3a6d8aa6d979198';
 
-String _$lessonRepositoryHash() => r'd0000000000000000000000000000000000000d2';
-
+/// See also [lessonRepository].
 @ProviderFor(lessonRepository)
 final lessonRepositoryProvider = Provider<LessonRepository>.internal(
   lessonRepository,
@@ -39,9 +40,9 @@ final lessonRepositoryProvider = Provider<LessonRepository>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef LessonRepositoryRef = ProviderRef<LessonRepository>;
+String _$loadLessonUseCaseHash() => r'a512e63eedad6cd5b3b1180fbc94ce08e46ef831';
 
-String _$loadLessonUseCaseHash() => r'd0000000000000000000000000000000000000d3';
-
+/// See also [loadLessonUseCase].
 @ProviderFor(loadLessonUseCase)
 final loadLessonUseCaseProvider = Provider<LoadLesson>.internal(
   loadLessonUseCase,
@@ -56,6 +57,5 @@ final loadLessonUseCaseProvider = Provider<LoadLesson>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef LoadLessonUseCaseRef = ProviderRef<LoadLesson>;
-
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

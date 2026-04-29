@@ -16,8 +16,9 @@ void main() {
     useCase = ResetPassword(mockRepository);
   });
 
-  const ResetPasswordParams tParams =
-      ResetPasswordParams(email: 'test@test.com');
+  const ResetPasswordParams tParams = ResetPasswordParams(
+    email: 'test@test.com',
+  );
 
   test('should return Unit when reset email is sent successfully', () async {
     when(
@@ -27,9 +28,7 @@ void main() {
     final Either<Failure, Unit> result = await useCase(tParams);
 
     expect(result, right(unit));
-    verify(
-      () => mockRepository.resetPassword(email: tParams.email),
-    ).called(1);
+    verify(() => mockRepository.resetPassword(email: tParams.email)).called(1);
   });
 
   test('should return UserNotFoundFailure when email not registered', () async {

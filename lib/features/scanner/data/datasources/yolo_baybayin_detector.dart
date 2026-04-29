@@ -42,7 +42,6 @@ class YoloBaybayinDetector implements BaybayinDetector {
     }
   }
 
-
   @override
   Stream<List<BaybayinDetection>> get detections => _streamController.stream;
 

@@ -130,7 +130,8 @@ class _ScannerCameraState extends ConsumerState<ScannerCamera> {
     );
     return pathAsync.when(
       loading: () => const ModelNotReadyScreen(),
-      error: (Object error, StackTrace stackTrace) => const ModelNotReadyScreen(),
+      error: (Object error, StackTrace stackTrace) =>
+          const ModelNotReadyScreen(),
       data: (String modelPath) {
         final YoloBaybayinDetector detector =
             ref.watch(baybayinDetectorProvider) as YoloBaybayinDetector;
@@ -146,7 +147,6 @@ class _ScannerCameraState extends ConsumerState<ScannerCamera> {
     );
   }
 }
-
 
 // ── Web fallback ──────────────────────────────────────────────────────────────
 

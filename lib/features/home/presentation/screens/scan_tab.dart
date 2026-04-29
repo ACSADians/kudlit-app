@@ -38,21 +38,23 @@ class _ScanTabState extends ConsumerState<ScanTab> {
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
     if (image == null) return;
-    
+
     setState(() {
       _isLoadingImage = true;
     });
 
     final Uint8List bytes = await image.readAsBytes();
-    
+
     setState(() {
       _selectedImageBytes = bytes;
       _isLoadingImage = false;
       _resultVisible = true;
     });
 
-    final List<BaybayinDetection> results = await ref.read(baybayinDetectorProvider).detectImage(bytes);
-    
+    final List<BaybayinDetection> results = await ref
+        .read(baybayinDetectorProvider)
+        .detectImage(bytes);
+
     if (mounted) {
       ref.read(scannerNotifierProvider.notifier).update(results);
     }
@@ -81,18 +83,16 @@ class _ScanTabState extends ConsumerState<ScanTab> {
           detections: detections,
           flashOn: _flashOn,
           onDetections: (List<BaybayinDetection> d) {
-             if (_selectedImageBytes == null) {
-               ref.read(scannerNotifierProvider.notifier).update(d);
-             }
+            if (_selectedImageBytes == null) {
+              ref.read(scannerNotifierProvider.notifier).update(d);
+            }
           },
           onFlashToggle: kIsWeb ? null : _toggleFlash,
           selectedImageBytes: _selectedImageBytes,
         ),
         if (_isLoadingImage)
           const Positioned.fill(
-            child: Center(
-              child: CircularProgressIndicator(),
-            ),
+            child: Center(child: CircularProgressIndicator()),
           ),
         const Positioned(
           top: 0,

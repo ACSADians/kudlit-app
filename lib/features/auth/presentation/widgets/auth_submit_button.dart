@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kudlit_ph/core/design_system/widgets/kudlit_loading_indicator.dart';
 
 /// Primary action button for all auth forms. Matches the visual weight of
 /// the welcome screen's [PrimaryAuthOptionButton].
@@ -36,13 +37,10 @@ class AuthSubmitButton extends StatelessWidget {
         ),
         alignment: Alignment.center,
         child: isLoading
-            ? SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: cs.onPrimary,
-                ),
+            ? KudlitLoadingIndicator(
+                size: 20,
+                strokeWidth: 2,
+                color: cs.onPrimary,
               )
             : Text(
                 label,

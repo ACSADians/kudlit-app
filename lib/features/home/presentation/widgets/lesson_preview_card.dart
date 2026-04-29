@@ -113,7 +113,6 @@ class _PreviewText extends StatelessWidget {
             ),
           ),
         ],
-
       ),
     );
   }
