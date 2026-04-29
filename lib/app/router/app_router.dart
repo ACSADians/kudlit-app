@@ -11,7 +11,9 @@ import 'package:kudlit_ph/features/auth/domain/entities/auth_user.dart';
 import 'package:kudlit_ph/features/auth/presentation/screens/forgot_password_screen.dart';
 import 'package:kudlit_ph/features/auth/presentation/screens/home_screen.dart';
 import 'package:kudlit_ph/features/auth/presentation/screens/login_screen.dart';
+import 'package:kudlit_ph/features/auth/presentation/screens/privacy_policy_screen.dart';
 import 'package:kudlit_ph/features/auth/presentation/screens/sign_up_screen.dart';
+import 'package:kudlit_ph/features/auth/presentation/screens/terms_screen.dart';
 import 'package:kudlit_ph/features/home/presentation/providers/app_preferences_provider.dart';
 import 'package:kudlit_ph/features/home/presentation/screens/model_setup_screen.dart';
 import 'package:kudlit_ph/features/home/presentation/screens/settings_screen.dart';
@@ -38,7 +40,8 @@ GoRouter appRouter(Ref ref) {
         final AppPreferences? prefs = prefsState.valueOrNull;
         // Show model setup if: on mobile, models not yet downloaded, and the
         // user hasn't already acknowledged the prompt (legacy skip or download).
-        final bool needsModelSetup = !kIsWeb &&
+        final bool needsModelSetup =
+            !kIsWeb &&
             !(prefs?.hasDownloadedModels ?? false) &&
             !(prefs?.hasSeenModelPrompt ?? false) &&
             !listenable.sessionSkipped;
@@ -54,7 +57,8 @@ GoRouter appRouter(Ref ref) {
           return AppConstants.routeSplash;
         }
         final AppPreferences? prefs = prefsState.valueOrNull;
-        final bool handled = (prefs?.hasDownloadedModels ?? false) ||
+        final bool handled =
+            (prefs?.hasDownloadedModels ?? false) ||
             (prefs?.hasSeenModelPrompt ?? false) ||
             listenable.sessionSkipped;
         if (handled) {
@@ -72,7 +76,9 @@ GoRouter appRouter(Ref ref) {
           state.matchedLocation == AppConstants.routeLogin ||
           state.matchedLocation == AppConstants.routeSignUp ||
           state.matchedLocation == AppConstants.routeForgotPassword ||
-          state.matchedLocation == AppConstants.routeAuthReset;
+          state.matchedLocation == AppConstants.routeAuthReset ||
+          state.matchedLocation == AppConstants.routeTerms ||
+          state.matchedLocation == AppConstants.routePrivacyPolicy;
 
       if (!isAuthenticated &&
           !isOnAuthRoute &&
@@ -123,6 +129,16 @@ GoRouter appRouter(Ref ref) {
         path: AppConstants.routeSettings,
         builder: (BuildContext context, GoRouterState state) =>
             const SettingsScreen(),
+      ),
+      GoRoute(
+        path: AppConstants.routeTerms,
+        builder: (BuildContext context, GoRouterState state) =>
+            const TermsScreen(),
+      ),
+      GoRoute(
+        path: AppConstants.routePrivacyPolicy,
+        builder: (BuildContext context, GoRouterState state) =>
+            const PrivacyPolicyScreen(),
       ),
     ],
   );

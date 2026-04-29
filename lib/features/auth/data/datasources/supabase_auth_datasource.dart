@@ -14,6 +14,8 @@ abstract interface class SupabaseAuthDatasource {
     required String password,
   });
 
+  Future<void> signInWithGoogle();
+
   Future<SignUpStatus> signUpWithEmail({
     required String email,
     required String password,
@@ -71,6 +73,27 @@ class SupabaseAuthDatasourceImpl implements SupabaseAuthDatasource {
   }
 
   @override
+  Future<void> signInWithGoogle() async {
+    try {
+      final String redirectTo = kIsWeb
+          ? '${Uri.base.origin}/auth/reset'
+          : 'kudlit://auth/reset';
+      await _client.auth.signInWithOAuth(
+        OAuthProvider.google,
+        redirectTo: redirectTo,
+        queryParams: <String, String>{'prompt': 'select_account'},
+      );
+    } on AuthException catch (e) {
+      throw ServerException(
+        message: e.message,
+        statusCode: int.tryParse(e.statusCode ?? ''),
+      );
+    } on Exception catch (e) {
+      throw ServerException(message: e.toString());
+    }
+  }
+
+  @override
   Future<SignUpStatus> signUpWithEmail({
     required String email,
     required String password,
@@ -111,12 +134,8 @@ class SupabaseAuthDatasourceImpl implements SupabaseAuthDatasource {
       // Web browsers cannot open custom URL schemes — fall back to null so
       // Supabase uses the Site URL configured in the project dashboard.
       // Mobile uses the deep link to re-open the app directly.
-      final String? redirectTo =
-          kIsWeb ? null : 'kudlit://auth/reset';
-      await _client.auth.resetPasswordForEmail(
-        email,
-        redirectTo: redirectTo,
-      );
+      final String? redirectTo = kIsWeb ? null : 'kudlit://auth/reset';
+      await _client.auth.resetPasswordForEmail(email, redirectTo: redirectTo);
     } on AuthException catch (e) {
       throw ServerException(message: e.message);
     }
