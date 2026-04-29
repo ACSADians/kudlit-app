@@ -62,3 +62,6 @@ supabase/.temp/
 
 # Flutter DevTools (machine-specific)
 devtools_options.yaml
+
+# Worktrees
+.worktrees/

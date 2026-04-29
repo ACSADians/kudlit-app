@@ -36,6 +36,18 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<Either<Failure, Unit>> signInWithGoogle() async {
+    try {
+      await _datasource.signInWithGoogle();
+      return right(unit);
+    } on ServerException catch (e) {
+      return left(_mapServerExceptionToFailure(e));
+    } on Exception {
+      return left(const Failure.network(message: 'Unexpected network error.'));
+    }
+  }
+
+  @override
   Future<Either<Failure, SignUpStatus>> signUpWithEmail({
     required String email,
     required String password,

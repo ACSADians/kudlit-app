@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:kudlit_ph/features/auth/presentation/widgets/auth_drag_handle.dart';
 import 'package:kudlit_ph/features/auth/presentation/widgets/auth_screen_shell.dart';
+import 'package:kudlit_ph/features/auth/presentation/widgets/auth_sheet.dart';
+import 'package:kudlit_ph/features/auth/presentation/widgets/auth_sheet_headline.dart';
 import 'package:kudlit_ph/features/auth/presentation/widgets/auth_submit_button.dart';
 import 'package:kudlit_ph/features/auth/presentation/widgets/email_field.dart';
 import 'package:kudlit_ph/features/auth/presentation/widgets/login_hero.dart';

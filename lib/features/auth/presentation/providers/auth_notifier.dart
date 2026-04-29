@@ -10,6 +10,7 @@ import 'package:kudlit_ph/features/auth/domain/entities/sign_up_status.dart';
 import 'package:kudlit_ph/features/auth/domain/repositories/auth_repository.dart';
 import 'package:kudlit_ph/features/auth/domain/usecases/reset_password.dart';
 import 'package:kudlit_ph/features/auth/domain/usecases/sign_in_with_email.dart';
+import 'package:kudlit_ph/features/auth/domain/usecases/sign_in_with_google.dart';
 import 'package:kudlit_ph/features/auth/domain/usecases/sign_out.dart';
 import 'package:kudlit_ph/features/auth/domain/usecases/sign_up_with_email.dart';
 import 'package:kudlit_ph/features/auth/presentation/providers/auth_provider.dart';
@@ -53,6 +54,12 @@ class AuthNotifier extends _$AuthNotifier {
     return result;
   }
 
+  Future<Either<Failure, Unit>> signInWithGoogle() async {
+    final AuthRepository repository = ref.read(authRepositoryProvider);
+    final SignInWithGoogle useCase = SignInWithGoogle(repository);
+    return useCase(const NoParams());
+  }
+
   Future<Either<Failure, SignUpStatus>> signUp({
     required String email,
     required String password,
@@ -62,9 +69,10 @@ class AuthNotifier extends _$AuthNotifier {
   }
 
   Future<void> signOut() async {
+    state = const AsyncLoading<AuthUser?>();
     final SignOut useCase = ref.read(signOutProvider);
     await useCase(const NoParams());
-    // Auth stream emits null and updates state automatically
+    // Auth stream emits null and updates state automatically via listener
   }
 
   Future<Either<Failure, Unit>> resetPassword({required String email}) async {

@@ -140,7 +140,7 @@ class _SplashMark extends StatelessWidget {
       'assets/brand/BaybayInscribe-AppIcon.webp',
       width: 88,
       height: 88,
-      errorBuilder: (BuildContext context, Object _, StackTrace? __) =>
+      errorBuilder: (BuildContext context, Object error, StackTrace? stackTrace) =>
           const _FallbackMark(),
     );
   }

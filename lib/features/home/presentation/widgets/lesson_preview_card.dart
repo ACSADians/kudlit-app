@@ -93,6 +93,8 @@ class _PreviewText extends StatelessWidget {
         children: <Widget>[
           Text(
             title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w700,
@@ -102,6 +104,8 @@ class _PreviewText extends StatelessWidget {
           const SizedBox(height: 3),
           Text(
             description,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: 11,
               color: cs.onSurface.withAlpha(170),
@@ -109,6 +113,7 @@ class _PreviewText extends StatelessWidget {
             ),
           ),
         ],
+
       ),
     );
   }

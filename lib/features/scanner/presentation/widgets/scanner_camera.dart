@@ -92,10 +92,6 @@ class _ScannerCameraState extends ConsumerState<ScannerCamera> {
     // 3. Temporal persistence — require N consecutive non-empty intervals
     //    before surfacing to the UI. Eliminates single-frame phantoms.
     _consecutiveHits++;
-    debugPrint(
-      '[ScannerCamera] ${filtered.length} hit(s) '
-      '(consecutive: $_consecutiveHits/$_kRequiredConsecutiveHits)',
-    );
     if (_consecutiveHits >= _kRequiredConsecutiveHits) {
       _dispatch(filtered);
     }
@@ -134,11 +130,10 @@ class _ScannerCameraState extends ConsumerState<ScannerCamera> {
     );
     return pathAsync.when(
       loading: () => const ModelNotReadyScreen(),
-      error: (_, __) => const ModelNotReadyScreen(),
+      error: (Object error, StackTrace stackTrace) => const ModelNotReadyScreen(),
       data: (String modelPath) {
         final YoloBaybayinDetector detector =
             ref.watch(baybayinDetectorProvider) as YoloBaybayinDetector;
-        debugPrint('[ScannerCamera] building YOLOView — modelPath: $modelPath');
         return YOLOView(
           modelPath: modelPath,
           task: YOLOTask.detect,
@@ -151,6 +146,7 @@ class _ScannerCameraState extends ConsumerState<ScannerCamera> {
     );
   }
 }
+
 
 // ── Web fallback ──────────────────────────────────────────────────────────────
 

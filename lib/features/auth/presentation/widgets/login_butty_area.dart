@@ -15,13 +15,17 @@ class LoginButtyArea extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: <Widget>[
-        ButtySpeechBubble(text: bubbleText),
-        const SizedBox(height: 2),
-        Image.asset(buttyAsset, width: 130, height: 130, fit: BoxFit.contain),
-      ],
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      alignment: Alignment.bottomCenter,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: <Widget>[
+          ButtySpeechBubble(text: bubbleText),
+          const SizedBox(height: 2),
+          Image.asset(buttyAsset, width: 130, height: 130, fit: BoxFit.contain),
+        ],
+      ),
     );
   }
 }

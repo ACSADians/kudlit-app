@@ -12,6 +12,8 @@ class AppConstants {
   static const String routeSettings = '/settings';
   static const String routeAuthReset = '/auth/reset';
   static const String routeLesson = '/learn/lesson';
+  static const String routeTerms = '/terms';
+  static const String routePrivacyPolicy = '/privacy-policy';
 
   static const String loginTitle = appName;
   static const String loginSubtitle =

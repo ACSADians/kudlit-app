@@ -98,7 +98,7 @@ class _NavPillSurface extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(999),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
+          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeInOutCubic,
@@ -263,27 +263,35 @@ class _NavPill extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        alignment: Alignment.center,
         decoration: BoxDecoration(
           color: active ? cs.primary : Colors.transparent,
           borderRadius: BorderRadius.circular(999),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Icon(icon, size: 17, color: active ? activeFg : inactiveFg),
-            const SizedBox(height: 3),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-                color: active ? activeFg : inactiveFg,
-                letterSpacing: 0.2,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Icon(icon, size: 17, color: active ? activeFg : inactiveFg),
+              const SizedBox(height: 3),
+              Text(
+                label,
+                maxLines: 1,
+                softWrap: false,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                  color: active ? activeFg : inactiveFg,
+                  letterSpacing: 0.2,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 }
+
