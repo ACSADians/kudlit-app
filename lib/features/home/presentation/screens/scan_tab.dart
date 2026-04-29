@@ -5,9 +5,11 @@ import 'package:image_picker/image_picker.dart';
 
 import 'package:kudlit_ph/features/scanner/domain/entities/baybayin_detection.dart';
 import 'package:kudlit_ph/features/scanner/presentation/providers/scanner_provider.dart';
+import 'package:kudlit_ph/features/scanner/presentation/providers/yolo_model_selection_provider.dart';
 import 'package:kudlit_ph/features/scanner/presentation/widgets/aggregated_bounding_box.dart';
 import 'package:kudlit_ph/features/scanner/presentation/widgets/detection_overlay.dart';
 import 'package:kudlit_ph/features/scanner/presentation/widgets/scanner_camera.dart';
+import 'package:kudlit_ph/features/scanner/presentation/widgets/yolo_model_dropdown.dart';
 
 /// Baybayin scanner screen.
 ///
@@ -97,6 +99,17 @@ class _ScanTabState extends ConsumerState<ScanTab> {
           left: 0,
           right: 0,
           child: SafeArea(bottom: false, child: _ScanningIndicator()),
+        ),
+        const Positioned(
+          top: 0,
+          right: 12,
+          child: SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: EdgeInsets.only(top: 10),
+              child: YoloModelDropdown(scope: YoloModelScope.camera),
+            ),
+          ),
         ),
         Positioned(
           left: 0,

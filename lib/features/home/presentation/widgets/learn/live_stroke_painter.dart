@@ -40,8 +40,5 @@ class LiveStrokePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(LiveStrokePainter old) =>
-      old.strokes != strokes ||
-      old.current != current ||
-      old.strokeColor != strokeColor;
+  bool shouldRepaint(LiveStrokePainter old) => true;
 }

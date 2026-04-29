@@ -20,6 +20,7 @@ class SupabaseAiModelsDatasourceImpl implements SupabaseAiModelsDatasource {
       final List<Map<String, dynamic>> rows = await _client
           .from(_table)
           .select()
+          .eq('enabled', true)
           .order('sort_order', ascending: true);
       return rows.map(AiModelInfoModel.fromJson).toList(growable: false);
     } on PostgrestException catch (e) {

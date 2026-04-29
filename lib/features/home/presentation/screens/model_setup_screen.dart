@@ -9,7 +9,7 @@ import 'package:kudlit_ph/features/auth/presentation/widgets/baybayin_backdrop.d
 import 'package:kudlit_ph/features/home/presentation/providers/app_preferences_provider.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/model_setup_model_card.dart';
 import 'package:kudlit_ph/features/scanner/data/datasources/yolo_model_cache.dart';
-import 'package:kudlit_ph/features/scanner/presentation/providers/yolo_model_path_provider.dart';
+import 'package:kudlit_ph/features/scanner/presentation/providers/yolo_model_selection_provider.dart';
 import 'package:kudlit_ph/features/translator/domain/entities/ai_model_info.dart';
 import 'package:kudlit_ph/features/translator/presentation/providers/ai_inference_provider.dart';
 import 'package:kudlit_ph/features/translator/presentation/providers/ai_inference_state.dart';
@@ -76,12 +76,16 @@ class _ModelSetupScreenState extends ConsumerState<ModelSetupScreen> {
           : (model.androidModelLink ?? model.modelLink);
       if (yoloUrl.isNotEmpty) {
         try {
-          await YoloModelCache.instance.download(yoloUrl);
-          // Refresh the scanner camera so it loads the new file immediately.
+          await YoloModelCache.instance.download(
+            model.id,
+            yoloUrl,
+            version: model.version,
+          );
+          // Refresh every scope's path resolver so any open scanner reloads.
           ref.invalidate(yoloModelPathProvider);
         } catch (e) {
           debugPrint('[ModelSetup] YOLO download failed: $e');
-          // Non-fatal — camera falls back to bundled asset.
+          // Non-fatal — camera will retry on next watch.
         }
       }
     }

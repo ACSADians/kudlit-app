@@ -6,7 +6,7 @@ import 'package:ultralytics_yolo/ultralytics_yolo.dart';
 import 'package:kudlit_ph/features/scanner/data/datasources/yolo_baybayin_detector.dart';
 import 'package:kudlit_ph/features/scanner/domain/entities/baybayin_detection.dart';
 import 'package:kudlit_ph/features/scanner/presentation/providers/scanner_provider.dart';
-import 'package:kudlit_ph/features/scanner/presentation/providers/yolo_model_path_provider.dart';
+import 'package:kudlit_ph/features/scanner/presentation/providers/yolo_model_selection_provider.dart';
 import 'package:kudlit_ph/features/scanner/presentation/widgets/model_not_ready_screen.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/yolo_sim_overlay.dart';
 
@@ -17,7 +17,7 @@ const Duration _kDetectionInterval = Duration(milliseconds: 500);
 /// Minimum confidence required for a detection to be surfaced.
 /// Raised to 0.65 — the Baybayin model is domain-specific so anything below
 /// this is almost certainly a false positive on non-Baybayin scenes.
-const double _kConfidenceThreshold = 0.65;
+const double _kConfidenceThreshold = 0.8;
 
 /// IoU threshold for non-max suppression.
 const double _kIoUThreshold = 0.45;
@@ -78,8 +78,7 @@ class _ScannerCameraState extends ConsumerState<ScannerCamera> {
     // 2. Minimum box area filter — eliminates tiny noise boxes.
     final List<YOLOResult> filtered = results.where((YOLOResult r) {
       if (r.confidence < _kConfidenceThreshold) return false;
-      final double area =
-          r.normalizedBox.width * r.normalizedBox.height;
+      final double area = r.normalizedBox.width * r.normalizedBox.height;
       return area >= _kMinBoxArea;
     }).toList();
 
@@ -124,8 +123,11 @@ class _ScannerCameraState extends ConsumerState<ScannerCamera> {
       return const _WebCameraFallback();
     }
 
-    // Resolve whether to use the downloaded model or the bundled asset.
-    final AsyncValue<String> pathAsync = ref.watch(yoloModelPathProvider);
+    // Resolve the active model for the camera scope, downloading on demand
+    // when the catalog version is bumped or the user picks a different model.
+    final AsyncValue<String> pathAsync = ref.watch(
+      yoloModelPathProvider(YoloModelScope.camera),
+    );
     return pathAsync.when(
       loading: () => const ModelNotReadyScreen(),
       error: (Object error, StackTrace stackTrace) => const ModelNotReadyScreen(),

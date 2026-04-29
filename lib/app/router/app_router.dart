@@ -18,6 +18,7 @@ import 'package:kudlit_ph/features/home/presentation/providers/app_preferences_p
 import 'package:kudlit_ph/features/home/presentation/screens/model_setup_screen.dart';
 import 'package:kudlit_ph/features/home/presentation/screens/settings_screen.dart';
 import 'package:kudlit_ph/features/home/presentation/screens/splash_screen.dart';
+import 'package:kudlit_ph/features/learning/presentation/screens/lesson_stage_screen.dart';
 
 part 'app_router.g.dart';
 
@@ -131,6 +132,11 @@ GoRouter appRouter(Ref ref) {
             const SettingsScreen(),
       ),
       GoRoute(
+        path: '${AppConstants.routeLesson}/:id',
+        builder: (BuildContext context, GoRouterState state) =>
+            LessonStageScreen(lessonId: state.pathParameters['id']!),
+      ),
+            GoRoute(
         path: AppConstants.routeTerms,
         builder: (BuildContext context, GoRouterState state) =>
             const TermsScreen(),
