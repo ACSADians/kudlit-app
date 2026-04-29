@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
+import 'package:kudlit_ph/app/constants.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/floating_tab_nav.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/learn/challenge_pin_bar.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/learn/drawing_pad_sheet.dart';
@@ -199,7 +201,7 @@ class _LearnTabState extends State<LearnTab> {
   }
 
   void _startLesson() {
-    setState(() => _inLesson = true);
+    GoRouter.of(context).push('${AppConstants.routeLesson}/vowels-01');
   }
 
   void _backToHome() {

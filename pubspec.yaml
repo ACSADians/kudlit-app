@@ -93,6 +93,7 @@ flutter:
     - assets/brand/
     - assets/brand/user.profile/
     - assets/fonts/
+    - assets/lessons/
 
   fonts:
     - family: Baybayin Simple TAWBID

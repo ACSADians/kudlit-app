@@ -16,6 +16,7 @@ import 'package:kudlit_ph/features/home/presentation/providers/app_preferences_p
 import 'package:kudlit_ph/features/home/presentation/screens/model_setup_screen.dart';
 import 'package:kudlit_ph/features/home/presentation/screens/settings_screen.dart';
 import 'package:kudlit_ph/features/home/presentation/screens/splash_screen.dart';
+import 'package:kudlit_ph/features/learning/presentation/screens/lesson_stage_screen.dart';
 
 part 'app_router.g.dart';
 
@@ -38,7 +39,8 @@ GoRouter appRouter(Ref ref) {
         final AppPreferences? prefs = prefsState.valueOrNull;
         // Show model setup if: on mobile, models not yet downloaded, and the
         // user hasn't already acknowledged the prompt (legacy skip or download).
-        final bool needsModelSetup = !kIsWeb &&
+        final bool needsModelSetup =
+            !kIsWeb &&
             !(prefs?.hasDownloadedModels ?? false) &&
             !(prefs?.hasSeenModelPrompt ?? false) &&
             !listenable.sessionSkipped;
@@ -54,7 +56,8 @@ GoRouter appRouter(Ref ref) {
           return AppConstants.routeSplash;
         }
         final AppPreferences? prefs = prefsState.valueOrNull;
-        final bool handled = (prefs?.hasDownloadedModels ?? false) ||
+        final bool handled =
+            (prefs?.hasDownloadedModels ?? false) ||
             (prefs?.hasSeenModelPrompt ?? false) ||
             listenable.sessionSkipped;
         if (handled) {
@@ -123,6 +126,11 @@ GoRouter appRouter(Ref ref) {
         path: AppConstants.routeSettings,
         builder: (BuildContext context, GoRouterState state) =>
             const SettingsScreen(),
+      ),
+      GoRoute(
+        path: '${AppConstants.routeLesson}/:id',
+        builder: (BuildContext context, GoRouterState state) =>
+            LessonStageScreen(lessonId: state.pathParameters['id']!),
       ),
     ],
   );

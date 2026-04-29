@@ -10,6 +10,8 @@ class AiModelInfo {
     required this.name,
     required this.modelLink,
     required this.sortOrder,
+    required this.version,
+    required this.enabled,
     this.description,
     this.androidModelLink,
     this.iosModelLink,
@@ -35,6 +37,14 @@ class AiModelInfo {
 
   /// Optional marketing/description copy.
   final String? description;
+
+  /// Monotonic version of the published model assets. Bumping this server-side
+  /// forces the client to redownload the local cache.
+  final int version;
+
+  /// When false, the model is hidden from in-app selectors. Existing local
+  /// downloads are left in place.
+  final bool enabled;
 
   /// Filename derived from [modelLink], used by `flutter_gemma`
   /// to check whether the model is already installed locally.

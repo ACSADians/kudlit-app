@@ -1,0 +1,69 @@
+{
+  "id": "vowels-01",
+  "title": "Baybayin Vowels",
+  "subtitle": "Three vowels, three shapes.",
+  "steps": [
+    {
+      "id": "ref-a",
+      "mode": "reference",
+      "label": "A",
+      "glyph": "a",
+      "intro": "Let's start with the vowel A.",
+      "narration": "Notice the curve — the tail lifts from the bottom-right. Take your time and study the shape before you draw.",
+      "buttyTip": "When you're ready, tap Got it to continue."
+    },
+    {
+      "id": "draw-a",
+      "mode": "draw",
+      "label": "A",
+      "glyph": "a",
+      "prompt": "Draw the vowel A.",
+      "hint": "Match the reference glyph above.",
+      "successFeedback": "Tama! Your curve is clean."
+    },
+    {
+      "id": "spell-a",
+      "mode": "freeInput",
+      "label": "A",
+      "glyph": "a",
+      "prompt": "Type the romanization of this glyph.",
+      "expected": ["a"],
+      "successFeedback": "Correct. A is the foundation of Baybayin."
+    },
+    {
+      "id": "ref-ei",
+      "mode": "reference",
+      "label": "E / I",
+      "glyph": "e",
+      "intro": "E and I share one glyph in Baybayin.",
+      "narration": "It's a mirrored curve — the same base as A, opposite direction.",
+      "buttyTip": "Two vowels, one shape. That's vowel pairing."
+    },
+    {
+      "id": "draw-ei",
+      "mode": "draw",
+      "label": "E / I",
+      "glyph": "e",
+      "prompt": "Draw the E / I glyph.",
+      "successFeedback": "Good. The mirrored curve is right."
+    },
+    {
+      "id": "ref-ou",
+      "mode": "reference",
+      "label": "O / U",
+      "glyph": "o",
+      "intro": "O and U also share a glyph — a clean circle.",
+      "narration": "Close the circle with a single, deliberate stroke.",
+      "buttyTip": "A clean close is the mark of a solid O / U."
+    },
+    {
+      "id": "spell-ou",
+      "mode": "freeInput",
+      "label": "O / U",
+      "glyph": "o",
+      "prompt": "Type either romanization for this glyph.",
+      "expected": ["o", "u"],
+      "successFeedback": "Tama! Either answer works — it's vowel pairing."
+    }
+  ]
+}

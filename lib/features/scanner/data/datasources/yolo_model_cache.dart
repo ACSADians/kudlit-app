@@ -4,26 +4,24 @@ import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
-/// Local on-disk cache for the Baybayin YOLO model.
+/// Local on-disk cache for Baybayin YOLO models.
 ///
-/// Models are stored in:
-///   `<app-support>/yolo_models/baybayin_yolo.{tflite|mlpackage.zip}`
+/// Each catalog model is cached separately, keyed by its Supabase row id, so
+/// switching the active model (camera vs. drawing pad, app-wide vs. per-screen)
+/// does not force a redownload. A sidecar `.version` file records the
+/// integer version that was downloaded — when the catalog version is bumped,
+/// the cache is considered stale and is replaced on next use.
 ///
-/// Usage:
-/// - [downloadedPath] — returns the file's absolute path if it has been
-///   downloaded, `null` otherwise.
-/// - [resolvedModelPath] — returns the downloaded path, or throws a
-///   [StateError] if the model has not been downloaded yet.
-/// - [download] — downloads the model from [url] and returns its local path.
+/// Layout:
+///   `<app-support>/yolo_models/<id>.{tflite|mlpackage.zip}`
+///   `<app-support>/yolo_models/<id>.version`   (text file, integer)
 class YoloModelCache {
   YoloModelCache._();
 
   static final YoloModelCache instance = YoloModelCache._();
 
-  /// Platform-specific filename for the YOLO model.
-  String get _fileName =>
-      Platform.isIOS ? 'baybayin_yolo.mlpackage.zip' : 'baybayin_yolo.tflite';
-
+  /// Platform-specific extension for the YOLO model file.
+  String get _extension => Platform.isIOS ? 'mlpackage.zip' : 'tflite';
 
   Future<Directory> _modelsDir() async {
     final Directory base = await getApplicationSupportDirectory();
@@ -34,49 +32,51 @@ class YoloModelCache {
     return dir;
   }
 
-  Future<File> _modelFile() async {
+  Future<File> _modelFile(String modelId) async {
     final Directory dir = await _modelsDir();
-    return File(p.join(dir.path, _fileName));
+    return File(p.join(dir.path, '$modelId.$_extension'));
   }
 
-  /// Returns `true` if the model has been downloaded.
-  Future<bool> isDownloaded() async {
-    final File file = await _modelFile();
-    return file.existsSync();
+  Future<File> _versionFile(String modelId) async {
+    final Directory dir = await _modelsDir();
+    return File(p.join(dir.path, '$modelId.version'));
   }
 
-  /// Returns the absolute filesystem path of the downloaded model, or `null`
-  /// if no downloaded model exists.
-  Future<String?> downloadedPath() async {
-    final File file = await _modelFile();
+  /// Returns the cached version integer for [modelId], or `null` if no
+  /// downloaded copy exists.
+  Future<int?> downloadedVersion(String modelId) async {
+    final File model = await _modelFile(modelId);
+    if (!model.existsSync()) return null;
+    final File version = await _versionFile(modelId);
+    if (!version.existsSync()) return 0; // legacy file from previous schema
+    final String raw = (await version.readAsString()).trim();
+    return int.tryParse(raw);
+  }
+
+  /// Returns the absolute path of the cached model for [modelId], or `null`
+  /// if it has not been downloaded yet.
+  Future<String?> pathFor(String modelId) async {
+    final File file = await _modelFile(modelId);
     return file.existsSync() ? file.path : null;
   }
 
-  /// Returns the absolute path of the downloaded model.
-  ///
-  /// Throws a [StateError] if the model has not been downloaded yet.
-  /// Check [isDownloaded] or watch `yoloModelPathProvider` to gate access.
-  Future<String> resolvedModelPath() async {
-    final String? downloaded = await downloadedPath();
-    if (downloaded == null) {
-      throw StateError(
-        'YOLO model not downloaded. Prompt the user to download it first.',
-      );
-    }
-    return downloaded;
+  /// True when a local copy exists at the requested [version] or newer.
+  Future<bool> isUpToDate(String modelId, int version) async {
+    final int? local = await downloadedVersion(modelId);
+    return local != null && local >= version;
   }
 
-  /// Downloads the model from [url] into the cache directory.
+  /// Downloads [url] for [modelId] and records [version] in the sidecar file.
   ///
   /// [onProgress] is called with `(bytesReceived, totalBytes)` each chunk;
   /// `totalBytes` is `-1` when the server does not send Content-Length.
-  ///
-  /// Returns the absolute path of the saved file.
   Future<String> download(
+    String modelId,
     String url, {
+    required int version,
     void Function(int received, int total)? onProgress,
   }) async {
-    final File target = await _modelFile();
+    final File target = await _modelFile(modelId);
     final HttpClient client = HttpClient();
     try {
       final HttpClientRequest request = await client.getUrl(Uri.parse(url));
@@ -86,7 +86,7 @@ class YoloModelCache {
           'YOLO model download failed — HTTP ${response.statusCode}',
         );
       }
-      final int total = response.contentLength; // -1 if unknown
+      final int total = response.contentLength;
       int received = 0;
       final IOSink sink = target.openWrite();
       await for (final List<int> chunk in response) {
@@ -96,21 +96,27 @@ class YoloModelCache {
       }
       await sink.flush();
       await sink.close();
+      // Only stamp the version after a successful write.
+      final File versionFile = await _versionFile(modelId);
+      await versionFile.writeAsString(version.toString(), flush: true);
     } catch (e) {
-      // Remove a partially written file so the next attempt starts clean.
       if (target.existsSync()) await target.delete();
       rethrow;
     } finally {
       client.close();
     }
-    debugPrint('[YoloModelCache] downloaded → ${target.path}');
+    debugPrint(
+      '[YoloModelCache] downloaded $modelId v$version → ${target.path}',
+    );
     return target.path;
   }
 
-  /// Deletes the cached model file (e.g. to force a re-download).
-  Future<void> clear() async {
-    final File file = await _modelFile();
+  /// Deletes the cached model file (and its version sidecar) for [modelId].
+  Future<void> clear(String modelId) async {
+    final File file = await _modelFile(modelId);
     if (file.existsSync()) await file.delete();
-    debugPrint('[YoloModelCache] cache cleared');
+    final File version = await _versionFile(modelId);
+    if (version.existsSync()) await version.delete();
+    debugPrint('[YoloModelCache] cleared $modelId');
   }
 }
