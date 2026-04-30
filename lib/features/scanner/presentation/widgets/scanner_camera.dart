@@ -23,8 +23,15 @@ const double _kConfidenceThreshold = 0.8;
 const double _kIoUThreshold = 0.45;
 
 /// Minimum normalised bounding-box area (width × height in 0–1 space).
-/// Boxes smaller than ~1.5 % of the frame are typically noise or partial hits.
-const double _kMinBoxArea = 0.015;
+/// Set very low so multi-character words can be detected when the user
+/// frames a full phrase (each glyph then occupies only a small fraction
+/// of the frame).
+const double _kMinBoxArea = 0.001;
+
+/// Detections whose box edge is within this margin (normalised) of the frame
+/// edge are treated as partially out-of-view and dropped. Eliminates the
+/// common case of half-visible neighbour glyphs being mis-classified.
+const double _kEdgeMargin = 0.02;
 
 /// How many consecutive throttle intervals a detection must appear before it
 /// is surfaced to the UI. Prevents one-frame phantom detections.
@@ -76,10 +83,23 @@ class _ScannerCameraState extends ConsumerState<ScannerCamera> {
     // 1. Confidence filter (native threshold should already handle this,
     //    but we double-check client-side).
     // 2. Minimum box area filter — eliminates tiny noise boxes.
+    // 3. In-frame filter — drop detections that are clipped by the frame
+    //    edge (commonly mis-classified partial glyphs from neighbouring
+    //    characters that are halfway out of view).
     final List<YOLOResult> filtered = results.where((YOLOResult r) {
       if (r.confidence < _kConfidenceThreshold) return false;
-      final double area = r.normalizedBox.width * r.normalizedBox.height;
-      return area >= _kMinBoxArea;
+      final Rect b = r.normalizedBox;
+      final double area = b.width * b.height;
+      if (area < _kMinBoxArea) return false;
+      // Reject if the box hugs / crosses the frame edge.
+      const double edge = _kEdgeMargin;
+      if (b.left < edge ||
+          b.top < edge ||
+          b.right > 1 - edge ||
+          b.bottom > 1 - edge) {
+        return false;
+      }
+      return true;
     }).toList();
 
     if (filtered.isEmpty) {
@@ -130,7 +150,8 @@ class _ScannerCameraState extends ConsumerState<ScannerCamera> {
     );
     return pathAsync.when(
       loading: () => const ModelNotReadyScreen(),
-      error: (Object error, StackTrace stackTrace) => const ModelNotReadyScreen(),
+      error: (Object error, StackTrace stackTrace) =>
+          const ModelNotReadyScreen(),
       data: (String modelPath) {
         final YoloBaybayinDetector detector =
             ref.watch(baybayinDetectorProvider) as YoloBaybayinDetector;
@@ -140,13 +161,13 @@ class _ScannerCameraState extends ConsumerState<ScannerCamera> {
           controller: detector.controller,
           confidenceThreshold: _kConfidenceThreshold,
           iouThreshold: _kIoUThreshold,
+          showOverlays: false,
           onResult: _onYoloResult,
         );
       },
     );
   }
 }
-
 
 // ── Web fallback ──────────────────────────────────────────────────────────────
 
