@@ -4,6 +4,7 @@ import 'package:kudlit_ph/features/home/data/models/profile_preferences_model.da
 import 'package:kudlit_ph/features/home/data/models/profile_summary_model.dart';
 
 abstract interface class ProfileManagementDatasource {
+  String? getCurrentUserId();
   Future<ProfileSummaryModel> getSummary();
   Future<ProfilePreferencesModel> getPreferences();
   Future<void> updateDisplayName({required String displayName});
@@ -17,6 +18,9 @@ class SupabaseProfileManagementDatasource
   final SupabaseClient _supabase;
 
   @override
+  String? getCurrentUserId() => _supabase.auth.currentUser?.id;
+
+  @override
   Future<ProfileSummaryModel> getSummary() async {
     final user = _supabase.auth.currentUser;
     if (user == null) {
@@ -24,24 +28,39 @@ class SupabaseProfileManagementDatasource
     }
 
     try {
-      final response = await _supabase
-          .from('profiles')
-          .select()
-          .eq('id', user.id)
-          .maybeSingle();
+      final List<dynamic> results = await Future.wait<dynamic>([
+        _supabase.from('profiles').select().eq('id', user.id).maybeSingle(),
+        _supabase
+            .from('learning_progress')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('completed', true),
+        _supabase.from('scan_history').select('id').eq('user_id', user.id),
+        _supabase
+            .from('translation_history')
+            .select('id')
+            .eq('user_id', user.id),
+        _supabase
+            .from('translation_history')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('is_bookmarked', true),
+      ]);
 
-      if (response == null) {
-        // Return default summary if profile doesn't exist yet
-        return const ProfileSummaryModel(
-          displayName: null,
-          completedLessons: 0,
-          scanHistoryItems: 0,
-          translationHistoryItems: 0,
-          bookmarkedTranslations: 0,
-        );
-      }
+      final Map<String, dynamic>? profile =
+          results[0] as Map<String, dynamic>?;
+      final List<dynamic> completedLessons = results[1] as List<dynamic>;
+      final List<dynamic> scanHistory = results[2] as List<dynamic>;
+      final List<dynamic> translationHistory = results[3] as List<dynamic>;
+      final List<dynamic> bookmarked = results[4] as List<dynamic>;
 
-      return ProfileSummaryModel.fromJson(response);
+      return ProfileSummaryModel(
+        displayName: profile?['display_name'] as String?,
+        completedLessons: completedLessons.length,
+        scanHistoryItems: scanHistory.length,
+        translationHistoryItems: translationHistory.length,
+        bookmarkedTranslations: bookmarked.length,
+      );
     } catch (e) {
       throw ServerException(message: e.toString());
     }
@@ -89,10 +108,10 @@ class SupabaseProfileManagementDatasource
       );
 
       // Then update the public profile (upsert since it might not exist)
+      // Note: profiles table does NOT have an updated_at column in current migration.
       await _supabase.from('profiles').upsert({
         'id': user.id,
         'display_name': displayName,
-        'updated_at': DateTime.now().toIso8601String(),
       });
     } catch (e) {
       throw ServerException(message: e.toString());

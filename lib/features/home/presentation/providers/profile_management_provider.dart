@@ -3,6 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:kudlit_ph/core/usecases/usecase.dart';
+import 'package:kudlit_ph/features/home/data/datasources/local_profile_management_datasource.dart';
 import 'package:kudlit_ph/features/home/data/datasources/profile_management_datasource.dart';
 import 'package:kudlit_ph/features/home/data/repositories/profile_management_repository_impl.dart';
 import 'package:kudlit_ph/features/home/domain/entities/profile_preferences.dart';
@@ -27,12 +28,23 @@ ProfileManagementDatasource profileManagementDatasource(
   return SupabaseProfileManagementDatasource(ref.watch(supabaseProvider));
 }
 
+@Riverpod(keepAlive: true)
+LocalProfileManagementDatasource localProfileManagementDatasource(
+  LocalProfileManagementDatasourceRef ref,
+) {
+  final SqfliteProfileManagementDatasource ds =
+      SqfliteProfileManagementDatasource();
+  ref.onDispose(ds.dispose);
+  return ds;
+}
+
 @riverpod
 ProfileManagementRepository profileManagementRepository(
   ProfileManagementRepositoryRef ref,
 ) {
   return ProfileManagementRepositoryImpl(
     ref.watch(profileManagementDatasourceProvider),
+    ref.watch(localProfileManagementDatasourceProvider),
   );
 }
 
@@ -74,16 +86,27 @@ class ProfileSummaryNotifier extends _$ProfileSummaryNotifier {
   }
 
   Future<void> updateDisplayName(String displayName) async {
-    state = const AsyncValue.loading();
+    final previousState = state;
+    state = AsyncValue.data(state.valueOrNull ?? const None());
+    state = const AsyncLoading<Option<ProfileSummary>>().copyWithPrevious(
+      state,
+    );
+
     final useCase = ref.read(updateDisplayNameUseCaseProvider);
     final result = await useCase(
       UpdateDisplayNameParams(displayName: displayName),
     );
 
-    state = await result.fold(
-      (l) => AsyncValue.error(l, StackTrace.current),
-      (r) async => AsyncValue.data(await _fetchSummary()),
-    );
+    if (result.isLeft()) {
+      state = AsyncValue<Option<ProfileSummary>>.error(
+        result.getLeft().toNullable()!,
+        StackTrace.current,
+      ).copyWithPrevious(previousState);
+      return;
+    }
+
+    final summary = await _fetchSummary();
+    state = AsyncValue.data(summary);
   }
 }
 
@@ -101,15 +124,26 @@ class ProfilePreferencesNotifier extends _$ProfilePreferencesNotifier {
   }
 
   Future<void> updatePreferences(ProfilePreferences preferences) async {
-    state = const AsyncValue.loading();
+    final previousState = state;
+    state = AsyncValue.data(state.valueOrNull ?? const None());
+    state = const AsyncLoading<Option<ProfilePreferences>>().copyWithPrevious(
+      state,
+    );
+
     final useCase = ref.read(saveProfilePreferencesUseCaseProvider);
     final result = await useCase(
       SaveProfilePreferencesParams(preferences: preferences),
     );
 
-    state = await result.fold(
-      (l) => AsyncValue.error(l, StackTrace.current),
-      (r) async => AsyncValue.data(await _fetchPreferences()),
-    );
+    if (result.isLeft()) {
+      state = AsyncValue<Option<ProfilePreferences>>.error(
+        result.getLeft().toNullable()!,
+        StackTrace.current,
+      ).copyWithPrevious(previousState);
+      return;
+    }
+
+    final prefs = await _fetchPreferences();
+    state = AsyncValue.data(prefs);
   }
 }

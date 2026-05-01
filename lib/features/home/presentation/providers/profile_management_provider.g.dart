@@ -43,8 +43,28 @@ final profileManagementDatasourceProvider =
 // ignore: unused_element
 typedef ProfileManagementDatasourceRef =
     AutoDisposeProviderRef<ProfileManagementDatasource>;
+String _$localProfileManagementDatasourceHash() =>
+    r'a745fbaf8272f848f5849f57fedad13760a7229d';
+
+/// See also [localProfileManagementDatasource].
+@ProviderFor(localProfileManagementDatasource)
+final localProfileManagementDatasourceProvider =
+    Provider<LocalProfileManagementDatasource>.internal(
+      localProfileManagementDatasource,
+      name: r'localProfileManagementDatasourceProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$localProfileManagementDatasourceHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef LocalProfileManagementDatasourceRef =
+    ProviderRef<LocalProfileManagementDatasource>;
 String _$profileManagementRepositoryHash() =>
-    r'63215c06f331682e89ad823555812ddecefa89ab';
+    r'2eaf582d0d5a0f94930fb97e1ece50cb608c6f21';
 
 /// See also [profileManagementRepository].
 @ProviderFor(profileManagementRepository)
@@ -142,7 +162,7 @@ final saveProfilePreferencesUseCaseProvider =
 typedef SaveProfilePreferencesUseCaseRef =
     AutoDisposeProviderRef<SaveProfilePreferences>;
 String _$profileSummaryNotifierHash() =>
-    r'7cc7b360635f2e1b42d3fd09e4f5a095b64b41bb';
+    r'd31440cc011580ffdbb7f2f3bc583faa4d00a4ec';
 
 /// See also [ProfileSummaryNotifier].
 @ProviderFor(ProfileSummaryNotifier)
@@ -163,7 +183,7 @@ final profileSummaryNotifierProvider =
 typedef _$ProfileSummaryNotifier =
     AutoDisposeAsyncNotifier<Option<ProfileSummary>>;
 String _$profilePreferencesNotifierHash() =>
-    r'e33eb6516284677495807fdbb880bdeda3dde234';
+    r'9657cfe982806b134ab4424fba9acb6356cf7d78';
 
 /// See also [ProfilePreferencesNotifier].
 @ProviderFor(ProfilePreferencesNotifier)

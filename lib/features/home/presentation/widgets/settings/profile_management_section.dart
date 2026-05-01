@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:kudlit_ph/core/error/failures.dart';
 import 'package:kudlit_ph/features/home/domain/entities/profile_preferences.dart';
+import 'package:kudlit_ph/features/home/domain/entities/profile_summary.dart';
 import 'package:kudlit_ph/features/home/presentation/providers/profile_management_provider.dart';
 
+import 'edit_name_dialog.dart';
+import 'profile_management_card.dart';
 import 'profile_management_item.dart';
-import 'profile_management_tile.dart';
-import 'settings_card.dart';
-import 'settings_divider.dart';
 import 'settings_section_label.dart';
 
 class ProfileManagementSection extends ConsumerStatefulWidget {
@@ -29,7 +30,29 @@ class _ProfileManagementSectionState
     extends ConsumerState<ProfileManagementSection> {
   final Set<String> _loadingActions = <String>{};
 
-  List<ProfileManagementItem> _getItems(String? displayName) {
+  List<ProfileManagementItem> _getItems(ProfileSummary? summary) {
+    final String? displayName = summary?.displayName;
+
+    String learningDesc =
+        'Track lesson completion, milestones, and last activity.';
+    if (summary != null && summary.completedLessons > 0) {
+      learningDesc += ' ${summary.completedLessons} lessons completed.';
+    }
+
+    String scanDesc = 'Review prior scan results and retry translations.';
+    if (summary != null && summary.scanHistoryItems > 0) {
+      scanDesc += ' ${summary.scanHistoryItems} scans.';
+    }
+
+    String translationDesc = 'Save and revisit translated phrases quickly.';
+    if (summary != null) {
+      final int t = summary.translationHistoryItems;
+      final int b = summary.bookmarkedTranslations;
+      if (t > 0 || b > 0) {
+        translationDesc += ' $t translations, $b bookmarked.';
+      }
+    }
+
     return <ProfileManagementItem>[
       ProfileManagementItem(
         id: 'edit-profile-identity',
@@ -40,16 +63,16 @@ class _ProfileManagementSectionState
         primaryActionLabel: displayName != null && displayName.isNotEmpty
             ? 'Edit name ($displayName)'
             : 'Edit name',
-        primaryActionMessage: 'edit-name', // Special action id
+        primaryActionMessage: 'edit-name',
         secondaryActionId: 'upload-avatar',
         secondaryActionLabel: 'Upload avatar',
         secondaryActionMessage: 'Avatar update flow is available soon.',
       ),
-      const ProfileManagementItem(
+      ProfileManagementItem(
         id: 'learning-progress-dashboard',
         icon: Icons.menu_book_rounded,
         title: 'Learning progress dashboard',
-        description: 'Track lesson completion, milestones, and last activity.',
+        description: learningDesc,
         primaryActionId: 'view-progress',
         primaryActionLabel: 'View progress',
         primaryActionMessage: 'Progress dashboard will be available soon.',
@@ -57,11 +80,11 @@ class _ProfileManagementSectionState
         secondaryActionLabel: 'Continue lesson',
         secondaryActionMessage: 'Lesson resume flow is available soon.',
       ),
-      const ProfileManagementItem(
+      ProfileManagementItem(
         id: 'scanner-history',
         icon: Icons.document_scanner_outlined,
         title: 'Scanner history',
-        description: 'Review prior scan results and retry translations.',
+        description: scanDesc,
         primaryActionId: 'open-scan-history',
         primaryActionLabel: 'Open history',
         primaryActionMessage: 'Scanner history will be available soon.',
@@ -69,11 +92,11 @@ class _ProfileManagementSectionState
         secondaryActionLabel: 'Clear history',
         secondaryActionMessage: 'History cleanup flow is available soon.',
       ),
-      const ProfileManagementItem(
+      ProfileManagementItem(
         id: 'translator-history-bookmarks',
         icon: Icons.translate_rounded,
         title: 'Translator history and bookmarks',
-        description: 'Save and revisit translated phrases quickly.',
+        description: translationDesc,
         primaryActionId: 'view-saved-translations',
         primaryActionLabel: 'View saved',
         primaryActionMessage: 'Saved translations will be available soon.',
@@ -88,7 +111,7 @@ class _ProfileManagementSectionState
         description: 'Configure text scale, contrast, and motion comfort.',
         primaryActionId: 'open-accessibility-setup',
         primaryActionLabel: 'Accessibility setup',
-        primaryActionMessage: 'open-accessibility-setup', // Special action id
+        primaryActionMessage: 'open-accessibility-setup',
       ),
       const ProfileManagementItem(
         id: 'privacy-controls',
@@ -97,7 +120,7 @@ class _ProfileManagementSectionState
         description: 'Manage analytics consent and data sharing preferences.',
         primaryActionId: 'open-privacy-settings',
         primaryActionLabel: 'Privacy settings',
-        primaryActionMessage: 'open-privacy-settings', // Special action id
+        primaryActionMessage: 'open-privacy-settings',
       ),
       const ProfileManagementItem(
         id: 'account-deletion-flow',
@@ -139,109 +162,81 @@ class _ProfileManagementSectionState
 
   Future<void> _showEditNameDialog() async {
     final summaryOpt = ref.read(profileSummaryNotifierProvider).valueOrNull;
-    String initialName = '';
-    if (summaryOpt != null && summaryOpt.isSome()) {
-      initialName = summaryOpt.toNullable()?.displayName ?? '';
-    }
+    final String initialName =
+        summaryOpt?.toNullable()?.displayName ?? '';
 
-    final controller = TextEditingController(text: initialName);
-
-    final newName = await showDialog<String>(
+    final String? newName = await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Edit Display Name'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(
-            hintText: 'Enter your new display name',
-          ),
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(controller.text),
-            child: const Text('Save'),
-          ),
-        ],
-      ),
+      builder: (_) => EditNameDialog(initialName: initialName),
     );
 
-    if (newName != null && newName != initialName && mounted) {
-      setState(() => _loadingActions.add('edit-name'));
-      await ref
-          .read(profileSummaryNotifierProvider.notifier)
-          .updateDisplayName(newName.trim());
-      if (mounted) {
-        setState(() => _loadingActions.remove('edit-name'));
-        final error = ref.read(profileSummaryNotifierProvider).error;
-        if (error != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to update name: $error')),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Display name updated.')),
-          );
-        }
-      }
+    if (newName == null || newName.trim() == initialName || !mounted) return;
+
+    setState(() => _loadingActions.add('edit-name'));
+    await ref
+        .read(profileSummaryNotifierProvider.notifier)
+        .updateDisplayName(newName.trim());
+
+    if (!mounted) return;
+    setState(() => _loadingActions.remove('edit-name'));
+
+    final currentState = ref.read(profileSummaryNotifierProvider);
+    if (currentState.hasError) {
+      _showErrorSnackBar('Failed to update name', currentState.error);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Display name updated.')),
+      );
     }
   }
 
   Future<void> _showAccessibilityDialog() async {
     final prefsOpt = ref.read(profilePreferencesNotifierProvider).valueOrNull;
-    bool highContrast = false;
-    bool reducedMotion = false;
-    bool dataSharingConsent = false;
+    final ProfilePreferences current = prefsOpt?.toNullable() ??
+        const ProfilePreferences(
+          highContrast: false,
+          reducedMotion: false,
+          dataSharingConsent: false,
+        );
 
-    if (prefsOpt != null && prefsOpt.isSome()) {
-      final prefs = prefsOpt.toNullable()!;
-      highContrast = prefs.highContrast;
-      reducedMotion = prefs.reducedMotion;
-      dataSharingConsent = prefs.dataSharingConsent;
-    }
-
-    final newPrefs = await showDialog<ProfilePreferences>(
+    final ProfilePreferences? newPrefs = await showDialog<ProfilePreferences>(
       context: context,
-      builder: (context) {
-        bool currentHighContrast = highContrast;
-        bool currentReducedMotion = reducedMotion;
+      builder: (BuildContext ctx) {
+        bool highContrast = current.highContrast;
+        bool reducedMotion = current.reducedMotion;
 
         return StatefulBuilder(
-          builder: (context, setState) {
+          builder: (BuildContext ctx2, StateSetter setInner) {
             return AlertDialog(
               title: const Text('Accessibility Settings'),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
-                children: [
+                children: <Widget>[
                   SwitchListTile(
                     title: const Text('High Contrast'),
-                    value: currentHighContrast,
-                    onChanged: (val) =>
-                        setState(() => currentHighContrast = val),
+                    value: highContrast,
+                    onChanged: (bool val) =>
+                        setInner(() => highContrast = val),
                   ),
                   SwitchListTile(
                     title: const Text('Reduced Motion'),
-                    value: currentReducedMotion,
-                    onChanged: (val) =>
-                        setState(() => currentReducedMotion = val),
+                    value: reducedMotion,
+                    onChanged: (bool val) =>
+                        setInner(() => reducedMotion = val),
                   ),
                 ],
               ),
-              actions: [
+              actions: <Widget>[
                 TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
+                  onPressed: () => Navigator.of(ctx2).pop(),
                   child: const Text('Cancel'),
                 ),
                 TextButton(
-                  onPressed: () => Navigator.of(context).pop(
+                  onPressed: () => Navigator.of(ctx2).pop(
                     ProfilePreferences(
-                      highContrast: currentHighContrast,
-                      reducedMotion: currentReducedMotion,
-                      dataSharingConsent: dataSharingConsent,
+                      highContrast: highContrast,
+                      reducedMotion: reducedMotion,
+                      dataSharingConsent: current.dataSharingConsent,
                     ),
                   ),
                   child: const Text('Save'),
@@ -253,73 +248,68 @@ class _ProfileManagementSectionState
       },
     );
 
-    if (newPrefs != null && mounted) {
-      setState(() => _loadingActions.add('open-accessibility-setup'));
-      await ref
-          .read(profilePreferencesNotifierProvider.notifier)
-          .updatePreferences(newPrefs);
-      if (mounted) {
-        setState(() => _loadingActions.remove('open-accessibility-setup'));
-        final error = ref.read(profilePreferencesNotifierProvider).error;
-        if (error != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to update preferences: $error')),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Accessibility settings updated.')),
-          );
-        }
-      }
+    if (newPrefs == null || !mounted) return;
+
+    setState(() => _loadingActions.add('open-accessibility-setup'));
+    await ref
+        .read(profilePreferencesNotifierProvider.notifier)
+        .updatePreferences(newPrefs);
+
+    if (!mounted) return;
+    setState(() => _loadingActions.remove('open-accessibility-setup'));
+
+    final currentState = ref.read(profilePreferencesNotifierProvider);
+    if (currentState.hasError) {
+      _showErrorSnackBar('Failed to update preferences', currentState.error);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Accessibility settings updated.')),
+      );
     }
   }
 
   Future<void> _showPrivacyDialog() async {
     final prefsOpt = ref.read(profilePreferencesNotifierProvider).valueOrNull;
-    bool highContrast = false;
-    bool reducedMotion = false;
-    bool dataSharingConsent = false;
+    final ProfilePreferences current = prefsOpt?.toNullable() ??
+        const ProfilePreferences(
+          highContrast: false,
+          reducedMotion: false,
+          dataSharingConsent: false,
+        );
 
-    if (prefsOpt != null && prefsOpt.isSome()) {
-      final prefs = prefsOpt.toNullable()!;
-      highContrast = prefs.highContrast;
-      reducedMotion = prefs.reducedMotion;
-      dataSharingConsent = prefs.dataSharingConsent;
-    }
-
-    final newPrefs = await showDialog<ProfilePreferences>(
+    final ProfilePreferences? newPrefs = await showDialog<ProfilePreferences>(
       context: context,
-      builder: (context) {
-        bool currentConsent = dataSharingConsent;
+      builder: (BuildContext ctx) {
+        bool consent = current.dataSharingConsent;
 
         return StatefulBuilder(
-          builder: (context, setState) {
+          builder: (BuildContext ctx2, StateSetter setInner) {
             return AlertDialog(
               title: const Text('Privacy Settings'),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
-                children: [
+                children: <Widget>[
                   SwitchListTile(
                     title: const Text('Share Analytics Data'),
                     subtitle: const Text(
                       'Help us improve Kudlit by sharing anonymous usage data.',
                     ),
-                    value: currentConsent,
-                    onChanged: (val) => setState(() => currentConsent = val),
+                    value: consent,
+                    onChanged: (bool val) => setInner(() => consent = val),
                   ),
                 ],
               ),
-              actions: [
+              actions: <Widget>[
                 TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
+                  onPressed: () => Navigator.of(ctx2).pop(),
                   child: const Text('Cancel'),
                 ),
                 TextButton(
-                  onPressed: () => Navigator.of(context).pop(
+                  onPressed: () => Navigator.of(ctx2).pop(
                     ProfilePreferences(
-                      highContrast: highContrast,
-                      reducedMotion: reducedMotion,
-                      dataSharingConsent: currentConsent,
+                      highContrast: current.highContrast,
+                      reducedMotion: current.reducedMotion,
+                      dataSharingConsent: consent,
                     ),
                   ),
                   child: const Text('Save'),
@@ -331,72 +321,64 @@ class _ProfileManagementSectionState
       },
     );
 
-    if (newPrefs != null && mounted) {
-      setState(() => _loadingActions.add('open-privacy-settings'));
-      await ref
-          .read(profilePreferencesNotifierProvider.notifier)
-          .updatePreferences(newPrefs);
-      if (mounted) {
-        setState(() => _loadingActions.remove('open-privacy-settings'));
-        final error = ref.read(profilePreferencesNotifierProvider).error;
-        if (error != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Failed to update privacy settings: $error'),
-            ),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Privacy settings updated.')),
-          );
-        }
-      }
+    if (newPrefs == null || !mounted) return;
+
+    setState(() => _loadingActions.add('open-privacy-settings'));
+    await ref
+        .read(profilePreferencesNotifierProvider.notifier)
+        .updatePreferences(newPrefs);
+
+    if (!mounted) return;
+    setState(() => _loadingActions.remove('open-privacy-settings'));
+
+    final currentState = ref.read(profilePreferencesNotifierProvider);
+    if (currentState.hasError) {
+      _showErrorSnackBar(
+          'Failed to update privacy settings', currentState.error);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Privacy settings updated.')),
+      );
     }
+  }
+
+  void _showErrorSnackBar(String prefix, Object? error) {
+    String message = error.toString();
+    if (error is Failure) {
+      message = error.when(
+        network: (String msg) => msg,
+        unknown: (String msg) => msg,
+        invalidCredentials: () => 'Invalid credentials',
+        userNotFound: () => 'User not found',
+        emailAlreadyInUse: () => 'Email already in use',
+        weakPassword: () => 'Weak password',
+        tooManyRequests: () => 'Too many requests',
+        sessionExpired: () => 'Session expired',
+        passwordResetEmailSent: () => 'Email sent',
+      );
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('$prefix: $message')),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    if (!widget.isAuthenticated) {
-      return const SizedBox.shrink();
-    }
+    if (!widget.isAuthenticated) return const SizedBox.shrink();
 
-    final summaryOpt = ref.watch(profileSummaryNotifierProvider).valueOrNull;
-    String? currentDisplayName;
-    if (summaryOpt != null && summaryOpt.isSome()) {
-      currentDisplayName = summaryOpt.toNullable()?.displayName;
-    }
-
-    final items = _getItems(currentDisplayName);
+    final ProfileSummary? summary = ref
+        .watch(profileSummaryNotifierProvider)
+        .valueOrNull
+        ?.toNullable();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         const SettingsSectionLabel(text: 'Profile management'),
-        SettingsCard(
-          children: <Widget>[
-            for (int i = 0; i < items.length; i++) ...<Widget>[
-              ProfileManagementTile(
-                item: items[i],
-                isPrimaryLoading: _loadingActions.contains(
-                  items[i].primaryActionId,
-                ),
-                isSecondaryLoading:
-                    items[i].secondaryActionId != null &&
-                    _loadingActions.contains(items[i].secondaryActionId!),
-                onPrimaryTap: () => _handleAction(
-                  items[i].primaryActionId,
-                  items[i].primaryActionMessage,
-                ),
-                onSecondaryTap: items[i].secondaryActionMessage == null
-                    ? null
-                    : () => _handleAction(
-                        items[i].secondaryActionId!,
-                        items[i].secondaryActionMessage!,
-                      ),
-              ),
-              if (i < items.length - 1) const SettingsDivider(),
-            ],
-          ],
+        ProfileManagementCard(
+          items: _getItems(summary),
+          loadingActions: _loadingActions,
+          onAction: _handleAction,
         ),
       ],
     );

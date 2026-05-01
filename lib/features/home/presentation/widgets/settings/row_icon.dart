@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
 class RowIcon extends StatelessWidget {
-  const RowIcon({super.key, required this.icon});
+  const RowIcon({super.key, required this.icon, this.iconColor, this.bgColor});
 
   final IconData icon;
+  final Color? iconColor;
+  final Color? bgColor;
 
   @override
   Widget build(BuildContext context) {
@@ -14,10 +16,10 @@ class RowIcon extends StatelessWidget {
       height: 32,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: cs.primaryContainer,
+        color: bgColor ?? cs.primaryContainer,
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Icon(icon, size: 16, color: cs.primary),
+      child: Icon(icon, size: 16, color: iconColor ?? cs.primary),
     );
   }
 }
