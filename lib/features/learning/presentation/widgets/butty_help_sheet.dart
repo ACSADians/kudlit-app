@@ -1,18 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:kudlit_ph/features/learning/domain/entities/gemma_prompts.dart';
 import 'package:kudlit_ph/features/learning/domain/entities/lesson_step.dart';
+import 'package:kudlit_ph/features/translator/domain/entities/chat_message.dart';
+import 'package:kudlit_ph/features/translator/presentation/providers/ai_inference_provider.dart';
 
-class ButtyHelpSheet extends StatefulWidget {
+class ButtyHelpSheet extends ConsumerStatefulWidget {
   const ButtyHelpSheet({super.key, required this.step});
 
   final LessonStep step;
 
   @override
-  State<ButtyHelpSheet> createState() => _ButtyHelpSheetState();
+  ConsumerState<ButtyHelpSheet> createState() => _ButtyHelpSheetState();
 }
 
-class _ButtyHelpSheetState extends State<ButtyHelpSheet> {
-  late final List<_HelpMessage> _messages;
+class _ButtyHelpSheetState extends ConsumerState<ButtyHelpSheet> {
+  final List<ChatMessage> _messages = <ChatMessage>[];
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scroll = ScrollController();
   bool _replying = false;
@@ -20,12 +24,14 @@ class _ButtyHelpSheetState extends State<ButtyHelpSheet> {
   @override
   void initState() {
     super.initState();
-    _messages = <_HelpMessage>[
-      _HelpMessage.butty(
-        "We're on '${widget.step.label}'. Want me to show the stroke order, "
-        'explain the sound, or something else?',
+    _messages.add(
+      ChatMessage(
+        text: "We're on '${widget.step.label}'. Want me to show the stroke order, "
+            'explain the sound, or something else?',
+        isUser: false,
+        timestamp: DateTime.now(),
       ),
-    ];
+    );
   }
 
   @override
@@ -44,18 +50,65 @@ class _ButtyHelpSheetState extends State<ButtyHelpSheet> {
     final String text = _controller.text.trim();
     if (text.isEmpty || _replying) return;
     _controller.clear();
+    
+    final ChatMessage userMsg = ChatMessage(
+      text: text,
+      isUser: true,
+      timestamp: DateTime.now(),
+    );
+
     setState(() {
-      _messages.add(_HelpMessage.user(text));
+      _messages.add(userMsg);
       _replying = true;
     });
     _scrollToBottom();
-    await Future<void>.delayed(const Duration(milliseconds: 700));
-    if (!mounted) return;
-    setState(() {
-      _messages.add(_HelpMessage.butty(_stubReply(text, widget.step)));
-      _replying = false;
-    });
-    _scrollToBottom();
+
+    try {
+      final Stream<String> responseStream = ref
+          .read(aiInferenceNotifierProvider.notifier)
+          .generateResponse(
+            _messages,
+            systemInstruction: GemmaPrompts.coachMode(widget.step.label),
+          );
+
+      final ChatMessage aiMsg = ChatMessage(
+        text: '',
+        isUser: false,
+        timestamp: DateTime.now(),
+      );
+      
+      setState(() {
+        _messages.add(aiMsg);
+      });
+
+      final StringBuffer buffer = StringBuffer();
+      await for (final String chunk in responseStream) {
+        buffer.write(chunk);
+        if (mounted) {
+          setState(() {
+            _messages.last = aiMsg.copyWith(text: buffer.toString());
+          });
+          _scrollToBottom();
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _messages.add(ChatMessage(
+            text: 'Oops, I had trouble thinking about that. Try again?',
+            isUser: false,
+            timestamp: DateTime.now(),
+          ));
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _replying = false;
+        });
+        _scrollToBottom();
+      }
+    }
   }
 
   void _scrollToBottom() {
@@ -99,7 +152,7 @@ class _ButtyHelpSheetState extends State<ButtyHelpSheet> {
                     vertical: 8,
                   ),
                   children: <Widget>[
-                    for (final _HelpMessage m in _messages) _Bubble(message: m),
+                    for (final ChatMessage m in _messages) _Bubble(message: m),
                     if (_replying) const _TypingDots(),
                   ],
                 ),
@@ -116,23 +169,6 @@ class _ButtyHelpSheetState extends State<ButtyHelpSheet> {
       },
     );
   }
-}
-
-String _stubReply(String input, LessonStep step) {
-  final String lower = input.toLowerCase();
-  if (lower.contains('stroke') || lower.contains('order')) {
-    return 'For ${step.label}, start at the top and follow the curve in one '
-        'continuous motion. Stroke-order animation is coming soon.';
-  }
-  if (lower.contains('sound') || lower.contains('pronoun')) {
-    return '${step.label} is pronounced as in Filipino — short and clean.';
-  }
-  if (lower.contains('mean') || lower.contains('what')) {
-    return '${step.label} is a Baybayin glyph. '
-        '${step.narration ?? step.hint ?? "Study the shape, then draw it."}';
-  }
-  return "Good question. I'm still learning, but for ${step.label}: "
-      '${step.hint ?? step.narration ?? "follow the reference glyph closely."}';
 }
 
 class _SheetHandle extends StatelessWidget {
@@ -297,12 +333,16 @@ class _ComposerBar extends StatelessWidget {
 class _Bubble extends StatelessWidget {
   const _Bubble({required this.message});
 
-  final _HelpMessage message;
+  final ChatMessage message;
 
   @override
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
-    final bool isButty = message.isButty;
+    final bool isButty = !message.isUser;
+    
+    // Hide empty bubbles while thinking
+    if (message.text.isEmpty) return const SizedBox.shrink();
+    
     return Align(
       alignment: isButty ? Alignment.centerLeft : Alignment.centerRight,
       child: Container(
@@ -349,17 +389,4 @@ class _TypingDots extends StatelessWidget {
       ),
     );
   }
-}
-
-class _HelpMessage {
-  const _HelpMessage._(this.text, {required this.isButty});
-
-  factory _HelpMessage.butty(String text) =>
-      _HelpMessage._(text, isButty: true);
-
-  factory _HelpMessage.user(String text) =>
-      _HelpMessage._(text, isButty: false);
-
-  final String text;
-  final bool isButty;
 }

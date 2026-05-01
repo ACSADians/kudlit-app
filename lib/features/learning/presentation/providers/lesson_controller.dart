@@ -4,12 +4,15 @@ import 'package:fpdart/fpdart.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import 'package:kudlit_ph/core/error/failures.dart';
+import 'package:kudlit_ph/features/learning/domain/entities/gemma_prompts.dart';
 import 'package:kudlit_ph/features/learning/domain/entities/lesson.dart';
 import 'package:kudlit_ph/features/learning/domain/entities/lesson_mode.dart';
 import 'package:kudlit_ph/features/learning/domain/entities/lesson_step.dart';
 import 'package:kudlit_ph/features/learning/domain/usecases/load_lesson.dart';
 import 'package:kudlit_ph/features/learning/presentation/providers/lesson_repository_provider.dart';
 import 'package:kudlit_ph/features/learning/presentation/providers/lesson_state.dart';
+import 'package:kudlit_ph/features/translator/domain/entities/chat_message.dart';
+import 'package:kudlit_ph/features/translator/presentation/providers/ai_inference_provider.dart';
 
 part 'lesson_controller.g.dart';
 
@@ -41,8 +44,7 @@ class LessonController extends _$LessonController {
     );
   }
 
-  /// Submits a drawing attempt. Stub: always treats as correct so the
-  /// stage flow is fully wired. Replace with real similarity check later.
+  /// Submits a drawing attempt and streams Gemma evaluation feedback.
   Future<void> submitDraw(List<List<Offset>> strokes) async {
     final LessonState? current = state.valueOrNull;
     if (current == null || current.completed) return;
@@ -51,18 +53,57 @@ class LessonController extends _$LessonController {
     state = AsyncData<LessonState?>(
       current.copyWith(
         attemptStatus: AttemptStatus.checking,
-        buttyMessage: 'Checking your strokes...',
+        buttyMessage: 'Analyzing your strokes...',
       ),
     );
-    await Future<void>.delayed(const Duration(milliseconds: 600));
 
     final LessonStep step = current.currentStep;
-    state = AsyncData<LessonState?>(
-      current.copyWith(
-        attemptStatus: AttemptStatus.correct,
-        buttyMessage: step.successFeedback ?? 'Correct.',
-      ),
-    );
+    
+    try {
+      final Stream<String> responseStream = ref
+          .read(aiInferenceNotifierProvider.notifier)
+          .generateResponse(
+            <ChatMessage>[
+              ChatMessage(
+                text: 'Evaluate my drawing for ${step.label}',
+                isUser: true,
+                timestamp: DateTime.now(),
+              )
+            ],
+            systemInstruction: GemmaPrompts.sketchpadEvaluator(step.label),
+          );
+
+      final StringBuffer buffer = StringBuffer();
+      
+      // Update state to correct immediately so they can proceed,
+      // but stream the feedback from Gemma into buttyMessage.
+      state = AsyncData<LessonState?>(
+        current.copyWith(
+          attemptStatus: AttemptStatus.correct,
+          buttyMessage: '',
+        ),
+      );
+
+      await for (final String chunk in responseStream) {
+        buffer.write(chunk);
+        final LessonState? updated = state.valueOrNull;
+        if (updated != null && updated.currentStepIndex == current.currentStepIndex) {
+          state = AsyncData<LessonState?>(
+            updated.copyWith(buttyMessage: buffer.toString()),
+          );
+        }
+      }
+    } catch (e) {
+      final LessonState? updated = state.valueOrNull;
+      if (updated != null) {
+        state = AsyncData<LessonState?>(
+          updated.copyWith(
+            attemptStatus: AttemptStatus.correct,
+            buttyMessage: step.successFeedback ?? 'Correct.',
+          ),
+        );
+      }
+    }
   }
 
   /// Validates a typed answer for [LessonMode.freeInput] steps.

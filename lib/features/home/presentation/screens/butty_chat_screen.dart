@@ -1,52 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:kudlit_ph/features/home/presentation/widgets/butty_chat/butty_header.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/butty_chat/chat_input_bar.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/butty_chat/chat_message_list.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/butty_chat/chat_msg.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/floating_tab_nav.dart';
+import 'package:kudlit_ph/features/learning/domain/entities/gemma_prompts.dart';
+import 'package:kudlit_ph/features/translator/domain/entities/chat_message.dart';
+import 'package:kudlit_ph/features/translator/presentation/providers/ai_inference_provider.dart';
 
-String buttyReply(String input) {
-  final String lower = input.toLowerCase();
-  if (lower.contains('hello') ||
-      lower.contains('hi') ||
-      lower.contains('kumusta')) {
-    return 'Kumusta! I\'m Butty, your Baybayin guide. What would you like to know?';
-  }
-  if (lower.contains('baybayin')) {
-    return 'Baybayin is an ancient pre-colonial Philippine script. '
-        'It\'s an abugida \u2014 each character represents a syllable, not just a letter.';
-  }
-  if (lower.contains('kudlit')) {
-    return 'A kudlit is a diacritic placed above or below a Baybayin character '
-        'to change its vowel sound. Above gives E or I; below gives O or U.';
-  }
-  if (lower.contains('lesson') ||
-      lower.contains('learn') ||
-      lower.contains('start')) {
-    return 'Head to the Learn tab and tap Lesson 1 \u2014 '
-        'I\'ll walk you through each character step by step.';
-  }
-  if (lower.contains('vowel')) {
-    return 'Baybayin has three vowel characters: A, E/I, and O/U. '
-        'Two vowels share one glyph \u2014 a feature called vowel pairing.';
-  }
-  if (lower.contains('consonant')) {
-    return 'Without a kudlit, every Baybayin consonant reads with an implied "a" '
-        'sound. Add a kudlit to change the vowel.';
-  }
-  return 'Good question. I\'m still growing, but try the Lesson 1 in the '
-      'Learn tab and I\'ll walk you through the basics of Baybayin writing.';
-}
-
-class ButtyChatScreen extends StatefulWidget {
+class ButtyChatScreen extends ConsumerStatefulWidget {
   const ButtyChatScreen({super.key});
 
   @override
-  State<ButtyChatScreen> createState() => _ButtyChatScreenState();
+  ConsumerState<ButtyChatScreen> createState() => _ButtyChatScreenState();
 }
 
-class _ButtyChatScreenState extends State<ButtyChatScreen> {
+class _ButtyChatScreenState extends ConsumerState<ButtyChatScreen> {
   final List<ChatMsg> _messages = <ChatMsg>[
     (
       isButty: true,
@@ -66,23 +37,64 @@ class _ButtyChatScreenState extends State<ButtyChatScreen> {
     super.dispose();
   }
 
-  void _handleSend() {
+  Future<void> _handleSend() async {
     final String text = _controller.text.trim();
     if (text.isEmpty || _responding) return;
     _controller.clear();
+    
     setState(() {
       _messages.add((isButty: false, text: text));
       _responding = true;
     });
     _scrollToBottom();
-    Future<void>.delayed(const Duration(milliseconds: 700), () {
-      if (!mounted) return;
+
+    final List<ChatMessage> history = _messages.map((ChatMsg msg) {
+      return ChatMessage(
+        text: msg.text,
+        isUser: !msg.isButty,
+        timestamp: DateTime.now(),
+      );
+    }).toList();
+
+    try {
+      final Stream<String> responseStream = ref
+          .read(aiInferenceNotifierProvider.notifier)
+          .generateResponse(
+            history,
+            systemInstruction: GemmaPrompts.assistantMode,
+          );
+
       setState(() {
-        _messages.add((isButty: true, text: buttyReply(text)));
-        _responding = false;
+        _messages.add((isButty: true, text: ''));
       });
-      _scrollToBottom();
-    });
+
+      final StringBuffer buffer = StringBuffer();
+      await for (final String chunk in responseStream) {
+        buffer.write(chunk);
+        if (mounted) {
+          setState(() {
+            _messages.last = (isButty: true, text: buffer.toString());
+          });
+          _scrollToBottom();
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _messages.add((
+            isButty: true,
+            text: 'Oops, I had trouble thinking about that. Try again?',
+          ));
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _responding = false;
+        });
+        _scrollToBottom();
+      }
+    }
   }
 
   void _scrollToBottom() {
