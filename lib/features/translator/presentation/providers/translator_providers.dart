@@ -42,16 +42,14 @@ SqliteChatDatasource sqliteChatDatasource(Ref ref) {
 
 @Riverpod(keepAlive: true)
 AiInferenceRepository aiInferenceRepository(Ref ref) {
+  // Actively watch preferences so the repo recreates if AI mode changes.
+  final AppPreferences? prefs = ref.watch(appPreferencesNotifierProvider).valueOrNull;
+  
   final AiInferenceRepositoryImpl repo = AiInferenceRepositoryImpl(
     modelsDatasource: ref.watch(supabaseAiModelsDatasourceProvider),
     localDatasource: ref.watch(localGemmaDatasourceProvider),
     cloudDatasource: ref.watch(cloudGemmaDatasourceProvider),
-    preferenceResolver: () {
-      final AsyncValue<AppPreferences> prefs = ref.read(
-        appPreferencesNotifierProvider,
-      );
-      return prefs.valueOrNull?.aiPreference ?? AiPreference.cloud;
-    },
+    preferenceResolver: () => prefs?.aiPreference ?? AiPreference.cloud,
   );
   ref.onDispose(repo.dispose);
   return repo;
