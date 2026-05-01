@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import 'package:kudlit_ph/features/scanner/domain/entities/baybayin_detection.dart';
+import 'package:kudlit_ph/features/scanner/presentation/providers/scanner_evaluation_provider.dart';
 import 'package:kudlit_ph/features/scanner/presentation/providers/scanner_provider.dart';
 import 'package:kudlit_ph/features/scanner/presentation/providers/yolo_model_selection_provider.dart';
 import 'package:kudlit_ph/features/scanner/presentation/widgets/aggregated_bounding_box.dart';
@@ -57,7 +58,14 @@ class _ScanTabState extends ConsumerState<ScanTab> {
 
     if (mounted) {
       ref.read(scannerNotifierProvider.notifier).update(results);
+      ref.read(scannerEvaluationProvider.notifier).evaluate(results, bytes);
     }
+  }
+
+  void _onShutterTapped() {
+    setState(() => _resultVisible = true);
+    final List<BaybayinDetection> detections = ref.read(scannerNotifierProvider);
+    ref.read(scannerEvaluationProvider.notifier).evaluate(detections, _selectedImageBytes);
   }
 
   void _clearSelectedImage() {
@@ -117,7 +125,7 @@ class _ScanTabState extends ConsumerState<ScanTab> {
           bottom: controlsBottom,
           child: _ScanControls(
             flashOn: _flashOn,
-            onShutter: () => setState(() => _resultVisible = !_resultVisible),
+            onShutter: _onShutterTapped,
             onFlashToggle: kIsWeb ? null : _toggleFlash,
             onGalleryTap: _pickImageFromGallery,
           ),
@@ -300,13 +308,13 @@ class _ShutterButton extends StatelessWidget {
 
 // ── Result panel ──────────────────────────────────────────────────────────────
 
-class _ScanResultPanel extends StatelessWidget {
+class _ScanResultPanel extends ConsumerWidget {
   const _ScanResultPanel({required this.onDismiss});
 
   final VoidCallback onDismiss;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final ColorScheme cs = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
@@ -359,33 +367,37 @@ class _ResultHandle extends StatelessWidget {
   }
 }
 
-class _ResultText extends StatelessWidget {
+class _ResultText extends ConsumerWidget {
   const _ResultText();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final ColorScheme cs = Theme.of(context).colorScheme;
+    final AsyncValue<String> evaluation = ref.watch(scannerEvaluationProvider);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Text(
-          'mhal kita',
-          style: TextStyle(
-            fontFamily: 'Baybayin Simple TAWBID',
-            fontSize: 28,
-            color: cs.onSurface,
-            letterSpacing: 6,
-            height: 1.1,
+        evaluation.when(
+          data: (String text) => Text(
+            text.isEmpty ? 'Analyzing...' : text,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: cs.onSurface,
+              height: 1.3,
+            ),
           ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          'Mahal kita',
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-            color: cs.onSurface.withAlpha(217),
-            letterSpacing: -0.15,
+          loading: () => Text(
+            'Analyzing...',
+            style: TextStyle(
+              fontSize: 16,
+              color: cs.onSurface.withAlpha(150),
+            ),
+          ),
+          error: (Object err, _) => Text(
+            'Error: $err',
+            style: TextStyle(color: cs.error),
           ),
         ),
       ],
