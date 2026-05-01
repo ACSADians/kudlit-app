@@ -8,6 +8,7 @@ import 'settings_divider.dart';
 import 'settings_section_label.dart';
 import 'theme_row.dart';
 import 'ai_preference_row.dart';
+import 'local_model_status_row.dart';
 
 class PreferencesSection extends ConsumerWidget {
   const PreferencesSection({super.key});
@@ -29,6 +30,8 @@ class PreferencesSection extends ConsumerWidget {
             ThemeRow(current: prefs.themeMode),
             const SettingsDivider(),
             AiPreferenceRow(current: prefs.aiPreference),
+            const SettingsDivider(),
+            const LocalModelStatusRow(),
           ],
         ),
       ],
