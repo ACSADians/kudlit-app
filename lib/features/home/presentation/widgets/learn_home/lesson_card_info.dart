@@ -1,7 +1,16 @@
 import 'package:flutter/material.dart';
 
 class LessonCardInfo extends StatelessWidget {
-  const LessonCardInfo({super.key});
+  const LessonCardInfo({
+    super.key,
+    required this.index,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final int index;
+  final String title;
+  final String subtitle;
 
   @override
   Widget build(BuildContext context) {
@@ -12,7 +21,7 @@ class LessonCardInfo extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Text(
-            'LESSON 1',
+            'LESSON $index',
             style: TextStyle(
               fontSize: 9,
               fontWeight: FontWeight.w700,
@@ -22,7 +31,7 @@ class LessonCardInfo extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Baybayin Basics',
+            title,
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w800,
@@ -32,7 +41,7 @@ class LessonCardInfo extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            '3 vowels · 2 consonants',
+            subtitle,
             style: TextStyle(fontSize: 13, color: cs.onSurface.withAlpha(140)),
           ),
         ],

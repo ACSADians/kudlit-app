@@ -5,8 +5,19 @@ import 'glyph_preview_row.dart';
 import 'lesson_card_info.dart';
 
 class LessonCard extends StatelessWidget {
-  const LessonCard({super.key, required this.onStart});
+  const LessonCard({
+    super.key,
+    required this.index,
+    required this.title,
+    required this.subtitle,
+    required this.items,
+    required this.onStart,
+  });
 
+  final int index;
+  final String title;
+  final String subtitle;
+  final List<(String, String)> items;
   final VoidCallback onStart;
 
   @override
@@ -21,8 +32,8 @@ class LessonCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          const LessonCardInfo(),
-          const GlyphPreviewRow(),
+          LessonCardInfo(index: index, title: title, subtitle: subtitle),
+          if (items.isNotEmpty) GlyphPreviewRow(items: items),
           BeginButton(onStart: onStart),
         ],
       ),

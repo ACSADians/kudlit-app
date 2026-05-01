@@ -3,17 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/learn_home/butty_talk_card.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/learn_home/learn_section_label.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/learn_home/lesson_card.dart';
-import 'package:kudlit_ph/features/home/presentation/widgets/learn_home/locked_card.dart';
 
 class LearnHomeBody extends StatelessWidget {
   const LearnHomeBody({
     super.key,
-    required this.onStart,
+    required this.onStartLesson,
     required this.onChatWithButty,
     required this.bottomPad,
   });
 
-  final VoidCallback onStart;
+  final void Function(String) onStartLesson;
   final VoidCallback onChatWithButty;
   final double bottomPad;
 
@@ -28,18 +27,78 @@ class LearnHomeBody extends StatelessWidget {
           const SizedBox(height: 24),
           const LearnSectionLabel(text: 'Lessons'),
           const SizedBox(height: 10),
-          LessonCard(onStart: onStart),
-          const SizedBox(height: 8),
-          const LockedCard(
-            index: 2,
-            title: 'Core Consonants',
-            subtitle: 'DA, GA, HA, LA, MA, NA and more',
+          LessonCard(
+            index: 1,
+            title: 'Baybayin Basics',
+            subtitle: '3 vowels',
+            items: const <(String, String)>[
+              ('a', 'A'),
+              ('e', 'E / I'),
+              ('o', 'O / U'),
+            ],
+            onStart: () => onStartLesson('vowels-01'),
           ),
           const SizedBox(height: 8),
-          const LockedCard(
+          LessonCard(
+            index: 2,
+            title: 'Core Consonants',
+            subtitle: 'Ba, Ka, Da/Ra, Ga',
+            items: const <(String, String)>[
+              ('b', 'BA'),
+              ('k', 'KA'),
+              ('d', 'DA/RA'),
+              ('g', 'GA'),
+            ],
+            onStart: () => onStartLesson('consonants-01'),
+          ),
+          const SizedBox(height: 8),
+          LessonCard(
             index: 3,
-            title: 'Kudlit — Diacritics',
-            subtitle: 'Modify consonants to change vowel sounds',
+            title: 'The Waves',
+            subtitle: 'Ha, La, Ma, Na',
+            items: const <(String, String)>[
+              ('h', 'HA'),
+              ('l', 'LA'),
+              ('m', 'MA'),
+              ('n', 'NA'),
+            ],
+            onStart: () => onStartLesson('consonants-02'),
+          ),
+          const SizedBox(height: 8),
+          LessonCard(
+            index: 4,
+            title: 'The Loops',
+            subtitle: 'Nga, Pa, Sa, Ta',
+            items: const <(String, String)>[
+              ('ng', 'NGA'),
+              ('p', 'PA'),
+              ('s', 'SA'),
+              ('t', 'TA'),
+            ],
+            onStart: () => onStartLesson('consonants-03'),
+          ),
+          const SizedBox(height: 8),
+          LessonCard(
+            index: 5,
+            title: 'The Tails',
+            subtitle: 'Wa, Ya',
+            items: const <(String, String)>[
+              ('w', 'WA'),
+              ('y', 'YA'),
+            ],
+            onStart: () => onStartLesson('consonants-04'),
+          ),
+          const SizedBox(height: 8),
+          LessonCard(
+            index: 6,
+            title: 'The Kudlit',
+            subtitle: 'Changing vowel sounds',
+            items: const <(String, String)>[
+              ('b', 'BA'),
+              ('be', 'BE/BI'),
+              ('bo', 'BO/BU'),
+            ],
+            onStart: () => onStartLesson('kudlit-01'),
           ),
         ],
       ),

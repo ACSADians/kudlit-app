@@ -200,8 +200,8 @@ class _LearnTabState extends State<LearnTab> {
     );
   }
 
-  void _startLesson() {
-    GoRouter.of(context).push('${AppConstants.routeLesson}/vowels-01');
+  void _startLesson(String lessonId) {
+    GoRouter.of(context).push('${AppConstants.routeLesson}/$lessonId');
   }
 
   void _backToHome() {
@@ -246,7 +246,7 @@ class _LearnTabState extends State<LearnTab> {
           else
             Expanded(
               child: LearnHomeBody(
-                onStart: _startLesson,
+                onStartLesson: _startLesson,
                 onChatWithButty: widget.onSwitchToButty,
                 bottomPad: bottomPad,
               ),

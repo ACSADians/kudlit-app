@@ -3,15 +3,9 @@ import 'package:flutter/material.dart';
 import 'glyph_item.dart';
 
 class GlyphPreviewRow extends StatelessWidget {
-  const GlyphPreviewRow({super.key});
+  const GlyphPreviewRow({super.key, required this.items});
 
-  static const List<(String, String)> _items = <(String, String)>[
-    ('a', 'A'),
-    ('e', 'E / I'),
-    ('o', 'O / U'),
-    ('b', 'BA'),
-    ('k', 'KA'),
-  ];
+  final List<(String, String)> items;
 
   @override
   Widget build(BuildContext context) {
@@ -19,7 +13,7 @@ class GlyphPreviewRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 18),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: _items
+        children: items
             .map(
               ((String, String) item) =>
                   GlyphItem(glyph: item.$1, label: item.$2),
