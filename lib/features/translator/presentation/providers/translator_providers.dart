@@ -30,7 +30,7 @@ LocalGemmaDatasource localGemmaDatasource(Ref ref) {
 
 @Riverpod(keepAlive: true)
 CloudGemmaDatasource cloudGemmaDatasource(Ref ref) {
-  return const CloudGemmaDatasource();
+  return CloudGemmaDatasource();
 }
 
 @Riverpod(keepAlive: true)
