@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -86,11 +87,7 @@ class ProfileSummaryNotifier extends _$ProfileSummaryNotifier {
   }
 
   Future<void> updateDisplayName(String displayName) async {
-    final previousState = state;
-    state = AsyncValue.data(state.valueOrNull ?? const None());
-    state = const AsyncLoading<Option<ProfileSummary>>().copyWithPrevious(
-      state,
-    );
+    state = AsyncValue.data(state.value ?? const None());
 
     final useCase = ref.read(updateDisplayNameUseCaseProvider);
     final result = await useCase(
@@ -98,10 +95,10 @@ class ProfileSummaryNotifier extends _$ProfileSummaryNotifier {
     );
 
     if (result.isLeft()) {
-      state = AsyncValue<Option<ProfileSummary>>.error(
+      state = AsyncError<Option<ProfileSummary>>(
         result.getLeft().toNullable()!,
         StackTrace.current,
-      ).copyWithPrevious(previousState);
+      );
       return;
     }
 
@@ -124,11 +121,7 @@ class ProfilePreferencesNotifier extends _$ProfilePreferencesNotifier {
   }
 
   Future<void> updatePreferences(ProfilePreferences preferences) async {
-    final previousState = state;
-    state = AsyncValue.data(state.valueOrNull ?? const None());
-    state = const AsyncLoading<Option<ProfilePreferences>>().copyWithPrevious(
-      state,
-    );
+    state = AsyncValue.data(state.value ?? const None());
 
     final useCase = ref.read(saveProfilePreferencesUseCaseProvider);
     final result = await useCase(
@@ -136,10 +129,10 @@ class ProfilePreferencesNotifier extends _$ProfilePreferencesNotifier {
     );
 
     if (result.isLeft()) {
-      state = AsyncValue<Option<ProfilePreferences>>.error(
+      state = AsyncError<Option<ProfilePreferences>>(
         result.getLeft().toNullable()!,
         StackTrace.current,
-      ).copyWithPrevious(previousState);
+      );
       return;
     }
 
