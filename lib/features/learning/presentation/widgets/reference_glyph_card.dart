@@ -36,21 +36,20 @@ class ReferenceGlyphCard extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           if (hideGlyph)
-            SizedBox(
-              height: size * 1.1,
-              child: Center(
-                child: Text(
-                  '?',
-                  style: TextStyle(
-                    fontSize: size,
-                    height: 1,
-                    fontWeight: FontWeight.w300,
-                    color: cs.onPrimaryContainer.withValues(alpha: 0.35),
-                  ),
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: compact ? 4 : 8),
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: compact ? 28 : 48,
+                  fontWeight: FontWeight.w800,
+                  height: 1,
+                  color: cs.onPrimaryContainer,
+                  letterSpacing: -0.5,
                 ),
               ),
             )
-          else
+          else ...<Widget>[
             Text(
               glyph,
               style: TextStyle(
@@ -60,15 +59,16 @@ class ReferenceGlyphCard extends StatelessWidget {
                 color: cs.onPrimaryContainer,
               ),
             ),
-          const SizedBox(height: 6),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              color: cs.onPrimaryContainer,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 1.2,
+            const SizedBox(height: 6),
+            Text(
+              label,
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                color: cs.onPrimaryContainer,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 1.2,
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );

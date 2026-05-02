@@ -1,5 +1,10 @@
+import 'dart:ui' as ui;
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:ultralytics_yolo/ultralytics_yolo.dart';
 
 import 'package:kudlit_ph/features/home/presentation/widgets/learn/live_stroke_painter.dart';
 import 'package:kudlit_ph/features/learning/domain/entities/lesson_step.dart';
@@ -7,6 +12,7 @@ import 'package:kudlit_ph/features/learning/presentation/providers/lesson_contro
 import 'package:kudlit_ph/features/learning/presentation/providers/lesson_state.dart';
 import 'package:kudlit_ph/features/learning/presentation/widgets/reference_glyph_card.dart';
 import 'package:kudlit_ph/features/scanner/domain/entities/baybayin_detection.dart';
+import 'package:kudlit_ph/features/scanner/presentation/providers/yolo_model_selection_provider.dart';
 import 'package:kudlit_ph/features/scanner/presentation/widgets/scanner_camera.dart';
 
 /// Where the learner's drawing comes from.
@@ -30,10 +36,12 @@ class DrawModeBody extends ConsumerStatefulWidget {
 }
 
 class DrawModeBodyState extends ConsumerState<DrawModeBody> {
+  final GlobalKey _canvasKey = GlobalKey();
+  bool _isSubmitting = false;
   final List<List<Offset>> _strokes = <List<Offset>>[];
   final List<List<Offset>> _undone = <List<Offset>>[];
   final List<Offset> _current = <Offset>[];
-  bool _glyphVisible = true;
+  bool _glyphVisible = false;
   DrawInputSource _source = DrawInputSource.pen;
 
   /// Latest detection class name from the camera, lower-cased and trimmed.
@@ -48,6 +56,7 @@ class DrawModeBodyState extends ConsumerState<DrawModeBody> {
         _strokes.clear();
         _undone.clear();
         _current.clear();
+        _glyphVisible = false;
       });
     }
   }
@@ -64,11 +73,143 @@ class DrawModeBodyState extends ConsumerState<DrawModeBody> {
       return true;
     }
     if (_strokes.isEmpty) return false;
+    if (_isSubmitting) return false;
+    _submitWithYolo();
+    return true;
+  }
+
+  /// Captures the pen canvas as a PNG, runs YOLO inference, and submits the
+  /// top detected label to [LessonController.submitDetection].
+  ///
+  /// Falls back to the stub [LessonController.submitDraw] when:
+  ///   - running on web (no native YOLO)
+  ///   - the model path is unavailable (not downloaded yet)
+  ///   - inference throws an error
+  Future<void> _submitWithYolo() async {
+    _isSubmitting = true;
+    final LessonController ctrl = ref.read(lessonControllerProvider.notifier);
+    ctrl.startChecking();
+    try {
+      await _doYoloInference(ctrl);
+    } finally {
+      _isSubmitting = false;
+    }
+  }
+
+  Future<void> _doYoloInference(LessonController ctrl) async {
+    if (!kIsWeb) {
+      final Uint8List? imageBytes = await _captureCanvas();
+      if (imageBytes == null) {
+        debugPrint('[DrawMode] canvas capture returned null — using stub');
+      } else {
+        try {
+          // Use the pre-loaded instance — no cold-start on first sketch submit.
+          final YOLO yolo = await ref.read(yoloDrawingPadModelProvider.future);
+          debugPrint(
+            '[DrawMode] running predict on ${imageBytes.lengthInBytes} bytes',
+          );
+          final Map<String, dynamic> result = await yolo.predict(
+            imageBytes,
+            confidenceThreshold: 0.25,
+          );
+          final List<dynamic> dets =
+              result['detections'] as List<dynamic>? ?? <dynamic>[];
+          debugPrint('[DrawMode] detections: ${dets.length}');
+          if (dets.isNotEmpty) {
+            YOLOResult? top;
+            for (final dynamic d in dets) {
+              final YOLOResult r = YOLOResult.fromMap(
+                d as Map<dynamic, dynamic>,
+              );
+              debugPrint(
+                '[DrawMode]   ${r.className} conf=${r.confidence.toStringAsFixed(2)}',
+              );
+              if (top == null || r.confidence > top.confidence) top = r;
+            }
+            if (top != null) {
+              debugPrint(
+                '[DrawMode] submitting top detection: ${top.className} '
+                '(${top.confidence.toStringAsFixed(2)}) | '
+                'expected: ${widget.step.expected}',
+              );
+              ctrl.submitDetection(top.className.trim().toLowerCase());
+              return;
+            }
+          } else {
+            debugPrint('[DrawMode] no detections above threshold — marking retry');
+            ctrl.submitDetection('');
+            return;
+          }
+        } catch (e) {
+          debugPrint('[DrawMode] YOLO sketch inference failed: $e');
+        }
+      }
+    }
+
+    // Only fall back to stub on web or if capture/model fails (not on 0 detections).
+    debugPrint('[DrawMode] falling back to submitDraw stub (capture or model error)');
     final List<List<Offset>> snapshot = _strokes
         .map(List<Offset>.from)
         .toList(growable: false);
-    ref.read(lessonControllerProvider.notifier).submitDraw(snapshot);
-    return true;
+    await ctrl.submitDraw(snapshot);
+  }
+
+  /// Renders the strokes onto a white canvas with black ink and returns the
+  /// result as a PNG [Uint8List].
+  ///
+  /// This is intentionally theme-agnostic: the YOLO model was trained on
+  /// dark-ink-on-white images, so we always produce that regardless of the
+  /// app's color scheme.
+  Future<Uint8List?> _captureCanvas() async {
+    try {
+      const double pixelRatio = 2.0;
+      final RenderBox box =
+          _canvasKey.currentContext!.findRenderObject()! as RenderBox;
+      final Size size = box.size;
+      final int width = (size.width * pixelRatio).round();
+      final int height = (size.height * pixelRatio).round();
+
+      final ui.PictureRecorder recorder = ui.PictureRecorder();
+      final Canvas canvas = Canvas(
+        recorder,
+        Rect.fromLTWH(0, 0, width.toDouble(), height.toDouble()),
+      );
+
+      // White background — matches training data.
+      canvas.drawRect(
+        Rect.fromLTWH(0, 0, width.toDouble(), height.toDouble()),
+        Paint()..color = const Color(0xFFFFFFFF),
+      );
+
+      // Black ink — always, regardless of theme.
+      final Paint strokePaint = Paint()
+        ..color = const Color(0xFF000000)
+        ..strokeWidth = 3.5 * pixelRatio
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round
+        ..style = PaintingStyle.stroke;
+
+      for (final List<Offset> stroke in _strokes) {
+        if (stroke.length < 2) continue;
+        final Path path = Path()
+          ..moveTo(stroke[0].dx * pixelRatio, stroke[0].dy * pixelRatio);
+        for (int i = 1; i < stroke.length; i++) {
+          path.lineTo(stroke[i].dx * pixelRatio, stroke[i].dy * pixelRatio);
+        }
+        canvas.drawPath(path, strokePaint);
+      }
+
+      final ui.Picture picture = recorder.endRecording();
+      final ui.Image image = await picture.toImage(width, height);
+      final ByteData? data =
+          await image.toByteData(format: ui.ImageByteFormat.png);
+      final Uint8List? bytes = data?.buffer.asUint8List();
+
+      return bytes;
+    } catch (e) {
+      debugPrint('[DrawMode] Canvas capture failed: $e');
+      return null;
+    }
   }
 
   void _onCameraDetections(List<BaybayinDetection> dets) {
@@ -156,13 +297,16 @@ class DrawModeBodyState extends ConsumerState<DrawModeBody> {
           ],
           Expanded(
             child: _source == DrawInputSource.pen
-                ? _DrawCanvas(
-                    status: widget.attemptStatus,
-                    strokes: _strokes,
-                    current: _current,
-                    onPanStart: _onPanStart,
-                    onPanUpdate: _onPanUpdate,
-                    onPanEnd: _onPanEnd,
+                ? RepaintBoundary(
+                    key: _canvasKey,
+                    child: _DrawCanvas(
+                      status: widget.attemptStatus,
+                      strokes: _strokes,
+                      current: _current,
+                      onPanStart: _onPanStart,
+                      onPanUpdate: _onPanUpdate,
+                      onPanEnd: _onPanEnd,
+                    ),
                   )
                 : _CameraCanvas(
                     status: widget.attemptStatus,
@@ -508,3 +652,4 @@ class _GlyphToggle extends StatelessWidget {
     );
   }
 }
+

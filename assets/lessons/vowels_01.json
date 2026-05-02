@@ -18,6 +18,7 @@
       "label": "A",
       "glyph": "a",
       "prompt": "Draw the vowel A.",
+      "expected": ["a"],
       "hint": "Match the reference glyph above.",
       "successFeedback": "Tama! Your curve is clean."
     },
@@ -45,6 +46,7 @@
       "label": "E / I",
       "glyph": "e",
       "prompt": "Draw the E / I glyph.",
+      "expected": ["e", "i"],
       "successFeedback": "Good. The mirrored curve is right."
     },
     {

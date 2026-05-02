@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:ultralytics_yolo/ultralytics_yolo.dart';
+
 import 'package:kudlit_ph/features/scanner/data/datasources/yolo_model_cache.dart';
 import 'package:kudlit_ph/features/translator/data/datasources/supabase_ai_models_datasource.dart';
 import 'package:kudlit_ph/features/translator/domain/entities/ai_model_info.dart';
@@ -237,3 +239,34 @@ String _platformUrl(AiModelInfo model) {
 class _YoloModelLoadingState implements Exception {
   const _YoloModelLoadingState();
 }
+
+/// A pre-loaded [YOLO] instance for the drawing pad scope.
+///
+/// Watching or reading this provider triggers model download (via
+/// [yoloModelPathProvider]) and native model initialisation so that the first
+/// sketch submission has no cold-start latency.
+///
+/// The provider keeps itself alive once loaded so the instance is reused
+/// for the entire lesson without reloading.
+final yoloDrawingPadModelProvider = FutureProvider<YOLO>((Ref ref) async {
+  if (kIsWeb) throw UnsupportedError('YOLO is not available on web.');
+
+  final String modelPath = await ref.watch(
+    yoloModelPathProvider(YoloModelScope.drawingPad).future,
+  );
+
+  // Keep the loaded instance alive so it is not discarded between steps.
+  ref.keepAlive();
+
+  final YOLO yolo = YOLO(
+    modelPath: modelPath,
+    task: YOLOTask.detect,
+    useGpu: false,
+  );
+  await yolo.loadModel();
+
+  // Dispose the native model when the provider is finally released.
+  ref.onDispose(yolo.dispose);
+
+  return yolo;
+});

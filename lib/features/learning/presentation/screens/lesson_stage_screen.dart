@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -12,6 +13,7 @@ import 'package:kudlit_ph/features/learning/presentation/widgets/lesson_top_bar.
 import 'package:kudlit_ph/features/learning/presentation/widgets/modes/draw_mode_body.dart';
 import 'package:kudlit_ph/features/learning/presentation/widgets/modes/free_input_mode_body.dart';
 import 'package:kudlit_ph/features/learning/presentation/widgets/modes/reference_mode_body.dart';
+import 'package:kudlit_ph/features/scanner/presentation/providers/yolo_model_selection_provider.dart';
 
 class LessonStageScreen extends ConsumerStatefulWidget {
   const LessonStageScreen({super.key, required this.lessonId});
@@ -67,6 +69,9 @@ class _LessonStageScreenState extends ConsumerState<LessonStageScreen> {
   @override
   Widget build(BuildContext context) {
     final AsyncValue<LessonState?> async = ref.watch(lessonControllerProvider);
+    // Watch the drawing-pad YOLO model so it starts loading immediately and
+    // Riverpod keeps the instance alive for the duration of this screen.
+    if (!kIsWeb) ref.watch(yoloDrawingPadModelProvider);
     return Scaffold(
       body: SafeArea(
         child: async.when(

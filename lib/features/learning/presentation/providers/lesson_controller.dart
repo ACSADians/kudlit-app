@@ -42,19 +42,57 @@ class LessonController extends _$LessonController {
     );
   }
 
-  /// Submits a drawing attempt. Stub: always treats as correct so the
-  /// stage flow is fully wired. Replace with real similarity check later.
-  Future<void> submitDraw(List<List<Offset>> strokes) async {
+  /// Marks the state as [AttemptStatus.checking] immediately so the UI can
+  /// show a loading indicator while async work (e.g. YOLO sketch inference)
+  /// runs in the background.
+  void startChecking() {
     final LessonState? current = state.value;
     if (current == null || current.completed) return;
     if (current.attemptStatus == AttemptStatus.checking) return;
-
     state = AsyncData<LessonState?>(
       current.copyWith(
         attemptStatus: AttemptStatus.checking,
         buttyMessage: 'Checking your strokes...',
       ),
     );
+  }
+
+  /// Validates a YOLO-detected [label] for [LessonMode.draw] steps.
+  ///
+  /// Compares [label] (trimmed, lowercased) against [LessonStep.expected].
+  void submitDetection(String label) {
+    final LessonState? current = state.value;
+    if (current == null || current.completed) return;
+    final LessonStep step = current.currentStep;
+    if (step.mode != LessonMode.draw) return;
+    // YOLO joins multi-value class names with '_' (e.g. "e_i" for e/i).
+    // Split and check whether any part matches the step's expected values.
+    final List<String> parts = label
+        .trim()
+        .toLowerCase()
+        .split('_')
+        .map((String p) => p.trim())
+        .where((String p) => p.isNotEmpty)
+        .toList();
+    final bool isCorrect =
+        parts.any((String p) => step.expected.contains(p));
+    state = AsyncData<LessonState?>(
+      current.copyWith(
+        attemptStatus: isCorrect ? AttemptStatus.correct : AttemptStatus.retry,
+        buttyMessage: isCorrect
+            ? (step.successFeedback ?? 'Correct!')
+            : (step.hint ?? 'Not quite — keep practicing.'),
+      ),
+    );
+  }
+
+  /// Submits a drawing attempt. Stub: always treats as correct so the
+  /// stage flow is fully wired. Replace with real similarity check later.
+  Future<void> submitDraw(List<List<Offset>> strokes) async {
+    final LessonState? current = state.value;
+    if (current == null || current.completed) return;
+    // Note: do NOT guard on AttemptStatus.checking here — the draw path
+    // calls startChecking() before this, so the state is already checking.
     await Future<void>.delayed(const Duration(milliseconds: 600));
 
     final LessonStep step = current.currentStep;

@@ -100,7 +100,11 @@ class _BarStack extends StatelessWidget {
         Positioned(
           top: -14,
           right: -2,
-          child: _OkButton(completed: completed, onTap: onContinue),
+          child: _OkButton(
+            completed: completed,
+            attemptStatus: attemptStatus,
+            onTap: onContinue,
+          ),
         ),
       ],
     );
@@ -215,28 +219,42 @@ class _CoachText extends StatelessWidget {
 }
 
 class _OkButton extends StatelessWidget {
-  const _OkButton({required this.completed, required this.onTap});
+  const _OkButton({
+    required this.completed,
+    required this.attemptStatus,
+    required this.onTap,
+  });
 
   final bool completed;
+  final AttemptStatus attemptStatus;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
+    final bool isChecking = attemptStatus == AttemptStatus.checking;
     return Material(
-      color: cs.primary,
+      color: isChecking ? cs.primary.withValues(alpha: 0.6) : cs.primary,
       shape: CircleBorder(side: BorderSide(color: cs.surface, width: 3)),
       elevation: 4,
       child: InkWell(
-        onTap: onTap,
+        onTap: isChecking ? null : onTap,
         customBorder: const CircleBorder(),
         child: SizedBox(
           width: 44,
           height: 44,
-          child: Icon(
-            completed ? Icons.flag_rounded : Icons.play_arrow_rounded,
-            color: cs.onPrimary,
-          ),
+          child: isChecking
+              ? Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    color: cs.onPrimary,
+                  ),
+                )
+              : Icon(
+                  completed ? Icons.flag_rounded : Icons.play_arrow_rounded,
+                  color: cs.onPrimary,
+                ),
         ),
       ),
     );
