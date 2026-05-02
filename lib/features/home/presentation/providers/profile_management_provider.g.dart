@@ -19,10 +19,6 @@ final supabaseProvider = Provider<SupabaseClient>.internal(
   retry: null,
 );
 
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef SupabaseRef = Ref;
-
 /// See also [profileManagementDatasource].
 @ProviderFor(profileManagementDatasource)
 final profileManagementDatasourceProvider =
@@ -36,10 +32,6 @@ final profileManagementDatasourceProvider =
       $allTransitiveDependencies: null,
       retry: null,
     );
-
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef ProfileManagementDatasourceRef = Ref;
 
 /// See also [localProfileManagementDatasource].
 @ProviderFor(localProfileManagementDatasource)
@@ -55,10 +47,6 @@ final localProfileManagementDatasourceProvider =
       retry: null,
     );
 
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef LocalProfileManagementDatasourceRef = Ref;
-
 /// See also [profileManagementRepository].
 @ProviderFor(profileManagementRepository)
 final profileManagementRepositoryProvider =
@@ -73,10 +61,6 @@ final profileManagementRepositoryProvider =
       retry: null,
     );
 
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef ProfileManagementRepositoryRef = Ref;
-
 /// See also [getProfileSummaryUseCase].
 @ProviderFor(getProfileSummaryUseCase)
 final getProfileSummaryUseCaseProvider = Provider<GetProfileSummary>.internal(
@@ -89,10 +73,6 @@ final getProfileSummaryUseCaseProvider = Provider<GetProfileSummary>.internal(
   $allTransitiveDependencies: null,
   retry: null,
 );
-
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef GetProfileSummaryUseCaseRef = Ref;
 
 /// See also [getProfilePreferencesUseCase].
 @ProviderFor(getProfilePreferencesUseCase)
@@ -108,10 +88,6 @@ final getProfilePreferencesUseCaseProvider =
       retry: null,
     );
 
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef GetProfilePreferencesUseCaseRef = Ref;
-
 /// See also [updateDisplayNameUseCase].
 @ProviderFor(updateDisplayNameUseCase)
 final updateDisplayNameUseCaseProvider = Provider<UpdateDisplayName>.internal(
@@ -124,10 +100,6 @@ final updateDisplayNameUseCaseProvider = Provider<UpdateDisplayName>.internal(
   $allTransitiveDependencies: null,
   retry: null,
 );
-
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef UpdateDisplayNameUseCaseRef = Ref;
 
 /// See also [saveProfilePreferencesUseCase].
 @ProviderFor(saveProfilePreferencesUseCase)
@@ -142,10 +114,6 @@ final saveProfilePreferencesUseCaseProvider =
       $allTransitiveDependencies: null,
       retry: null,
     );
-
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef SaveProfilePreferencesUseCaseRef = Ref;
 
 /// See also [ProfileSummaryNotifier].
 @ProviderFor(ProfileSummaryNotifier)
