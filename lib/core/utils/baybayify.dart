@@ -122,3 +122,43 @@ String baybayinToLatin(String input) {
 
   return output.toString();
 }
+
+/// Builds every romanised permutation of an ordered list of detected
+/// Baybayin character labels.
+///
+/// Some characters are ambiguous because the kudlit diacritic that selects
+/// the vowel (`i`/`e` vs `o`/`u`) is missing or unclear in the source image.
+/// The detector emits these as a pair joined with `_`, e.g. `bi_be` means
+/// "either `bi` or `be`".
+///
+/// Given `['pa', 'bi_be', 'da_do']` this returns
+/// `['pabida', 'pabido', 'pabeda', 'pabedo']`.
+///
+/// Empty / whitespace-only segments are dropped. The product is capped at
+/// [maxResults] (default 64) so the cycler UI stays usable even when many
+/// ambiguous glyphs appear in one phrase.
+List<String> permuteBaybayin(List<String> tokens, {int maxResults = 64}) {
+  final List<List<String>> options = <List<String>>[];
+  for (final String t in tokens) {
+    final List<String> opts = t
+        .split('_')
+        .map((String s) => s.trim())
+        .where((String s) => s.isNotEmpty)
+        .toList(growable: false);
+    if (opts.isNotEmpty) options.add(opts);
+  }
+  if (options.isEmpty) return const <String>[];
+
+  List<String> acc = <String>[''];
+  for (final List<String> opts in options) {
+    final List<String> next = <String>[];
+    for (final String prefix in acc) {
+      for (final String o in opts) {
+        next.add(prefix + o);
+        if (next.length >= maxResults) return next;
+      }
+    }
+    acc = next;
+  }
+  return acc;
+}

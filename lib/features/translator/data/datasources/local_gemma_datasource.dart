@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter_gemma/flutter_gemma.dart';
 
 import 'package:kudlit_ph/core/error/exceptions.dart';
@@ -40,7 +38,7 @@ class LocalGemmaDatasource {
     try {
       final InferenceInstallationBuilder builder = FlutterGemma.installModel(
         modelType: ModelType.gemmaIt,
-      ).fromNetwork(_platformLinkFor(model)).withCancelToken(_cancelToken!);
+      ).fromNetwork(model.platformLink).withCancelToken(_cancelToken!);
 
       if (onProgress != null) {
         builder.withProgress(onProgress);
@@ -85,19 +83,6 @@ class LocalGemmaDatasource {
         yield response.token;
       }
     }
-  }
-
-  /// Returns the platform-appropriate download URL.
-  ///
-  /// Preference order: platform-specific link → generic [AiModelInfo.modelLink].
-  String _platformLinkFor(AiModelInfo model) {
-    if (Platform.isAndroid && model.androidModelLink != null) {
-      return model.androidModelLink!;
-    }
-    if (Platform.isIOS && model.iosModelLink != null) {
-      return model.iosModelLink!;
-    }
-    return model.modelLink;
   }
 
   Future<void> dispose() async {

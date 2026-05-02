@@ -49,7 +49,7 @@ class YoloModelDropdown extends ConsumerWidget {
             child: Text('No models', style: TextStyle(color: Colors.white70)),
           );
         }
-        final AiModelInfo? active = activeAsync.valueOrNull;
+        final AiModelInfo? active = activeAsync.value;
         return _DropdownShell(
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(

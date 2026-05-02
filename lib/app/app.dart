@@ -13,7 +13,7 @@ class KudlitApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final GoRouter router = ref.watch(appRouterProvider);
     final ThemeMode themeMode =
-        ref.watch(appPreferencesNotifierProvider).valueOrNull?.themeMode ??
+        ref.watch(appPreferencesNotifierProvider).value?.themeMode ??
         ThemeMode.system;
 
     return MaterialApp.router(

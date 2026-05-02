@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:meta/meta.dart';
 
 /// Metadata describing an available Baybayin AI model.
@@ -45,6 +47,19 @@ class AiModelInfo {
   /// When false, the model is hidden from in-app selectors. Existing local
   /// downloads are left in place.
   final bool enabled;
+
+  /// Platform-appropriate download URL.
+  ///
+  /// Preference order: platform-specific link → generic [modelLink].
+  String get platformLink {
+    if (Platform.isAndroid && androidModelLink != null) {
+      return androidModelLink!;
+    }
+    if (Platform.isIOS && iosModelLink != null) {
+      return iosModelLink!;
+    }
+    return modelLink;
+  }
 
   /// Filename derived from [modelLink], used by `flutter_gemma`
   /// to check whether the model is already installed locally.

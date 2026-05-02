@@ -161,7 +161,7 @@ class _ProfileManagementSectionState
   }
 
   Future<void> _showEditNameDialog() async {
-    final summaryOpt = ref.read(profileSummaryNotifierProvider).valueOrNull;
+    final summaryOpt = ref.read(profileSummaryNotifierProvider).value;
     final String initialName =
         summaryOpt?.toNullable()?.displayName ?? '';
 
@@ -191,7 +191,7 @@ class _ProfileManagementSectionState
   }
 
   Future<void> _showAccessibilityDialog() async {
-    final prefsOpt = ref.read(profilePreferencesNotifierProvider).valueOrNull;
+    final prefsOpt = ref.read(profilePreferencesNotifierProvider).value;
     final ProfilePreferences current = prefsOpt?.toNullable() ??
         const ProfilePreferences(
           highContrast: false,
@@ -269,7 +269,7 @@ class _ProfileManagementSectionState
   }
 
   Future<void> _showPrivacyDialog() async {
-    final prefsOpt = ref.read(profilePreferencesNotifierProvider).valueOrNull;
+    final prefsOpt = ref.read(profilePreferencesNotifierProvider).value;
     final ProfilePreferences current = prefsOpt?.toNullable() ??
         const ProfilePreferences(
           highContrast: false,
@@ -368,7 +368,7 @@ class _ProfileManagementSectionState
 
     final ProfileSummary? summary = ref
         .watch(profileSummaryNotifierProvider)
-        .valueOrNull
+        .value
         ?.toNullable();
 
     return Column(

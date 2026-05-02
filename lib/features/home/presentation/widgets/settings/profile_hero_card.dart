@@ -77,7 +77,7 @@ class _ProfileHeroCardState extends ConsumerState<ProfileHeroCard> {
     final ColorScheme cs = Theme.of(context).colorScheme;
     final summary = ref
         .watch(profileSummaryNotifierProvider)
-        .valueOrNull
+        .value
         ?.toNullable();
     final String displayName =
         summary?.displayName ?? widget.user.displayName ?? '';
