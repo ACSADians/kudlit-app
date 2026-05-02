@@ -1,7 +1,7 @@
 import 'package:meta/meta.dart';
 
 import 'package:kudlit_ph/features/home/presentation/providers/app_preferences_provider.dart';
-import 'package:kudlit_ph/features/translator/domain/entities/ai_model_info.dart';
+import 'package:kudlit_ph/features/translator/domain/entities/gemma_model_info.dart';
 
 /// State machine for the global AI inference service.
 @immutable
@@ -19,14 +19,14 @@ class AiInferenceIdle extends AiInferenceState {
 class AiLocalModelMissing extends AiInferenceState {
   const AiLocalModelMissing(this.model);
 
-  final AiModelInfo model;
+  final GemmaModelInfo model;
 }
 
 /// Download in flight. [progress] is 0..100.
 class AiDownloading extends AiInferenceState {
   const AiDownloading({required this.model, required this.progress});
 
-  final AiModelInfo model;
+  final GemmaModelInfo model;
   final int progress;
 }
 
@@ -36,7 +36,7 @@ class AiReady extends AiInferenceState {
   const AiReady({required this.mode, required this.activeModel});
 
   final AiPreference mode;
-  final AiModelInfo activeModel;
+  final GemmaModelInfo activeModel;
 }
 
 /// Catch-all error state.

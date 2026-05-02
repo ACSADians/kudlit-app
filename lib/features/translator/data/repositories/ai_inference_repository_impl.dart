@@ -4,11 +4,12 @@ import 'package:fpdart/fpdart.dart';
 import 'package:kudlit_ph/core/error/exceptions.dart';
 import 'package:kudlit_ph/core/error/failures.dart';
 import 'package:kudlit_ph/features/home/presentation/providers/app_preferences_provider.dart';
-import 'package:kudlit_ph/features/translator/data/datasources/cloud_gemma_datasource.dart';
+import 'package:kudlit_ph/features/translator/data/datasources/ai_datasource.dart';
 import 'package:kudlit_ph/features/translator/data/datasources/local_gemma_datasource.dart';
-import 'package:kudlit_ph/features/translator/data/datasources/supabase_ai_models_datasource.dart';
-import 'package:kudlit_ph/features/translator/domain/entities/ai_model_info.dart';
+import 'package:kudlit_ph/features/translator/data/datasources/supabase_gemma_models_datasource.dart';
+import 'package:kudlit_ph/features/translator/domain/entities/baybayin_challenge.dart';
 import 'package:kudlit_ph/features/translator/domain/entities/chat_message.dart';
+import 'package:kudlit_ph/features/translator/domain/entities/gemma_model_info.dart';
 import 'package:kudlit_ph/features/translator/domain/repositories/ai_inference_repository.dart';
 
 class AiInferenceRepositoryImpl implements AiInferenceRepository {
@@ -19,9 +20,9 @@ class AiInferenceRepositoryImpl implements AiInferenceRepository {
     required this.preferenceResolver,
   });
 
-  final SupabaseAiModelsDatasource modelsDatasource;
+  final SupabaseGemmaModelsDatasource modelsDatasource;
   final LocalGemmaDatasource localDatasource;
-  final CloudGemmaDatasource cloudDatasource;
+  final AiDatasource cloudDatasource;
 
   /// Resolves the current [AiPreference] at call time.
   /// Allows the repo to react to preference changes without holding
@@ -31,9 +32,9 @@ class AiInferenceRepositoryImpl implements AiInferenceRepository {
   bool get _useCloud => kIsWeb || preferenceResolver() == AiPreference.cloud;
 
   @override
-  Future<Either<Failure, List<AiModelInfo>>> getAvailableModels() async {
+  Future<Either<Failure, List<GemmaModelInfo>>> getAvailableModels() async {
     try {
-      final List<AiModelInfo> models = await modelsDatasource.fetchModels();
+      final List<GemmaModelInfo> models = await modelsDatasource.fetchModels();
       return right(models);
     } on ServerException catch (e) {
       return left(Failure.network(message: e.message));
@@ -43,7 +44,9 @@ class AiInferenceRepositoryImpl implements AiInferenceRepository {
   }
 
   @override
-  Future<Either<Failure, bool>> isLocalModelInstalled(AiModelInfo model) async {
+  Future<Either<Failure, bool>> isLocalModelInstalled(
+    GemmaModelInfo model,
+  ) async {
     if (kIsWeb) {
       return right(false);
     }
@@ -57,7 +60,7 @@ class AiInferenceRepositoryImpl implements AiInferenceRepository {
 
   @override
   Future<Either<Failure, Unit>> downloadLocalModel(
-    AiModelInfo model, {
+    GemmaModelInfo model, {
     void Function(int progress)? onProgress,
   }) async {
     if (kIsWeb) {
@@ -97,6 +100,39 @@ class AiInferenceRepositoryImpl implements AiInferenceRepository {
       history,
       systemInstruction: systemInstruction,
     );
+  }
+
+  // ─── 2. Image analysis ────────────────────────────────────────────────────
+
+  @override
+  Stream<String> analyzeImage(
+    Uint8List imageBytes, {
+    String mimeType = 'image/png',
+    String? prompt,
+  }) {
+    // Always cloud — local model does not support vision input.
+    return cloudDatasource.analyzeImage(
+      imageBytes,
+      mimeType: mimeType,
+      prompt: prompt,
+    );
+  }
+
+  // ─── 3. Challenge generation ──────────────────────────────────────────────
+
+  @override
+  Future<Either<Failure, BaybayinChallenge>> generateChallenge({
+    List<String>? characters,
+  }) async {
+    try {
+      final BaybayinChallenge challenge = await cloudDatasource
+          .generateChallenge(characters: characters);
+      return right(challenge);
+    } on ServerException catch (e) {
+      return left(Failure.network(message: e.message));
+    } catch (e) {
+      return left(Failure.unknown(message: e.toString()));
+    }
   }
 
   @override

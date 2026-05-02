@@ -6,6 +6,18 @@ part of 'translator_providers.dart';
 // RiverpodGenerator
 // **************************************************************************
 
+@ProviderFor(availableGemmaModels)
+final availableGemmaModelsProvider =
+    FutureProvider<List<GemmaModelInfo>>.internal(
+      availableGemmaModels,
+      name: r'availableGemmaModelsProvider',
+      from: null,
+      argument: null,
+      isAutoDispose: true,
+      dependencies: null,
+      $allTransitiveDependencies: null,
+      retry: null,
+    );
 
 @ProviderFor(supabaseAiModelsDatasource)
 final supabaseAiModelsDatasourceProvider =
@@ -20,10 +32,18 @@ final supabaseAiModelsDatasourceProvider =
       retry: null,
     );
 
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef SupabaseAiModelsDatasourceRef = Ref;
-
+@ProviderFor(supabaseGemmaModelsDatasource)
+final supabaseGemmaModelsDatasourceProvider =
+    Provider<SupabaseGemmaModelsDatasource>.internal(
+      supabaseGemmaModelsDatasource,
+      name: r'supabaseGemmaModelsDatasourceProvider',
+      from: null,
+      argument: null,
+      isAutoDispose: false,
+      dependencies: null,
+      $allTransitiveDependencies: null,
+      retry: null,
+    );
 
 @ProviderFor(localGemmaDatasource)
 final localGemmaDatasourceProvider = Provider<LocalGemmaDatasource>.internal(
@@ -37,11 +57,6 @@ final localGemmaDatasourceProvider = Provider<LocalGemmaDatasource>.internal(
   retry: null,
 );
 
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef LocalGemmaDatasourceRef = Ref;
-
-
 @ProviderFor(cloudGemmaDatasource)
 final cloudGemmaDatasourceProvider = Provider<CloudGemmaDatasource>.internal(
   cloudGemmaDatasource,
@@ -53,11 +68,6 @@ final cloudGemmaDatasourceProvider = Provider<CloudGemmaDatasource>.internal(
   $allTransitiveDependencies: null,
   retry: null,
 );
-
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef CloudGemmaDatasourceRef = Ref;
-
 
 @ProviderFor(sqliteChatDatasource)
 final sqliteChatDatasourceProvider = Provider<SqliteChatDatasource>.internal(
@@ -71,11 +81,6 @@ final sqliteChatDatasourceProvider = Provider<SqliteChatDatasource>.internal(
   retry: null,
 );
 
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef SqliteChatDatasourceRef = Ref;
-
-
 @ProviderFor(aiInferenceRepository)
 final aiInferenceRepositoryProvider = Provider<AiInferenceRepository>.internal(
   aiInferenceRepository,
@@ -88,9 +93,30 @@ final aiInferenceRepositoryProvider = Provider<AiInferenceRepository>.internal(
   retry: null,
 );
 
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef AiInferenceRepositoryRef = Ref;
+@ProviderFor(analyzeBaybayinImage)
+final analyzeBaybayinImageProvider = Provider<AnalyzeBaybayinImage>.internal(
+  analyzeBaybayinImage,
+  name: r'analyzeBaybayinImageProvider',
+  from: null,
+  argument: null,
+  isAutoDispose: false,
+  dependencies: null,
+  $allTransitiveDependencies: null,
+  retry: null,
+);
+
+@ProviderFor(generateBaybayinChallenge)
+final generateBaybayinChallengeProvider =
+    Provider<GenerateBaybayinChallenge>.internal(
+      generateBaybayinChallenge,
+      name: r'generateBaybayinChallengeProvider',
+      from: null,
+      argument: null,
+      isAutoDispose: false,
+      dependencies: null,
+      $allTransitiveDependencies: null,
+      retry: null,
+    );
 
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

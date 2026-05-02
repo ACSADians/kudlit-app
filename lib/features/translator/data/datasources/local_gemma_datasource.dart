@@ -1,8 +1,13 @@
+import 'dart:typed_data';
+
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_gemma/flutter_gemma.dart';
 
 import 'package:kudlit_ph/core/error/exceptions.dart';
-import 'package:kudlit_ph/features/translator/domain/entities/ai_model_info.dart';
+import 'package:kudlit_ph/features/translator/data/datasources/ai_datasource.dart';
+import 'package:kudlit_ph/features/translator/domain/entities/baybayin_challenge.dart';
 import 'package:kudlit_ph/features/translator/domain/entities/chat_message.dart';
+import 'package:kudlit_ph/features/translator/domain/entities/gemma_model_info.dart';
 
 /// Wraps `flutter_gemma` for on-device inference.
 ///
@@ -13,14 +18,14 @@ import 'package:kudlit_ph/features/translator/domain/entities/chat_message.dart'
 ///   download discretionarily — iOS picks the timing, the app may
 ///   be backgrounded or terminated while download proceeds.
 /// - Web: not supported by this datasource (`kIsWeb` guard upstream).
-class LocalGemmaDatasource {
+class LocalGemmaDatasource implements AiDatasource {
   LocalGemmaDatasource();
 
   CancelToken? _cancelToken;
   InferenceModel? _activeModel;
   InferenceChat? _chat;
 
-  Future<bool> isInstalled(AiModelInfo model) async {
+  Future<bool> isInstalled(GemmaModelInfo model) async {
     try {
       return await FlutterGemma.isModelInstalled(model.fileName);
     } catch (e) {
@@ -31,14 +36,16 @@ class LocalGemmaDatasource {
   /// Enqueues a background download for [model]. Resolves when the
   /// underlying handler reports the file is fully written.
   Future<void> download(
-    AiModelInfo model, {
+    GemmaModelInfo model, {
     void Function(int progress)? onProgress,
   }) async {
     _cancelToken = CancelToken();
     try {
-      final InferenceInstallationBuilder builder = FlutterGemma.installModel(
-        modelType: ModelType.gemmaIt,
-      ).fromNetwork(model.platformLink).withCancelToken(_cancelToken!);
+      final String? hfToken = dotenv.env['HUGGINGFACE_TOKEN'];
+      final InferenceInstallationBuilder builder =
+          FlutterGemma.installModel(modelType: ModelType.gemma4)
+              .fromNetwork(model.modelLink, token: hfToken)
+              .withCancelToken(_cancelToken!);
 
       if (onProgress != null) {
         builder.withProgress(onProgress);
@@ -60,6 +67,7 @@ class LocalGemmaDatasource {
   }
 
   /// Lazily creates the active model + chat and streams text tokens.
+  @override
   Stream<String> generate(
     List<ChatMessage> history, {
     String? systemInstruction,
@@ -85,6 +93,18 @@ class LocalGemmaDatasource {
     }
   }
 
+  @override
+  Stream<String> analyzeImage(
+    Uint8List imageBytes, {
+    String mimeType = 'image/png',
+    String? prompt,
+  }) => throw UnsupportedError('analyzeImage is not supported on-device');
+
+  @override
+  Future<BaybayinChallenge> generateChallenge({List<String>? characters}) =>
+      throw UnsupportedError('generateChallenge is not supported on-device');
+
+  @override
   Future<void> dispose() async {
     await _activeModel?.close();
     _activeModel = null;

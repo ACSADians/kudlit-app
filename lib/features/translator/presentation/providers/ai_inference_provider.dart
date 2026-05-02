@@ -6,7 +6,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import 'package:kudlit_ph/core/error/failures.dart';
 import 'package:kudlit_ph/features/home/presentation/providers/app_preferences_provider.dart';
-import 'package:kudlit_ph/features/translator/domain/entities/ai_model_info.dart';
+import 'package:kudlit_ph/features/translator/domain/entities/gemma_model_info.dart';
 import 'package:kudlit_ph/features/translator/domain/entities/chat_message.dart';
 import 'package:kudlit_ph/features/translator/domain/repositories/ai_inference_repository.dart';
 import 'package:kudlit_ph/features/translator/presentation/providers/ai_inference_state.dart';
@@ -32,7 +32,7 @@ class AiInferenceNotifier extends _$AiInferenceNotifier {
       appPreferencesNotifierProvider.future,
     );
 
-    final Either<Failure, List<AiModelInfo>> modelsResult = await repo
+    final Either<Failure, List<GemmaModelInfo>> modelsResult = await repo
         .getAvailableModels();
     if (modelsResult.isLeft()) {
       final Failure f = modelsResult.getLeft().getOrElse(
@@ -40,22 +40,22 @@ class AiInferenceNotifier extends _$AiInferenceNotifier {
       );
       return AiInferenceError(_failureMessage(f));
     }
-    final List<AiModelInfo> models = modelsResult.getRight().getOrElse(
-      () => <AiModelInfo>[],
+    final List<GemmaModelInfo> models = modelsResult.getRight().getOrElse(
+      () => <GemmaModelInfo>[],
     );
     return _resolveInitialState(repo: repo, models: models, prefs: prefs);
   }
 
   Future<AiInferenceState> _resolveInitialState({
     required AiInferenceRepository repo,
-    required List<AiModelInfo> models,
+    required List<GemmaModelInfo> models,
     required AppPreferences prefs,
   }) async {
     if (models.isEmpty) {
       return const AiInferenceError('No AI models configured.');
     }
 
-    final AiModelInfo active = _resolveActiveModel(
+    final GemmaModelInfo active = _resolveActiveModel(
       models,
       preferredId: prefs.selectedModelId,
     );
@@ -80,19 +80,17 @@ class AiInferenceNotifier extends _$AiInferenceNotifier {
 
   /// Picks the median-ranked model unless [preferredId] is set
   /// and present in the catalog.
-  AiModelInfo _resolveActiveModel(
-    List<AiModelInfo> models, {
+  GemmaModelInfo _resolveActiveModel(
+    List<GemmaModelInfo> models, {
     String? preferredId,
   }) {
     if (preferredId != null) {
-      for (final AiModelInfo m in models) {
+      for (final GemmaModelInfo m in models) {
         if (m.id == preferredId) return m;
       }
     }
-    final List<AiModelInfo> sorted = <AiModelInfo>[...models]
-      ..sort(
-        (AiModelInfo a, AiModelInfo b) => a.sortOrder.compareTo(b.sortOrder),
-      );
+    final List<GemmaModelInfo> sorted = <GemmaModelInfo>[...models]
+      ..sort((GemmaModelInfo a, GemmaModelInfo b) => a.id.compareTo(b.id));
     return sorted[sorted.length ~/ 2];
   }
 
@@ -102,9 +100,9 @@ class AiInferenceNotifier extends _$AiInferenceNotifier {
   /// progress and ends in [AiReady] on success.
   Future<void> downloadLocalModel() async {
     final AiInferenceState? current = state.value;
-    final AiModelInfo? model = switch (current) {
-      AiLocalModelMissing(:final AiModelInfo model) => model,
-      AiDownloading(:final AiModelInfo model) => model,
+    final GemmaModelInfo? model = switch (current) {
+      AiLocalModelMissing(:final GemmaModelInfo model) => model,
+      AiDownloading(:final GemmaModelInfo model) => model,
       _ => null,
     };
     if (model == null) return;
@@ -141,7 +139,7 @@ class AiInferenceNotifier extends _$AiInferenceNotifier {
   ///
   /// Safe to call fire-and-forget; the `build()` guard preserves
   /// `AiDownloading` state even if prefs change mid-download.
-  Future<void> triggerLocalDownload(AiModelInfo model) async {
+  Future<void> triggerLocalDownload(GemmaModelInfo model) async {
     state = AsyncData(AiDownloading(model: model, progress: 0));
 
     final AiInferenceRepository repo = ref.read(aiInferenceRepositoryProvider);
@@ -166,7 +164,7 @@ class AiInferenceNotifier extends _$AiInferenceNotifier {
   }
 
   /// Persist a different active model and reload state.
-  Future<void> setActiveModel(AiModelInfo model) async {
+  Future<void> setActiveModel(GemmaModelInfo model) async {
     await ref
         .read(appPreferencesNotifierProvider.notifier)
         .setSelectedModel(model.id);
