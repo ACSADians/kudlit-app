@@ -15,15 +15,16 @@ String _$baybayinDetectorHash() => r'baybayinDetector';
 final baybayinDetectorProvider = Provider<BaybayinDetector>.internal(
   baybayinDetector,
   name: r'baybayinDetectorProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$baybayinDetectorHash,
+  from: null,
+  argument: null,
+  isAutoDispose: false,
   dependencies: null,
-  allTransitiveDependencies: null,
+  $allTransitiveDependencies: null,
+  retry: null,
 );
 
 @Deprecated('Will be removed in 3.0. Use Ref instead.')
-typedef BaybayinDetectorRef = ProviderRef<BaybayinDetector>;
+typedef BaybayinDetectorRef = Ref;
 
 String _$scannerNotifierHash() => r'scannerNotifier';
 
@@ -32,20 +33,21 @@ String _$scannerNotifierHash() => r'scannerNotifier';
 /// Copied from [ScannerNotifier].
 @ProviderFor(ScannerNotifier)
 final scannerNotifierProvider =
-    AutoDisposeNotifierProvider<
+    NotifierProvider<
       ScannerNotifier,
       List<BaybayinDetection>
     >.internal(
       ScannerNotifier.new,
       name: r'scannerNotifierProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$scannerNotifierHash,
+      from: null,
+      argument: null,
+      isAutoDispose: true,
       dependencies: null,
-      allTransitiveDependencies: null,
+      $allTransitiveDependencies: null,
+      retry: null,
     );
 
-typedef _$ScannerNotifier = AutoDisposeNotifier<List<BaybayinDetection>>;
+typedef _$ScannerNotifier = Notifier<List<BaybayinDetection>>;
 
 // ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
+// ignore_for_file: unused_element, subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

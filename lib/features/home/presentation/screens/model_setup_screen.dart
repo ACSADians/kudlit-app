@@ -33,7 +33,7 @@ class _ModelSetupScreenState extends ConsumerState<ModelSetupScreen> {
   Widget build(BuildContext context) {
     final AiInferenceState? inferenceState = ref
         .watch(aiInferenceNotifierProvider)
-        .valueOrNull;
+        .value;
     final AiModelInfo? model = _resolveModel(inferenceState);
 
     return Scaffold(

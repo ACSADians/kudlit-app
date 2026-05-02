@@ -22,7 +22,7 @@ class ChatHistoryNotifier extends _$ChatHistoryNotifier {
 
   Future<void> addMessage(ChatMessage message) async {
     final ChatMessage saved = await _datasource.insert(message);
-    final List<ChatMessage> current = state.valueOrNull ?? <ChatMessage>[];
+    final List<ChatMessage> current = state.value ?? <ChatMessage>[];
     state = AsyncData(<ChatMessage>[...current, saved]);
   }
 

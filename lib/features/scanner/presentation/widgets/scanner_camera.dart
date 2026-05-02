@@ -8,6 +8,7 @@ import 'package:kudlit_ph/features/scanner/domain/entities/baybayin_detection.da
 import 'package:kudlit_ph/features/scanner/presentation/providers/scanner_provider.dart';
 import 'package:kudlit_ph/features/scanner/presentation/providers/yolo_model_selection_provider.dart';
 import 'package:kudlit_ph/features/scanner/presentation/widgets/model_not_ready_screen.dart';
+import 'package:kudlit_ph/features/scanner/presentation/widgets/model_not_supported_screen.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/yolo_sim_overlay.dart';
 
 /// How often the detection output is forwarded to [ScannerCamera.onDetections].
@@ -141,6 +142,11 @@ class _ScannerCameraState extends ConsumerState<ScannerCamera> {
   Widget build(BuildContext context) {
     if (kIsWeb) {
       return const _WebCameraFallback();
+    }
+
+    final bool capable = ref.watch(deviceInferenceCapableProvider);
+    if (!capable) {
+      return const ModelNotSupportedScreen();
     }
 
     // Resolve the active model for the camera scope, downloading on demand

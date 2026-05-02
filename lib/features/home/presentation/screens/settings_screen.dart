@@ -16,7 +16,7 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AsyncValue<AuthUser?> authState = ref.watch(authNotifierProvider);
-    final AuthUser? user = authState.valueOrNull;
+    final AuthUser? user = authState.value;
     final double bottom = MediaQuery.paddingOf(context).bottom;
 
     return Scaffold(

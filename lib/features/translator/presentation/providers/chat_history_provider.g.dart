@@ -6,19 +6,18 @@ part of 'chat_history_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$chatHistoryNotifierHash() =>
-    r'c0000000000000000000000000000000000000c1';
 
 @ProviderFor(ChatHistoryNotifier)
 final chatHistoryNotifierProvider =
     AsyncNotifierProvider<ChatHistoryNotifier, List<ChatMessage>>.internal(
       ChatHistoryNotifier.new,
       name: r'chatHistoryNotifierProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$chatHistoryNotifierHash,
+      from: null,
+      argument: null,
+      isAutoDispose: true,
       dependencies: null,
-      allTransitiveDependencies: null,
+      $allTransitiveDependencies: null,
+      retry: null,
     );
 
 typedef _$ChatHistoryNotifier = AsyncNotifier<List<ChatMessage>>;

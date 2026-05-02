@@ -24,7 +24,7 @@ class AiInferenceNotifier extends _$AiInferenceNotifier {
   @override
   Future<AiInferenceState> build() async {
     // Don't interrupt an active download triggered from the setup screen.
-    final AiInferenceState? prev = state.valueOrNull;
+    final AiInferenceState? prev = state.value;
     if (prev is AiDownloading) return prev;
 
     final AiInferenceRepository repo = ref.watch(aiInferenceRepositoryProvider);
@@ -101,7 +101,7 @@ class AiInferenceNotifier extends _$AiInferenceNotifier {
   /// Starts/continues the local model download. Updates state with
   /// progress and ends in [AiReady] on success.
   Future<void> downloadLocalModel() async {
-    final AiInferenceState? current = state.valueOrNull;
+    final AiInferenceState? current = state.value;
     final AiModelInfo? model = switch (current) {
       AiLocalModelMissing(:final AiModelInfo model) => model,
       AiDownloading(:final AiModelInfo model) => model,

@@ -38,7 +38,7 @@ GoRouter appRouter(Ref ref) {
       // Splash: hold while loading, then route to correct destination.
       if (state.matchedLocation == AppConstants.routeSplash) {
         if (authState.isLoading || prefsState.isLoading) return null;
-        final AppPreferences? prefs = prefsState.valueOrNull;
+        final AppPreferences? prefs = prefsState.value;
         // Show model setup if: on mobile, models not yet downloaded, and the
         // user hasn't already acknowledged the prompt (legacy skip or download).
         final bool needsModelSetup =
@@ -57,7 +57,7 @@ GoRouter appRouter(Ref ref) {
         if (authState.isLoading || prefsState.isLoading) {
           return AppConstants.routeSplash;
         }
-        final AppPreferences? prefs = prefsState.valueOrNull;
+        final AppPreferences? prefs = prefsState.value;
         final bool handled =
             (prefs?.hasDownloadedModels ?? false) ||
             (prefs?.hasSeenModelPrompt ?? false) ||

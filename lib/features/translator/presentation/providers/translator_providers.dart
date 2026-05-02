@@ -50,7 +50,7 @@ AiInferenceRepository aiInferenceRepository(Ref ref) {
       final AsyncValue<AppPreferences> prefs = ref.read(
         appPreferencesNotifierProvider,
       );
-      return prefs.valueOrNull?.aiPreference ?? AiPreference.cloud;
+      return prefs.value?.aiPreference ?? AiPreference.cloud;
     },
   );
   ref.onDispose(repo.dispose);

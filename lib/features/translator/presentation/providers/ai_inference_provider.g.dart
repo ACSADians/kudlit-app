@@ -6,19 +6,18 @@ part of 'ai_inference_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$aiInferenceNotifierHash() =>
-    r'b0000000000000000000000000000000000000b1';
 
 @ProviderFor(AiInferenceNotifier)
 final aiInferenceNotifierProvider =
     AsyncNotifierProvider<AiInferenceNotifier, AiInferenceState>.internal(
       AiInferenceNotifier.new,
       name: r'aiInferenceNotifierProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$aiInferenceNotifierHash,
+      from: null,
+      argument: null,
+      isAutoDispose: false,
       dependencies: null,
-      allTransitiveDependencies: null,
+      $allTransitiveDependencies: null,
+      retry: null,
     );
 
 typedef _$AiInferenceNotifier = AsyncNotifier<AiInferenceState>;

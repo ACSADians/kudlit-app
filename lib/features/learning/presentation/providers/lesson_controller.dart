@@ -1,5 +1,6 @@
 // ignore: unnecessary_import — flutter_riverpod is needed for Ref resolution
 import 'package:flutter/painting.dart' show Offset;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -44,7 +45,7 @@ class LessonController extends _$LessonController {
   /// Submits a drawing attempt. Stub: always treats as correct so the
   /// stage flow is fully wired. Replace with real similarity check later.
   Future<void> submitDraw(List<List<Offset>> strokes) async {
-    final LessonState? current = state.valueOrNull;
+    final LessonState? current = state.value;
     if (current == null || current.completed) return;
     if (current.attemptStatus == AttemptStatus.checking) return;
 
@@ -67,7 +68,7 @@ class LessonController extends _$LessonController {
 
   /// Validates a typed answer for [LessonMode.freeInput] steps.
   Future<void> submitText(String value) async {
-    final LessonState? current = state.valueOrNull;
+    final LessonState? current = state.value;
     if (current == null || current.completed) return;
     final LessonStep step = current.currentStep;
     if (step.mode != LessonMode.freeInput) return;
@@ -87,7 +88,7 @@ class LessonController extends _$LessonController {
 
   /// Used by [LessonMode.reference] steps: user taps "Got it" to continue.
   void acknowledge() {
-    final LessonState? current = state.valueOrNull;
+    final LessonState? current = state.value;
     if (current == null) return;
     state = AsyncData<LessonState?>(
       current.copyWith(attemptStatus: AttemptStatus.correct),
@@ -96,7 +97,7 @@ class LessonController extends _$LessonController {
 
   /// Advances to the next step or marks the lesson complete.
   void next() {
-    final LessonState? current = state.valueOrNull;
+    final LessonState? current = state.value;
     if (current == null) return;
     final int nextIndex = current.currentStepIndex + 1;
     if (nextIndex >= current.lesson.steps.length) {
@@ -120,7 +121,7 @@ class LessonController extends _$LessonController {
   }
 
   void resetAttempt() {
-    final LessonState? current = state.valueOrNull;
+    final LessonState? current = state.value;
     if (current == null) return;
     state = AsyncData<LessonState?>(
       current.copyWith(
