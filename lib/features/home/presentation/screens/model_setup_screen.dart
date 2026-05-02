@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,12 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kudlit_ph/core/design_system/kudlit_colors.dart';
 import 'package:kudlit_ph/features/auth/presentation/widgets/baybayin_backdrop.dart';
 import 'package:kudlit_ph/features/home/presentation/providers/app_preferences_provider.dart';
-import 'package:kudlit_ph/features/home/presentation/widgets/model_setup_model_card.dart';
 import 'package:kudlit_ph/features/scanner/data/datasources/yolo_model_cache.dart';
 import 'package:kudlit_ph/features/scanner/presentation/providers/yolo_model_selection_provider.dart';
 import 'package:kudlit_ph/features/translator/domain/entities/ai_model_info.dart';
+import 'package:kudlit_ph/features/translator/domain/entities/gemma_model_info.dart';
 import 'package:kudlit_ph/features/translator/presentation/providers/ai_inference_provider.dart';
-import 'package:kudlit_ph/features/translator/presentation/providers/ai_inference_state.dart';
+import 'package:kudlit_ph/features/translator/presentation/providers/translator_providers.dart';
 
 /// Shown once on first launch (mobile only).
 ///
@@ -28,13 +26,22 @@ class ModelSetupScreen extends ConsumerStatefulWidget {
 
 class _ModelSetupScreenState extends ConsumerState<ModelSetupScreen> {
   bool _busy = false;
+  GemmaModelInfo? _selectedGemma;
+  AiModelInfo? _selectedYolo;
 
   @override
   Widget build(BuildContext context) {
-    final AiInferenceState? inferenceState = ref
-        .watch(aiInferenceNotifierProvider)
-        .value;
-    final AiModelInfo? model = _resolveModel(inferenceState);
+    final List<GemmaModelInfo> gemmaModels =
+        ref.watch(availableGemmaModelsProvider).value ?? const [];
+    final List<AiModelInfo> yoloModels =
+        ref.watch(availableYoloModelsProvider).value ?? const [];
+
+    if (_selectedGemma == null && gemmaModels.isNotEmpty) {
+      _selectedGemma = gemmaModels.first;
+    }
+    if (_selectedYolo == null && yoloModels.isNotEmpty) {
+      _selectedYolo = yoloModels.first;
+    }
 
     return Scaffold(
       backgroundColor: KudlitColors.neutralBlack,
@@ -43,9 +50,16 @@ class _ModelSetupScreenState extends ConsumerState<ModelSetupScreen> {
         children: <Widget>[
           const _SetupBackground(),
           _ModelSetupBody(
-            model: model,
+            gemmaModels: gemmaModels,
+            yoloModels: yoloModels,
+            selectedGemma: _selectedGemma,
+            selectedYolo: _selectedYolo,
             busy: _busy,
-            onDownload: model != null ? () => _onDownload(model) : null,
+            onGemmaChanged: (GemmaModelInfo? m) =>
+                setState(() => _selectedGemma = m),
+            onYoloChanged: (AiModelInfo? m) =>
+                setState(() => _selectedYolo = m),
+            onDownloadAll: _selectedGemma != null ? _onDownloadAll : null,
             onSkip: _onSkip,
           ),
         ],
@@ -53,39 +67,34 @@ class _ModelSetupScreenState extends ConsumerState<ModelSetupScreen> {
     );
   }
 
-  AiModelInfo? _resolveModel(AiInferenceState? s) => switch (s) {
-    AiReady(:final AiModelInfo activeModel) => activeModel,
-    AiLocalModelMissing(:final AiModelInfo model) => model,
-    AiDownloading(:final AiModelInfo model) => model,
-    _ => null,
-  };
-
-  Future<void> _onDownload(AiModelInfo model) async {
-    if (_busy) return;
+  Future<void> _onDownloadAll() async {
+    if (_busy || _selectedGemma == null) return;
     setState(() => _busy = true);
 
-    // Kick off both downloads in parallel.
-    // 1. Gemma (AI chat / translation) via AiInferenceNotifier.
-    ref.read(aiInferenceNotifierProvider.notifier).triggerLocalDownload(model);
+    ref
+        .read(aiInferenceNotifierProvider.notifier)
+        .triggerLocalDownload(_selectedGemma!);
 
-    // 2. YOLO (Baybayin camera detection) via YoloModelCache.
-    //    URL is read from the baybayin_models table via AiModelInfo.
-    if (!kIsWeb) {
-      final String yoloUrl = Platform.isIOS
-          ? (model.iosModelLink ?? model.modelLink)
-          : (model.androidModelLink ?? model.modelLink);
+    if (!kIsWeb && _selectedYolo != null) {
+      final AiModelInfo yolo = _selectedYolo!;
+      final String yoloUrl;
+      if (defaultTargetPlatform == TargetPlatform.iOS) {
+        yoloUrl = yolo.iosModelLink ?? yolo.modelLink;
+      } else if (defaultTargetPlatform == TargetPlatform.android) {
+        yoloUrl = yolo.androidModelLink ?? yolo.modelLink;
+      } else {
+        yoloUrl = yolo.modelLink;
+      }
       if (yoloUrl.isNotEmpty) {
         try {
           await YoloModelCache.instance.download(
-            model.id,
+            yolo.id,
             yoloUrl,
-            version: model.version,
+            version: yolo.version,
           );
-          // Refresh every scope's path resolver so any open scanner reloads.
           ref.invalidate(yoloModelPathProvider);
         } catch (e) {
           debugPrint('[ModelSetup] YOLO download failed: $e');
-          // Non-fatal — camera will retry on next watch.
         }
       }
     }
@@ -96,15 +105,11 @@ class _ModelSetupScreenState extends ConsumerState<ModelSetupScreen> {
     await ref
         .read(appPreferencesNotifierProvider.notifier)
         .markModelsDownloaded();
-    // Router redirects automatically when hasDownloadedModels becomes true.
   }
 
   Future<void> _onSkip() async {
     if (_busy) return;
     setState(() => _busy = true);
-    // Set a session-only flag — no persistence.
-    // The router will navigate away this session, but on the next cold
-    // launch the setup screen shows again until models are downloaded.
     ref.read(modelSetupSkippedProvider.notifier).state = true;
   }
 }
@@ -158,15 +163,25 @@ class _SetupBackground extends StatelessWidget {
 
 class _ModelSetupBody extends StatelessWidget {
   const _ModelSetupBody({
-    required this.model,
+    required this.gemmaModels,
+    required this.yoloModels,
+    required this.selectedGemma,
+    required this.selectedYolo,
     required this.busy,
-    required this.onDownload,
+    required this.onGemmaChanged,
+    required this.onYoloChanged,
+    required this.onDownloadAll,
     required this.onSkip,
   });
 
-  final AiModelInfo? model;
+  final List<GemmaModelInfo> gemmaModels;
+  final List<AiModelInfo> yoloModels;
+  final GemmaModelInfo? selectedGemma;
+  final AiModelInfo? selectedYolo;
   final bool busy;
-  final VoidCallback? onDownload;
+  final ValueChanged<GemmaModelInfo?> onGemmaChanged;
+  final ValueChanged<AiModelInfo?> onYoloChanged;
+  final VoidCallback? onDownloadAll;
   final VoidCallback onSkip;
 
   @override
@@ -182,11 +197,22 @@ class _ModelSetupBody extends StatelessWidget {
             const SizedBox(height: 20),
             const _SetupHeadline(),
             const SizedBox(height: 18),
-            ModelSetupModelCard(model: model),
+            _ModelSelectionSection(
+              gemmaModels: gemmaModels,
+              yoloModels: yoloModels,
+              selectedGemma: selectedGemma,
+              selectedYolo: selectedYolo,
+              onGemmaChanged: onGemmaChanged,
+              onYoloChanged: onYoloChanged,
+            ),
             const SizedBox(height: 10),
             const _DownloadNotice(),
             const Spacer(flex: 3),
-            _SetupActions(busy: busy, onDownload: onDownload, onSkip: onSkip),
+            _SetupActions(
+              busy: busy,
+              onDownloadAll: onDownloadAll,
+              onSkip: onSkip,
+            ),
             const SizedBox(height: 12),
           ],
         ),
@@ -283,12 +309,12 @@ class _DownloadNotice extends StatelessWidget {
 class _SetupActions extends StatelessWidget {
   const _SetupActions({
     required this.busy,
-    required this.onDownload,
+    required this.onDownloadAll,
     required this.onSkip,
   });
 
   final bool busy;
-  final VoidCallback? onDownload;
+  final VoidCallback? onDownloadAll;
   final VoidCallback onSkip;
 
   @override
@@ -297,7 +323,7 @@ class _SetupActions extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         FilledButton.icon(
-          onPressed: busy ? null : onDownload,
+          onPressed: busy ? null : onDownloadAll,
           icon: busy
               ? const SizedBox(
                   width: 16,
@@ -308,7 +334,7 @@ class _SetupActions extends StatelessWidget {
                   ),
                 )
               : const Icon(Icons.download_rounded),
-          label: const Text('Download AI model'),
+          label: const Text('Download all'),
           style: FilledButton.styleFrom(
             backgroundColor: KudlitColors.blue400,
             foregroundColor: KudlitColors.blue900,
@@ -328,6 +354,99 @@ class _SetupActions extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _ModelSelectionSection extends StatelessWidget {
+  const _ModelSelectionSection({
+    required this.gemmaModels,
+    required this.yoloModels,
+    required this.selectedGemma,
+    required this.selectedYolo,
+    required this.onGemmaChanged,
+    required this.onYoloChanged,
+  });
+
+  final List<GemmaModelInfo> gemmaModels;
+  final List<AiModelInfo> yoloModels;
+  final GemmaModelInfo? selectedGemma;
+  final AiModelInfo? selectedYolo;
+  final ValueChanged<GemmaModelInfo?> onGemmaChanged;
+  final ValueChanged<AiModelInfo?> onYoloChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        _ModelDropdown<GemmaModelInfo>(
+          label: 'Translation model (Gemma)',
+          models: gemmaModels,
+          selected: selectedGemma,
+          onChanged: onGemmaChanged,
+          nameOf: (GemmaModelInfo m) => m.name,
+        ),
+        const SizedBox(height: 10),
+        _ModelDropdown<AiModelInfo>(
+          label: 'Recognition model (YOLO)',
+          models: yoloModels,
+          selected: selectedYolo,
+          onChanged: onYoloChanged,
+          nameOf: (AiModelInfo m) => m.name,
+        ),
+      ],
+    );
+  }
+}
+
+class _ModelDropdown<T> extends StatelessWidget {
+  const _ModelDropdown({
+    required this.label,
+    required this.models,
+    required this.selected,
+    required this.onChanged,
+    required this.nameOf,
+  });
+
+  final String label;
+  final List<T> models;
+  final T? selected;
+  final ValueChanged<T?> onChanged;
+  final String Function(T) nameOf;
+
+  @override
+  Widget build(BuildContext context) {
+    return DropdownButtonFormField<T>(
+      initialValue: selected,
+      items: models
+          .map((T m) => DropdownMenuItem<T>(value: m, child: Text(nameOf(m))))
+          .toList(growable: false),
+      onChanged: models.isEmpty ? null : onChanged,
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: const TextStyle(color: KudlitColors.blue800, fontSize: 13),
+        filled: true,
+        fillColor: KudlitColors.blue100,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 12,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: KudlitColors.blue300.withAlpha(80)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: KudlitColors.blue300.withAlpha(80)),
+        ),
+      ),
+      dropdownColor: KudlitColors.blue100,
+      style: const TextStyle(color: KudlitColors.blue900, fontSize: 14),
+      hint: Text(
+        models.isEmpty ? 'Loading…' : 'Select a model',
+        style: const TextStyle(color: KudlitColors.blue800, fontSize: 14),
+      ),
     );
   }
 }

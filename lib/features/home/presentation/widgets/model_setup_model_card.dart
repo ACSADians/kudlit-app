@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
 
 import 'package:kudlit_ph/core/design_system/kudlit_colors.dart';
-import 'package:kudlit_ph/features/translator/domain/entities/ai_model_info.dart';
 
-/// Card displaying a single AI model's name and description.
+/// Card displaying a single model's name.
 ///
-/// Shows a loading skeleton when [model] is null (inference state still
-/// loading from Supabase).
+/// Shows a loading skeleton when [modelName] is null (catalog still loading
+/// from Supabase).
 class ModelSetupModelCard extends StatelessWidget {
-  const ModelSetupModelCard({required this.model, super.key});
+  const ModelSetupModelCard({required this.modelName, super.key});
 
-  final AiModelInfo? model;
+  final String? modelName;
 
   @override
   Widget build(BuildContext context) {
@@ -21,17 +20,17 @@ class ModelSetupModelCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: KudlitColors.blue300.withAlpha(80)),
       ),
-      child: model == null
+      child: modelName == null
           ? const _CardSkeleton()
-          : _CardContent(model: model!),
+          : _CardContent(modelName: modelName!),
     );
   }
 }
 
 class _CardContent extends StatelessWidget {
-  const _CardContent({required this.model});
+  const _CardContent({required this.modelName});
 
-  final AiModelInfo model;
+  final String modelName;
 
   @override
   Widget build(BuildContext context) {
@@ -45,24 +44,13 @@ class _CardContent extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               Text(
-                model.name,
+                modelName,
                 style: const TextStyle(
                   color: KudlitColors.blue900,
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              if (model.description != null) ...<Widget>[
-                const SizedBox(height: 4),
-                Text(
-                  model.description!,
-                  style: const TextStyle(
-                    color: KudlitColors.grey300,
-                    fontSize: 13,
-                    height: 1.4,
-                  ),
-                ),
-              ],
               const SizedBox(height: 6),
               const _OfflineBadge(),
             ],
