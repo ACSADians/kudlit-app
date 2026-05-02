@@ -42,6 +42,7 @@ class LocalGemmaDatasource {
     try {
       final InferenceInstallationBuilder builder = FlutterGemma.installModel(
         modelType: ModelType.gemmaIt,
+        fileType: ModelFileType.litertlm,
       ).fromNetwork(_platformLinkFor(model)).withCancelToken(_cancelToken!);
 
       if (onProgress != null) {
