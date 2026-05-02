@@ -7,8 +7,11 @@ part of 'chat_history_provider.dart';
 // **************************************************************************
 
 String _$chatHistoryNotifierHash() =>
-    r'c0000000000000000000000000000000000000c1';
+    r'323ae043e62e0a589a4bfc4397f7fc00b4ed9370';
 
+/// Persisted Butty chat history backed by sqflite.
+///
+/// Copied from [ChatHistoryNotifier].
 @ProviderFor(ChatHistoryNotifier)
 final chatHistoryNotifierProvider =
     AsyncNotifierProvider<ChatHistoryNotifier, List<ChatMessage>>.internal(
@@ -22,6 +25,5 @@ final chatHistoryNotifierProvider =
     );
 
 typedef _$ChatHistoryNotifier = AsyncNotifier<List<ChatMessage>>;
-
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

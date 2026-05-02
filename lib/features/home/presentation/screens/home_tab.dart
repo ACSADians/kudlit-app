@@ -136,7 +136,6 @@ class _ToolsRow extends StatelessWidget {
   }
 }
 
-
 class _LessonsGrid extends StatelessWidget {
   const _LessonsGrid();
 

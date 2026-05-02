@@ -48,6 +48,35 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<Either<Failure, Unit>> sendPhoneOtp({
+    required String phoneNumber,
+  }) async {
+    try {
+      await _datasource.sendPhoneOtp(phoneNumber: phoneNumber);
+      return right(unit);
+    } on ServerException catch (e) {
+      return left(_mapServerExceptionToFailure(e));
+    } on Exception {
+      return left(const Failure.network(message: 'Unexpected network error.'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, Unit>> verifyPhoneOtp({
+    required String phoneNumber,
+    required String token,
+  }) async {
+    try {
+      await _datasource.verifyPhoneOtp(phoneNumber: phoneNumber, token: token);
+      return right(unit);
+    } on ServerException catch (e) {
+      return left(_mapServerExceptionToFailure(e));
+    } on Exception {
+      return left(const Failure.network(message: 'Unexpected network error.'));
+    }
+  }
+
+  @override
   Future<Either<Failure, SignUpStatus>> signUpWithEmail({
     required String email,
     required String password,
@@ -102,6 +131,12 @@ class AuthRepositoryImpl implements AuthRepository {
     }
     if (msg.contains('weak password') || msg.contains('password should be')) {
       return const Failure.weakPassword();
+    }
+    if (msg.contains('invalid otp') ||
+        msg.contains('otp expired') ||
+        msg.contains('token has expired') ||
+        msg.contains('expired token')) {
+      return const Failure.invalidCredentials();
     }
     return Failure.unknown(message: e.message);
   }

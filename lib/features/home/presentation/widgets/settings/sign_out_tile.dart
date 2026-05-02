@@ -1,11 +1,7 @@
 import 'package:flutter/material.dart';
 
 class SignOutTile extends StatefulWidget {
-  const SignOutTile({
-    super.key,
-    required this.onTap,
-    this.isLoading = false,
-  });
+  const SignOutTile({super.key, required this.onTap, this.isLoading = false});
 
   final VoidCallback onTap;
   final bool isLoading;

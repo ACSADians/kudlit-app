@@ -294,4 +294,3 @@ class _NavPill extends StatelessWidget {
     );
   }
 }
-

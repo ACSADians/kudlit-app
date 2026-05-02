@@ -22,25 +22,27 @@ void main() {
     password: 'password123',
   );
 
-  test('should return confirmationPending when email confirmation is required',
-      () async {
-    when(
-      () => mockRepository.signUpWithEmail(
-        email: any(named: 'email'),
-        password: any(named: 'password'),
-      ),
-    ).thenAnswer((_) async => const Right(SignUpStatus.confirmationPending));
+  test(
+    'should return confirmationPending when email confirmation is required',
+    () async {
+      when(
+        () => mockRepository.signUpWithEmail(
+          email: any(named: 'email'),
+          password: any(named: 'password'),
+        ),
+      ).thenAnswer((_) async => const Right(SignUpStatus.confirmationPending));
 
-    final Either<Failure, SignUpStatus> result = await useCase(tParams);
+      final Either<Failure, SignUpStatus> result = await useCase(tParams);
 
-    expect(result, const Right(SignUpStatus.confirmationPending));
-    verify(
-      () => mockRepository.signUpWithEmail(
-        email: tParams.email,
-        password: tParams.password,
-      ),
-    ).called(1);
-  });
+      expect(result, const Right(SignUpStatus.confirmationPending));
+      verify(
+        () => mockRepository.signUpWithEmail(
+          email: tParams.email,
+          password: tParams.password,
+        ),
+      ).called(1);
+    },
+  );
 
   test('should return autoConfirmed when signup creates a session', () async {
     when(

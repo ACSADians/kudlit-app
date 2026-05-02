@@ -142,7 +142,6 @@ class _CardSkeleton extends StatelessWidget {
   }
 }
 
-
 class _SkeletonBox extends StatelessWidget {
   const _SkeletonBox({
     required this.width,
