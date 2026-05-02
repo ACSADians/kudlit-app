@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:genkit/genkit.dart';
 import 'package:genkit/src/ai/generate.dart' show GenerateResponse;
@@ -7,6 +5,7 @@ import 'package:genkit/src/ai/generate.dart' show GenerateResponse;
 import 'package:kudlit_ph/features/translator/data/datasources/cloud_gemma_datasource.dart';
 import 'package:kudlit_ph/features/translator/domain/entities/baybayin_challenge.dart';
 import 'package:kudlit_ph/features/translator/domain/entities/chat_message.dart';
+import 'package:schemantic/schemantic.dart';
 
 // ─── Fake Genkit ─────────────────────────────────────────────────────────────
 
@@ -46,7 +45,7 @@ class FakeGenkit extends Fake implements Genkit {
     bool? outputNoInstructions,
     String? outputContentType,
     Map<String, dynamic>? context,
-    StreamingCallback<GenerateResponseChunk>? onChunk,
+    void Function(GenerateResponseChunk)? onChunk,
   }) async {
     if (throwOnGenerate != null) throw throwOnGenerate!;
 
