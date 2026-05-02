@@ -33,7 +33,9 @@ class AiInferenceRepositoryImpl implements AiInferenceRepository {
   @override
   Future<Either<Failure, List<AiModelInfo>>> getAvailableModels() async {
     try {
-      final List<AiModelInfo> models = await modelsDatasource.fetchModels();
+      final List<AiModelInfo> models = await modelsDatasource.fetchModels(
+        type: ModelKind.llm,
+      );
       return right(models);
     } on ServerException catch (e) {
       return left(Failure.network(message: e.message));

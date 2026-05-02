@@ -60,33 +60,40 @@ class _ModelSetupScreenState extends ConsumerState<ModelSetupScreen> {
     _ => null,
   };
 
-  Future<void> _onDownload(AiModelInfo model) async {
+  Future<void> _onDownload(AiModelInfo llmModel) async {
     if (_busy) return;
     setState(() => _busy = true);
 
-    // Kick off both downloads in parallel.
-    // 1. Gemma (AI chat / translation) via AiInferenceNotifier.
-    ref.read(aiInferenceNotifierProvider.notifier).triggerLocalDownload(model);
+    // 1. Gemma LLM (offline chatbot / Butty) — flutter_gemma / MediaPipe.
+    //    Fires in the background; AiInferenceNotifier tracks progress.
+    ref
+        .read(aiInferenceNotifierProvider.notifier)
+        .triggerLocalDownload(llmModel);
 
-    // 2. YOLO (Baybayin camera detection) via YoloModelCache.
-    //    URL is read from the baybayin_models table via AiModelInfo.
+    // 2. KudVis vision model (OCR / camera detection) — YoloModelCache.
+    //    Uses a separate vision-typed row from the catalog, never the LLM model.
     if (!kIsWeb) {
-      final String yoloUrl = Platform.isIOS
-          ? (model.iosModelLink ?? model.modelLink)
-          : (model.androidModelLink ?? model.modelLink);
-      if (yoloUrl.isNotEmpty) {
-        try {
-          await YoloModelCache.instance.download(
-            model.id,
-            yoloUrl,
-            version: model.version,
-          );
-          // Refresh every scope's path resolver so any open scanner reloads.
-          ref.invalidate(yoloModelPathProvider);
-        } catch (e) {
-          debugPrint('[ModelSetup] YOLO download failed: $e');
-          // Non-fatal — camera will retry on next watch.
+      try {
+        final List<AiModelInfo> visionModels =
+            await ref.read(availableYoloModelsProvider.future);
+        final AiModelInfo? visionModel =
+            visionModels.isNotEmpty ? visionModels.first : null;
+        if (visionModel != null) {
+          final String yoloUrl = Platform.isIOS
+              ? (visionModel.iosModelLink ?? visionModel.modelLink)
+              : (visionModel.androidModelLink ?? visionModel.modelLink);
+          if (yoloUrl.isNotEmpty) {
+            await YoloModelCache.instance.download(
+              visionModel.id,
+              yoloUrl,
+              version: visionModel.version,
+            );
+            ref.invalidate(yoloModelPathProvider);
+          }
         }
+      } catch (e) {
+        debugPrint('[ModelSetup] YOLO download failed: $e');
+        // Non-fatal — camera pipeline retries on next use.
       }
     }
 

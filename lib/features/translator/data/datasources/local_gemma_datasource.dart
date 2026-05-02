@@ -23,6 +23,7 @@ class LocalGemmaDatasource {
   InferenceChat? _chat;
 
   Future<bool> isInstalled(AiModelInfo model) async {
+    _assertLlmModel(model);
     try {
       return await FlutterGemma.isModelInstalled(model.fileName);
     } catch (e) {
@@ -36,6 +37,7 @@ class LocalGemmaDatasource {
     AiModelInfo model, {
     void Function(int progress)? onProgress,
   }) async {
+    _assertLlmModel(model);
     _cancelToken = CancelToken();
     try {
       final InferenceInstallationBuilder builder = FlutterGemma.installModel(
@@ -98,6 +100,16 @@ class LocalGemmaDatasource {
       return model.iosModelLink!;
     }
     return model.modelLink;
+  }
+
+  void _assertLlmModel(AiModelInfo model) {
+    if (model.modelType != ModelKind.llm) {
+      throw ServerException(
+        message: 'LocalGemmaDatasource only accepts LLM models. '
+            '"${model.name}" is a ${model.modelType.name} model and must not '
+            'be passed to flutter_gemma / MediaPipe LlmInference.',
+      );
+    }
   }
 
   Future<void> dispose() async {

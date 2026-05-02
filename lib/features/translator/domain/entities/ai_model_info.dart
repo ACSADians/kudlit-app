@@ -1,5 +1,11 @@
 import 'package:meta/meta.dart';
 
+/// Distinguishes the inference engine a model is built for.
+///
+/// - [llm]: offline chatbot via flutter_gemma / MediaPipe LlmInference.
+/// - [vision]: YOLO OCR detection model (TFLite on Android, mlpackage on iOS).
+enum ModelKind { llm, vision }
+
 /// Metadata describing an available Baybayin AI model.
 ///
 /// Mirrors the `public.baybayin_models` row in Supabase.
@@ -12,6 +18,7 @@ class AiModelInfo {
     required this.sortOrder,
     required this.version,
     required this.enabled,
+    this.modelType = ModelKind.llm,
     this.description,
     this.androidModelLink,
     this.iosModelLink,
@@ -45,6 +52,12 @@ class AiModelInfo {
   /// When false, the model is hidden from in-app selectors. Existing local
   /// downloads are left in place.
   final bool enabled;
+
+  /// Inference engine this model targets.
+  ///
+  /// [ModelKind.llm] → flutter_gemma / MediaPipe LlmInference (Butty chatbot).
+  /// [ModelKind.vision] → YOLO TFLite / mlpackage (OCR / camera pipeline).
+  final ModelKind modelType;
 
   /// Filename derived from [modelLink], used by `flutter_gemma`
   /// to check whether the model is already installed locally.

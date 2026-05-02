@@ -126,8 +126,10 @@ final yoloModelSelectionProvider =
 
 // ─── Catalog ─────────────────────────────────────────────────────────────────
 
-/// All enabled models from the Supabase catalog, ordered by `sort_order`.
+/// All enabled vision models from the Supabase catalog, ordered by `sort_order`.
 ///
+/// Only rows with `model_type = 'vision'` are returned — these are the YOLO
+/// TFLite / mlpackage files used for OCR and camera detection.
 /// Disabled rows (`enabled = false`) are filtered out at the data source.
 final availableYoloModelsProvider = FutureProvider<List<AiModelInfo>>((
   Ref ref,
@@ -135,7 +137,7 @@ final availableYoloModelsProvider = FutureProvider<List<AiModelInfo>>((
   final SupabaseAiModelsDatasource ds = ref.watch(
     supabaseAiModelsDatasourceProvider,
   );
-  final List<AiModelInfo> models = await ds.fetchModels();
+  final List<AiModelInfo> models = await ds.fetchModels(type: ModelKind.vision);
   return models;
 });
 
