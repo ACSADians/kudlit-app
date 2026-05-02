@@ -87,7 +87,7 @@ class LessonController extends _$LessonController {
 
       await for (final String chunk in responseStream) {
         buffer.write(chunk);
-        final LessonState? updated = state.valueOrNull;
+        final LessonState? updated = state.value;
         if (updated != null && updated.currentStepIndex == current.currentStepIndex) {
           state = AsyncData<LessonState?>(
             updated.copyWith(buttyMessage: buffer.toString()),
@@ -95,7 +95,7 @@ class LessonController extends _$LessonController {
         }
       }
     } catch (e) {
-      final LessonState? updated = state.valueOrNull;
+      final LessonState? updated = state.value;
       if (updated != null) {
         state = AsyncData<LessonState?>(
           updated.copyWith(

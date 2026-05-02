@@ -5,6 +5,7 @@ import 'package:kudlit_ph/features/home/presentation/providers/app_preferences_p
 
 import 'ai_preference_row.dart';
 import 'settings_card.dart';
+import 'settings_divider.dart';
 import 'settings_section_label.dart';
 import 'theme_row.dart';
 

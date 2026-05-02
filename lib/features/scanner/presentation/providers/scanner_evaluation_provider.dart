@@ -7,12 +7,13 @@ import 'package:kudlit_ph/features/scanner/domain/entities/baybayin_detection.da
 import 'package:kudlit_ph/features/translator/domain/entities/chat_message.dart';
 import 'package:kudlit_ph/features/translator/presentation/providers/ai_inference_provider.dart';
 
-final AutoDisposeNotifierProvider<ScannerEvaluationNotifier, AsyncValue<String>> scannerEvaluationProvider =
-    AutoDisposeNotifierProvider<ScannerEvaluationNotifier, AsyncValue<String>>(
-  ScannerEvaluationNotifier.new,
-);
+final NotifierProvider<ScannerEvaluationNotifier, AsyncValue<String>>
+scannerEvaluationProvider =
+    NotifierProvider<ScannerEvaluationNotifier, AsyncValue<String>>(
+      ScannerEvaluationNotifier.new,
+    );
 
-class ScannerEvaluationNotifier extends AutoDisposeNotifier<AsyncValue<String>> {
+class ScannerEvaluationNotifier extends Notifier<AsyncValue<String>> {
   @override
   AsyncValue<String> build() => const AsyncData<String>('');
 

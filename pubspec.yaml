@@ -66,13 +66,7 @@ dependencies:
   # File system paths (app support / documents directories)
   path_provider: ^2.1.5
   image_picker: ^1.2.1
-<<<<<<< HEAD
   google_generative_ai: ^0.4.7
-=======
-  genkit: ^0.10.0-dev.8
-  genkit_google_genai: ^0.0.1-dev.8
-  schemantic: ^0.0.1-dev.9
->>>>>>> eaf74a1 (Add Baybayin permutations, clickable chip, and update Riverpod (#10))
 
 dev_dependencies:
   flutter_test:

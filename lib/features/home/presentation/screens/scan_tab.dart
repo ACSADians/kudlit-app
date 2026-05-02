@@ -66,20 +66,30 @@ class _ScanTabState extends ConsumerState<ScanTab> {
 
     if (mounted) {
       ref.read(scannerNotifierProvider.notifier).update(results);
-<<<<<<< HEAD
       ref.read(scannerEvaluationProvider.notifier).evaluate(results, bytes);
-=======
       setState(() {
         _snapshot = List<BaybayinDetection>.of(results);
       });
->>>>>>> eaf74a1 (Add Baybayin permutations, clickable chip, and update Riverpod (#10))
     }
   }
 
   void _onShutterTapped() {
-    setState(() => _resultVisible = true);
     final List<BaybayinDetection> detections = ref.read(scannerNotifierProvider);
-    ref.read(scannerEvaluationProvider.notifier).evaluate(detections, _selectedImageBytes);
+    if (_resultVisible) {
+      setState(() {
+        _resultVisible = false;
+        _snapshot = const <BaybayinDetection>[];
+      });
+      return;
+    }
+
+    setState(() {
+      _snapshot = List<BaybayinDetection>.of(detections);
+      _resultVisible = true;
+    });
+    ref
+        .read(scannerEvaluationProvider.notifier)
+        .evaluate(detections, _selectedImageBytes);
   }
 
   void _clearSelectedImage() {
@@ -152,24 +162,7 @@ class _ScanTabState extends ConsumerState<ScanTab> {
           bottom: controlsBottom,
           child: _ScanControls(
             flashOn: _flashOn,
-<<<<<<< HEAD
             onShutter: _onShutterTapped,
-=======
-            onShutter: () {
-              final List<BaybayinDetection> current = ref.read(
-                scannerNotifierProvider,
-              );
-              setState(() {
-                if (_resultVisible) {
-                  _resultVisible = false;
-                  _snapshot = const <BaybayinDetection>[];
-                } else {
-                  _snapshot = List<BaybayinDetection>.of(current);
-                  _resultVisible = true;
-                }
-              });
-            },
->>>>>>> eaf74a1 (Add Baybayin permutations, clickable chip, and update Riverpod (#10))
             onFlashToggle: kIsWeb ? null : _toggleFlash,
             onGalleryTap: _pickImageFromGallery,
           ),
@@ -360,25 +353,17 @@ class _ShutterButton extends StatelessWidget {
 
 // ── Result panel ──────────────────────────────────────────────────────────────
 
-<<<<<<< HEAD
-class _ScanResultPanel extends ConsumerWidget {
-  const _ScanResultPanel({required this.onDismiss});
-=======
-class _ScanResultPanel extends StatefulWidget {
+class _ScanResultPanel extends ConsumerStatefulWidget {
   const _ScanResultPanel({required this.detections, required this.onDismiss});
->>>>>>> eaf74a1 (Add Baybayin permutations, clickable chip, and update Riverpod (#10))
 
   final List<BaybayinDetection> detections;
   final VoidCallback onDismiss;
 
   @override
-<<<<<<< HEAD
-  Widget build(BuildContext context, WidgetRef ref) {
-=======
-  State<_ScanResultPanel> createState() => _ScanResultPanelState();
+  ConsumerState<_ScanResultPanel> createState() => _ScanResultPanelState();
 }
 
-class _ScanResultPanelState extends State<_ScanResultPanel> {
+class _ScanResultPanelState extends ConsumerState<_ScanResultPanel> {
   int _index = 0;
 
   static List<String> _tokensFor(List<BaybayinDetection> dets) {
@@ -425,7 +410,6 @@ class _ScanResultPanelState extends State<_ScanResultPanel> {
 
   @override
   Widget build(BuildContext context) {
->>>>>>> eaf74a1 (Add Baybayin permutations, clickable chip, and update Riverpod (#10))
     final ColorScheme cs = Theme.of(context).colorScheme;
     final List<String> tokens = _tokens;
     final List<String> perms = _permutations;
@@ -504,16 +488,11 @@ class _ResultHandle extends StatelessWidget {
   }
 }
 
-<<<<<<< HEAD
 class _ResultText extends ConsumerWidget {
-  const _ResultText();
-=======
-class _ResultText extends StatelessWidget {
   const _ResultText({required this.current, required this.tokenPreview});
 
   final String current;
   final String tokenPreview;
->>>>>>> eaf74a1 (Add Baybayin permutations, clickable chip, and update Riverpod (#10))
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -523,28 +502,6 @@ class _ResultText extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-<<<<<<< HEAD
-        evaluation.when(
-          data: (String text) => Text(
-            text.isEmpty ? 'Analyzing...' : text,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: cs.onSurface,
-              height: 1.3,
-            ),
-          ),
-          loading: () => Text(
-            'Analyzing...',
-            style: TextStyle(
-              fontSize: 16,
-              color: cs.onSurface.withAlpha(150),
-            ),
-          ),
-          error: (Object err, _) => Text(
-            'Error: $err',
-            style: TextStyle(color: cs.error),
-=======
         Text(
           baybayifyWord(current),
           style: TextStyle(
@@ -563,7 +520,6 @@ class _ResultText extends StatelessWidget {
             fontWeight: FontWeight.w700,
             color: cs.onSurface,
             letterSpacing: -0.15,
->>>>>>> eaf74a1 (Add Baybayin permutations, clickable chip, and update Riverpod (#10))
           ),
         ),
         if (tokenPreview.isNotEmpty) ...<Widget>[
@@ -577,6 +533,29 @@ class _ResultText extends StatelessWidget {
             ),
           ),
         ],
+        const SizedBox(height: 8),
+        evaluation.when(
+          data: (String text) => Text(
+            text.isEmpty ? 'Analyzing...' : text,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: cs.onSurface.withAlpha(190),
+              height: 1.3,
+            ),
+          ),
+          loading: () => Text(
+            'Analyzing...',
+            style: TextStyle(
+              fontSize: 14,
+              color: cs.onSurface.withAlpha(150),
+            ),
+          ),
+          error: (Object err, StackTrace _) => Text(
+            'Error: $err',
+            style: TextStyle(color: cs.error),
+          ),
+        ),
       ],
     );
   }

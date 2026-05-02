@@ -116,8 +116,7 @@ class _VisionStatusRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final bool? installed =
-        ref.watch(_yoloInstalledProvider(model.id)).valueOrNull;
+    final bool? installed = ref.watch(_yoloInstalledProvider(model.id)).value;
 
     if (installed == null) return const _CheckingRow();
 

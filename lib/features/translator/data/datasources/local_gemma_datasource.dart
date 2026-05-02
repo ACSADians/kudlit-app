@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_gemma/flutter_gemma.dart';
 
 import 'package:kudlit_ph/core/error/exceptions.dart';
@@ -40,7 +42,7 @@ class LocalGemmaDatasource {
     try {
       final InferenceInstallationBuilder builder = FlutterGemma.installModel(
         modelType: ModelType.gemmaIt,
-      ).fromNetwork(model.platformLink).withCancelToken(_cancelToken!);
+      ).fromNetwork(_platformLinkFor(model)).withCancelToken(_cancelToken!);
 
       if (onProgress != null) {
         builder.withProgress(onProgress);
@@ -87,7 +89,6 @@ class LocalGemmaDatasource {
     }
   }
 
-<<<<<<< HEAD
   /// Returns the platform-appropriate download URL.
   ///
   /// Preference order: platform-specific link → generic [AiModelInfo.modelLink].
@@ -110,9 +111,6 @@ class LocalGemmaDatasource {
       );
     }
   }
-
-=======
->>>>>>> eaf74a1 (Add Baybayin permutations, clickable chip, and update Riverpod (#10))
   Future<void> dispose() async {
     await _activeModel?.close();
     _activeModel = null;
