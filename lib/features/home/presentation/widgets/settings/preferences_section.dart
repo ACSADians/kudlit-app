@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kudlit_ph/features/home/presentation/providers/app_preferences_provider.dart';
 
 import 'settings_card.dart';
-import 'settings_divider.dart';
 import 'settings_section_label.dart';
 import 'theme_row.dart';
 import 'ai_preference_row.dart';
