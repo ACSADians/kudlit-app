@@ -18,21 +18,17 @@ import 'package:kudlit_ph/features/home/domain/usecases/update_display_name.dart
 part 'profile_management_provider.g.dart';
 
 @riverpod
-SupabaseClient supabase(SupabaseRef ref) {
+SupabaseClient supabase(Ref ref) {
   return Supabase.instance.client;
 }
 
 @riverpod
-ProfileManagementDatasource profileManagementDatasource(
-  ProfileManagementDatasourceRef ref,
-) {
+ProfileManagementDatasource profileManagementDatasource(Ref ref) {
   return SupabaseProfileManagementDatasource(ref.watch(supabaseProvider));
 }
 
 @Riverpod(keepAlive: true)
-LocalProfileManagementDatasource localProfileManagementDatasource(
-  LocalProfileManagementDatasourceRef ref,
-) {
+LocalProfileManagementDatasource localProfileManagementDatasource(Ref ref) {
   final SqfliteProfileManagementDatasource ds =
       SqfliteProfileManagementDatasource();
   ref.onDispose(ds.dispose);
@@ -40,9 +36,7 @@ LocalProfileManagementDatasource localProfileManagementDatasource(
 }
 
 @riverpod
-ProfileManagementRepository profileManagementRepository(
-  ProfileManagementRepositoryRef ref,
-) {
+ProfileManagementRepository profileManagementRepository(Ref ref) {
   return ProfileManagementRepositoryImpl(
     ref.watch(profileManagementDatasourceProvider),
     ref.watch(localProfileManagementDatasourceProvider),
@@ -50,26 +44,22 @@ ProfileManagementRepository profileManagementRepository(
 }
 
 @riverpod
-GetProfileSummary getProfileSummaryUseCase(GetProfileSummaryUseCaseRef ref) {
+GetProfileSummary getProfileSummaryUseCase(Ref ref) {
   return GetProfileSummary(ref.watch(profileManagementRepositoryProvider));
 }
 
 @riverpod
-GetProfilePreferences getProfilePreferencesUseCase(
-  GetProfilePreferencesUseCaseRef ref,
-) {
+GetProfilePreferences getProfilePreferencesUseCase(Ref ref) {
   return GetProfilePreferences(ref.watch(profileManagementRepositoryProvider));
 }
 
 @riverpod
-UpdateDisplayName updateDisplayNameUseCase(UpdateDisplayNameUseCaseRef ref) {
+UpdateDisplayName updateDisplayNameUseCase(Ref ref) {
   return UpdateDisplayName(ref.watch(profileManagementRepositoryProvider));
 }
 
 @riverpod
-SaveProfilePreferences saveProfilePreferencesUseCase(
-  SaveProfilePreferencesUseCaseRef ref,
-) {
+SaveProfilePreferences saveProfilePreferencesUseCase(Ref ref) {
   return SaveProfilePreferences(ref.watch(profileManagementRepositoryProvider));
 }
 
