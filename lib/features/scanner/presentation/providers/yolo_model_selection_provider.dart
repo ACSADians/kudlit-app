@@ -162,7 +162,7 @@ final activeYoloModelProvider =
 
       return modelsAsync.whenData((List<AiModelInfo> models) {
         if (models.isEmpty) return null;
-        final YoloModelSelection? selection = selectionAsync.valueOrNull;
+        final YoloModelSelection? selection = selectionAsync.value;
         final String? selectedId = selection?.idFor(scope);
         if (selectedId != null) {
           for (final AiModelInfo m in models) {

@@ -17,7 +17,7 @@ class ActivitySection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final summary = ref
         .watch(profileSummaryNotifierProvider)
-        .valueOrNull
+        .value
         ?.toNullable();
 
     final int lessons = summary?.completedLessons ?? 0;

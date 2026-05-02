@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -17,21 +18,17 @@ import 'package:kudlit_ph/features/home/domain/usecases/update_display_name.dart
 part 'profile_management_provider.g.dart';
 
 @riverpod
-SupabaseClient supabase(SupabaseRef ref) {
+SupabaseClient supabase(Ref ref) {
   return Supabase.instance.client;
 }
 
 @riverpod
-ProfileManagementDatasource profileManagementDatasource(
-  ProfileManagementDatasourceRef ref,
-) {
+ProfileManagementDatasource profileManagementDatasource(Ref ref) {
   return SupabaseProfileManagementDatasource(ref.watch(supabaseProvider));
 }
 
 @Riverpod(keepAlive: true)
-LocalProfileManagementDatasource localProfileManagementDatasource(
-  LocalProfileManagementDatasourceRef ref,
-) {
+LocalProfileManagementDatasource localProfileManagementDatasource(Ref ref) {
   final SqfliteProfileManagementDatasource ds =
       SqfliteProfileManagementDatasource();
   ref.onDispose(ds.dispose);
@@ -39,9 +36,7 @@ LocalProfileManagementDatasource localProfileManagementDatasource(
 }
 
 @riverpod
-ProfileManagementRepository profileManagementRepository(
-  ProfileManagementRepositoryRef ref,
-) {
+ProfileManagementRepository profileManagementRepository(Ref ref) {
   return ProfileManagementRepositoryImpl(
     ref.watch(profileManagementDatasourceProvider),
     ref.watch(localProfileManagementDatasourceProvider),
@@ -49,26 +44,22 @@ ProfileManagementRepository profileManagementRepository(
 }
 
 @riverpod
-GetProfileSummary getProfileSummaryUseCase(GetProfileSummaryUseCaseRef ref) {
+GetProfileSummary getProfileSummaryUseCase(Ref ref) {
   return GetProfileSummary(ref.watch(profileManagementRepositoryProvider));
 }
 
 @riverpod
-GetProfilePreferences getProfilePreferencesUseCase(
-  GetProfilePreferencesUseCaseRef ref,
-) {
+GetProfilePreferences getProfilePreferencesUseCase(Ref ref) {
   return GetProfilePreferences(ref.watch(profileManagementRepositoryProvider));
 }
 
 @riverpod
-UpdateDisplayName updateDisplayNameUseCase(UpdateDisplayNameUseCaseRef ref) {
+UpdateDisplayName updateDisplayNameUseCase(Ref ref) {
   return UpdateDisplayName(ref.watch(profileManagementRepositoryProvider));
 }
 
 @riverpod
-SaveProfilePreferences saveProfilePreferencesUseCase(
-  SaveProfilePreferencesUseCaseRef ref,
-) {
+SaveProfilePreferences saveProfilePreferencesUseCase(Ref ref) {
   return SaveProfilePreferences(ref.watch(profileManagementRepositoryProvider));
 }
 
@@ -86,11 +77,7 @@ class ProfileSummaryNotifier extends _$ProfileSummaryNotifier {
   }
 
   Future<void> updateDisplayName(String displayName) async {
-    final previousState = state;
-    state = AsyncValue.data(state.valueOrNull ?? const None());
-    state = const AsyncLoading<Option<ProfileSummary>>().copyWithPrevious(
-      state,
-    );
+    state = AsyncValue.data(state.value ?? const None());
 
     final useCase = ref.read(updateDisplayNameUseCaseProvider);
     final result = await useCase(
@@ -98,10 +85,10 @@ class ProfileSummaryNotifier extends _$ProfileSummaryNotifier {
     );
 
     if (result.isLeft()) {
-      state = AsyncValue<Option<ProfileSummary>>.error(
+      state = AsyncError<Option<ProfileSummary>>(
         result.getLeft().toNullable()!,
         StackTrace.current,
-      ).copyWithPrevious(previousState);
+      );
       return;
     }
 
@@ -124,11 +111,7 @@ class ProfilePreferencesNotifier extends _$ProfilePreferencesNotifier {
   }
 
   Future<void> updatePreferences(ProfilePreferences preferences) async {
-    final previousState = state;
-    state = AsyncValue.data(state.valueOrNull ?? const None());
-    state = const AsyncLoading<Option<ProfilePreferences>>().copyWithPrevious(
-      state,
-    );
+    state = AsyncValue.data(state.value ?? const None());
 
     final useCase = ref.read(saveProfilePreferencesUseCaseProvider);
     final result = await useCase(
@@ -136,10 +119,10 @@ class ProfilePreferencesNotifier extends _$ProfilePreferencesNotifier {
     );
 
     if (result.isLeft()) {
-      state = AsyncValue<Option<ProfilePreferences>>.error(
+      state = AsyncError<Option<ProfilePreferences>>(
         result.getLeft().toNullable()!,
         StackTrace.current,
-      ).copyWithPrevious(previousState);
+      );
       return;
     }
 

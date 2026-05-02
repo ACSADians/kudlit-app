@@ -49,7 +49,16 @@ AiInferenceRepository aiInferenceRepository(Ref ref) {
     modelsDatasource: ref.watch(supabaseAiModelsDatasourceProvider),
     localDatasource: ref.watch(localGemmaDatasourceProvider),
     cloudDatasource: ref.watch(cloudGemmaDatasourceProvider),
+<<<<<<< HEAD
     preferenceResolver: () => prefs?.aiPreference ?? AiPreference.cloud,
+=======
+    preferenceResolver: () {
+      final AsyncValue<AppPreferences> prefs = ref.read(
+        appPreferencesNotifierProvider,
+      );
+      return prefs.value?.aiPreference ?? AiPreference.cloud;
+    },
+>>>>>>> eaf74a1 (Add Baybayin permutations, clickable chip, and update Riverpod (#10))
   );
   ref.onDispose(repo.dispose);
   return repo;

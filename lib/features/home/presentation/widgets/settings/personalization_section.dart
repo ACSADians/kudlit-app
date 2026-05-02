@@ -23,7 +23,7 @@ class PersonalizationSection extends ConsumerStatefulWidget {
 class _PersonalizationSectionState
     extends ConsumerState<PersonalizationSection> {
   ProfilePreferences _currentPrefs() {
-    final opt = ref.read(profilePreferencesNotifierProvider).valueOrNull;
+    final opt = ref.read(profilePreferencesNotifierProvider).value;
     return opt?.toNullable() ??
         const ProfilePreferences(
           highContrast: false,

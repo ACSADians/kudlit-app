@@ -16,7 +16,7 @@ class AppHeader extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final ColorScheme cs = Theme.of(context).colorScheme;
     final ThemeData theme = Theme.of(context);
-    final AuthUser? user = ref.watch(authNotifierProvider).valueOrNull;
+    final AuthUser? user = ref.watch(authNotifierProvider).value;
 
     return DecoratedBox(
       decoration: BoxDecoration(

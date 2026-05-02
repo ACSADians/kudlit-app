@@ -15,7 +15,7 @@ class PreferencesSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final AppPreferences? prefs = ref
         .watch(appPreferencesNotifierProvider)
-        .valueOrNull;
+        .value;
 
     if (prefs == null) return const SizedBox.shrink();
 

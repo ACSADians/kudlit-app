@@ -6,21 +6,20 @@ part of 'lesson_controller.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$lessonControllerHash() => r'b8d809ec9a1f9aa831897ecbbd059d4884ef548d';
-
-/// See also [LessonController].
 @ProviderFor(LessonController)
 final lessonControllerProvider =
-    AutoDisposeAsyncNotifierProvider<LessonController, LessonState?>.internal(
+    AsyncNotifierProvider<LessonController, LessonState?>.internal(
       LessonController.new,
       name: r'lessonControllerProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$lessonControllerHash,
+      from: null,
+      argument: null,
+      isAutoDispose: true,
       dependencies: null,
-      allTransitiveDependencies: null,
+      $allTransitiveDependencies: null,
+      retry: null,
     );
 
-typedef _$LessonController = AutoDisposeAsyncNotifier<LessonState?>;
+typedef _$LessonController = AsyncNotifier<LessonState?>;
+
 // ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
+// ignore_for_file: unused_element, subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
