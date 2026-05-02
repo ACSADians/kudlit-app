@@ -206,7 +206,8 @@ class _SetupHero extends StatelessWidget {
         child: Image.asset(
           'assets/brand/ButtyRead.webp',
           height: 110,
-          errorBuilder: (context, error, stackTrace) => const SizedBox(height: 110),
+          errorBuilder: (context, error, stackTrace) =>
+              const SizedBox(height: 110),
         ),
       ),
     );

@@ -16,6 +16,13 @@ abstract interface class SupabaseAuthDatasource {
 
   Future<void> signInWithGoogle();
 
+  Future<void> sendPhoneOtp({required String phoneNumber});
+
+  Future<void> verifyPhoneOtp({
+    required String phoneNumber,
+    required String token,
+  });
+
   Future<SignUpStatus> signUpWithEmail({
     required String email,
     required String password,
@@ -82,6 +89,41 @@ class SupabaseAuthDatasourceImpl implements SupabaseAuthDatasource {
         OAuthProvider.google,
         redirectTo: redirectTo,
         queryParams: <String, String>{'prompt': 'select_account'},
+      );
+    } on AuthException catch (e) {
+      throw ServerException(
+        message: e.message,
+        statusCode: int.tryParse(e.statusCode ?? ''),
+      );
+    } on Exception catch (e) {
+      throw ServerException(message: e.toString());
+    }
+  }
+
+  @override
+  Future<void> sendPhoneOtp({required String phoneNumber}) async {
+    try {
+      await _client.auth.signInWithOtp(phone: phoneNumber);
+    } on AuthException catch (e) {
+      throw ServerException(
+        message: e.message,
+        statusCode: int.tryParse(e.statusCode ?? ''),
+      );
+    } on Exception catch (e) {
+      throw ServerException(message: e.toString());
+    }
+  }
+
+  @override
+  Future<void> verifyPhoneOtp({
+    required String phoneNumber,
+    required String token,
+  }) async {
+    try {
+      await _client.auth.verifyOTP(
+        phone: phoneNumber,
+        token: token,
+        type: OtpType.sms,
       );
     } on AuthException catch (e) {
       throw ServerException(

@@ -12,8 +12,10 @@ import 'package:kudlit_ph/features/auth/domain/repositories/auth_repository.dart
 import 'package:kudlit_ph/features/auth/domain/usecases/reset_password.dart';
 import 'package:kudlit_ph/features/auth/domain/usecases/sign_in_with_email.dart';
 import 'package:kudlit_ph/features/auth/domain/usecases/sign_in_with_google.dart';
+import 'package:kudlit_ph/features/auth/domain/usecases/send_phone_otp.dart';
 import 'package:kudlit_ph/features/auth/domain/usecases/sign_out.dart';
 import 'package:kudlit_ph/features/auth/domain/usecases/sign_up_with_email.dart';
+import 'package:kudlit_ph/features/auth/domain/usecases/verify_phone_otp.dart';
 import 'package:kudlit_ph/features/auth/presentation/providers/auth_provider.dart';
 
 part 'auth_notifier.g.dart';
@@ -59,6 +61,25 @@ class AuthNotifier extends _$AuthNotifier {
     final AuthRepository repository = ref.read(authRepositoryProvider);
     final SignInWithGoogle useCase = SignInWithGoogle(repository);
     return useCase(const NoParams());
+  }
+
+  Future<Either<Failure, Unit>> sendPhoneOtp({
+    required String phoneNumber,
+  }) async {
+    final AuthRepository repository = ref.read(authRepositoryProvider);
+    final SendPhoneOtp useCase = SendPhoneOtp(repository);
+    return useCase(SendPhoneOtpParams(phoneNumber: phoneNumber));
+  }
+
+  Future<Either<Failure, Unit>> verifyPhoneOtp({
+    required String phoneNumber,
+    required String token,
+  }) async {
+    final AuthRepository repository = ref.read(authRepositoryProvider);
+    final VerifyPhoneOtp useCase = VerifyPhoneOtp(repository);
+    return useCase(
+      VerifyPhoneOtpParams(phoneNumber: phoneNumber, token: token),
+    );
   }
 
   Future<Either<Failure, SignUpStatus>> signUp({

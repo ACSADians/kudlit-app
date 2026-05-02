@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:fpdart/fpdart.dart';
 
+import 'package:kudlit_ph/app/constants.dart';
+import 'package:kudlit_ph/core/error/failures.dart';
 import 'package:kudlit_ph/features/auth/domain/entities/country_code.dart';
+import 'package:kudlit_ph/features/auth/presentation/providers/auth_notifier.dart';
 import 'package:kudlit_ph/features/auth/presentation/widgets/auth_drag_handle.dart';
 import 'package:kudlit_ph/features/auth/presentation/widgets/auth_screen_shell.dart';
 import 'package:kudlit_ph/features/auth/presentation/widgets/auth_sheet.dart';
@@ -15,18 +20,19 @@ import 'phone_otp_screen.dart';
 /// Phone number entry screen.
 /// Defaults to Philippines (+63); user can tap the prefix to pick another
 /// country code. Tapping "Send OTP" pushes [PhoneOtpScreen].
-class PhoneSignInScreen extends StatefulWidget {
+class PhoneSignInScreen extends ConsumerStatefulWidget {
   const PhoneSignInScreen({super.key});
 
   @override
-  State<PhoneSignInScreen> createState() => _PhoneSignInScreenState();
+  ConsumerState<PhoneSignInScreen> createState() => _PhoneSignInScreenState();
 }
 
-class _PhoneSignInScreenState extends State<PhoneSignInScreen> {
+class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _phoneController = TextEditingController();
   CountryCode _country = CountryCode.ph;
   bool _isLoading = false;
+  String? _errorMessage;
 
   @override
   void dispose() {
@@ -35,11 +41,31 @@ class _PhoneSignInScreenState extends State<PhoneSignInScreen> {
   }
 
   String? _validatePhone(String? value) {
-    final String v = value?.trim() ?? '';
+    final String v = _normalizePhone(value ?? '');
     if (v.isEmpty) return 'Phone number is required.';
     if (v.length < 7) return 'Enter a valid phone number.';
     return null;
   }
+
+  String _normalizePhone(String value) {
+    final String digitsOnly = value.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digitsOnly.startsWith('0') && digitsOnly.length > 1) {
+      return digitsOnly.substring(1);
+    }
+    return digitsOnly;
+  }
+
+  String _mapFailure(Failure failure) => failure.when(
+    network: (String msg) => '${AppConstants.networkErrorPrefix}$msg',
+    tooManyRequests: () => AppConstants.tooManyRequestsMessage,
+    invalidCredentials: () => 'Enter a valid phone number.',
+    unknown: (String msg) => msg,
+    emailAlreadyInUse: () => AppConstants.unexpectedError,
+    weakPassword: () => AppConstants.unexpectedError,
+    userNotFound: () => AppConstants.unexpectedError,
+    sessionExpired: () => AppConstants.unexpectedError,
+    passwordResetEmailSent: () => AppConstants.unexpectedError,
+  );
 
   void _pickCountry() {
     showModalBottomSheet<CountryCode>(
@@ -60,21 +86,33 @@ class _PhoneSignInScreenState extends State<PhoneSignInScreen> {
 
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
 
     final String fullNumber =
-        '${_country.dialCode}${_phoneController.text.trim()}';
-
-    // TODO: call auth notifier for phone sign-in
-    await Future<void>.delayed(const Duration(milliseconds: 300));
+        '${_country.dialCode}${_normalizePhone(_phoneController.text)}';
+    final Either<Failure, Unit> result = await ref
+        .read(authNotifierProvider.notifier)
+        .sendPhoneOtp(phoneNumber: fullNumber);
 
     if (!mounted) return;
-    setState(() => _isLoading = false);
-
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => PhoneOtpScreen(phoneNumber: fullNumber),
-      ),
+    result.fold(
+      (Failure failure) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = _mapFailure(failure);
+        });
+      },
+      (_) {
+        setState(() => _isLoading = false);
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => PhoneOtpScreen(phoneNumber: fullNumber),
+          ),
+        );
+      },
     );
   }
 
@@ -115,6 +153,17 @@ class _PhoneSignInScreenState extends State<PhoneSignInScreen> {
               isLoading: _isLoading,
               onTap: _submit,
             ),
+            if (_errorMessage != null) ...<Widget>[
+              const SizedBox(height: 12),
+              Text(
+                _errorMessage!,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.error,
+                  fontSize: 12,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
             const SizedBox(height: 20),
             const _EmailSignInPrompt(),
           ],

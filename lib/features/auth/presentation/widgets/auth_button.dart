@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kudlit_ph/core/design_system/widgets/kudlit_loading_indicator.dart';
 
 class AuthButton extends StatelessWidget {
   const AuthButton({
@@ -20,10 +21,10 @@ class AuthButton extends StatelessWidget {
       child: FilledButton(
         onPressed: isLoading ? null : onPressed,
         child: isLoading
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
+            ? const KudlitLoadingIndicator(
+                size: 20,
+                strokeWidth: 2,
+                color: Colors.white,
               )
             : Text(label),
       ),

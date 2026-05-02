@@ -10,7 +10,7 @@ Update the Kudlit app's authentication screens to properly and consistently util
 2.  **Deduplicate UI Elements**
     *   Remove redundant hardcoded titles (like the Baybayin text) from `LoginFormBody` and `SignUpFormBody` because `KudlitAuthShell` already provides a unified, responsive hero section.
 3.  **Standardize Form Elements**
-    *   Extract bottom actions (e.g., "Don't have an account? Sign up") into a shared `AuthFooterAction` widget so it looks identical across all auth screens.
+    *   Extract bottom actions (e.g., "Don't have an account? Sign up") into a shared `AuthFooterAction` widget so it looks fidentical across all auth screens.
     *   Use `KudlitTheme` text styles and `KudlitColors` strictly.
 4.  **Shared Error Display**
     *   Extract a shared `AuthErrorBanner` widget to display error messages consistently across `LoginScreen`, `SignUpScreen`, and `ForgotPasswordScreen` using `KudlitColors.danger400` or the design system's semantic error tokens.
@@ -26,4 +26,4 @@ Update the Kudlit app's authentication screens to properly and consistently util
 
 ## Testing
 *   Rely on `flutter analyze` and widget structure checks to ensure zero regressions in UI layout.
-*   Verify responsive layout visually on Chrome (`flutter run -d chrome`).
+*   Verify responsive layout visually on Chrome (`flutter run -d chrome`)ff

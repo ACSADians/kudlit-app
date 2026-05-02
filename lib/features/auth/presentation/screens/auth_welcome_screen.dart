@@ -33,10 +33,7 @@ class AuthWelcomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return AuthScreenShell(
       heroFraction: 0.52,
-      hero: const LoginHero(
-        showBackButton: false,
-        showLanguageToggle: true,
-      ),
+      hero: const LoginHero(showBackButton: false, showLanguageToggle: true),
       sheet: AuthSheet(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -45,7 +42,8 @@ class AuthWelcomeScreen extends StatelessWidget {
             const SizedBox(height: 10),
             const AuthSheetHeadline(
               title: 'Kudlit',
-              subtitle: 'Read Baybayin, practice kudlit marks, and keep your '
+              subtitle:
+                  'Read Baybayin, practice kudlit marks, and keep your '
                   'learning progress ready for every session.',
             ),
             const SizedBox(height: 32),

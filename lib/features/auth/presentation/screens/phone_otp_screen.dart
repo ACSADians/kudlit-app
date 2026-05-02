@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:fpdart/fpdart.dart';
 
+import 'package:kudlit_ph/app/constants.dart';
 import 'package:kudlit_ph/core/design_system/kudlit_colors.dart';
+import 'package:kudlit_ph/core/error/failures.dart';
+import 'package:kudlit_ph/features/auth/presentation/providers/auth_notifier.dart';
 import 'package:kudlit_ph/features/auth/presentation/widgets/auth_drag_handle.dart';
 import 'package:kudlit_ph/features/auth/presentation/widgets/auth_screen_shell.dart';
 import 'package:kudlit_ph/features/auth/presentation/widgets/auth_sheet.dart';
@@ -9,20 +14,18 @@ import 'package:kudlit_ph/features/auth/presentation/widgets/auth_sheet_headline
 import 'package:kudlit_ph/features/auth/presentation/widgets/auth_submit_button.dart';
 import 'package:kudlit_ph/features/auth/presentation/widgets/login_hero.dart';
 
-import 'home_screen.dart';
-
 /// OTP verification screen. Receives the [phoneNumber] the code was sent to.
 /// Renders 6 individual digit boxes that auto-advance focus on input.
-class PhoneOtpScreen extends StatefulWidget {
+class PhoneOtpScreen extends ConsumerStatefulWidget {
   const PhoneOtpScreen({required this.phoneNumber, super.key});
 
   final String phoneNumber;
 
   @override
-  State<PhoneOtpScreen> createState() => _PhoneOtpScreenState();
+  ConsumerState<PhoneOtpScreen> createState() => _PhoneOtpScreenState();
 }
 
-class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
+class _PhoneOtpScreenState extends ConsumerState<PhoneOtpScreen> {
   static const int _length = 6;
 
   final List<TextEditingController> _controllers =
@@ -36,7 +39,9 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
   );
 
   bool _isLoading = false;
-  bool _hasError = false;
+  bool _isResending = false;
+  String? _errorMessage;
+  String? _resendMessage;
   final int _resendCooldown = 0;
 
   @override
@@ -54,22 +59,38 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
       _controllers.map((TextEditingController c) => c.text).join();
 
   bool get _isComplete => _otp.length == _length;
+  bool get _hasError => _errorMessage != null;
+
+  String _mapFailure(Failure failure) => failure.when(
+    network: (String msg) => '${AppConstants.networkErrorPrefix}$msg',
+    tooManyRequests: () => AppConstants.tooManyRequestsMessage,
+    invalidCredentials: () => 'Incorrect or expired code. Please try again.',
+    unknown: (String msg) => msg,
+    emailAlreadyInUse: () => AppConstants.unexpectedError,
+    weakPassword: () => AppConstants.unexpectedError,
+    userNotFound: () => AppConstants.unexpectedError,
+    sessionExpired: () => AppConstants.unexpectedError,
+    passwordResetEmailSent: () => AppConstants.unexpectedError,
+  );
 
   void _onDigitChanged(int index, String value) {
+    if (_errorMessage != null || _resendMessage != null) {
+      setState(() {
+        _errorMessage = null;
+        _resendMessage = null;
+      });
+    }
     if (value.isEmpty) {
-      // Backspace — move focus back
       if (index > 0) {
         _focusNodes[index - 1].requestFocus();
       }
       return;
     }
-    // Move focus forward
     if (index < _length - 1) {
       _focusNodes[index + 1].requestFocus();
     } else {
       _focusNodes[index].unfocus();
     }
-    // Auto-submit when all filled
     if (_isComplete) _submit();
   }
 
@@ -77,28 +98,66 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
     if (!_isComplete || _isLoading) return;
     setState(() {
       _isLoading = true;
-      _hasError = false;
+      _errorMessage = null;
+      _resendMessage = null;
     });
-
-    // TODO: call auth notifier for OTP verification
-    await Future<void>.delayed(const Duration(milliseconds: 600));
+    final Either<Failure, Unit> result = await ref
+        .read(authNotifierProvider.notifier)
+        .verifyPhoneOtp(phoneNumber: widget.phoneNumber, token: _otp);
 
     if (!mounted) return;
-    setState(() => _isLoading = false);
-
-    // Simulate success — replace with actual auth result
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute<void>(builder: (_) => const HomeScreen()),
-      (_) => false,
+    result.fold(
+      (Failure failure) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = _mapFailure(failure);
+        });
+      },
+      (_) {
+        setState(() => _isLoading = false);
+        final NavigatorState navigator = Navigator.of(context);
+        while (navigator.canPop()) {
+          navigator.pop();
+        }
+      },
     );
   }
 
-  void _clearOtp() {
+  void _clearOtpFields() {
     for (final TextEditingController c in _controllers) {
       c.clear();
     }
     _focusNodes[0].requestFocus();
-    setState(() => _hasError = false);
+  }
+
+  Future<void> _resendCode() async {
+    if (_isResending || _isLoading) return;
+    setState(() {
+      _isResending = true;
+      _errorMessage = null;
+      _resendMessage = null;
+    });
+
+    final Either<Failure, Unit> result = await ref
+        .read(authNotifierProvider.notifier)
+        .sendPhoneOtp(phoneNumber: widget.phoneNumber);
+
+    if (!mounted) return;
+    result.fold(
+      (Failure failure) {
+        setState(() {
+          _isResending = false;
+          _errorMessage = _mapFailure(failure);
+        });
+      },
+      (_) {
+        _clearOtpFields();
+        setState(() {
+          _isResending = false;
+          _resendMessage = 'A new code was sent.';
+        });
+      },
+    );
   }
 
   @override
@@ -119,11 +178,14 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
           controllers: _controllers,
           focusNodes: _focusNodes,
           hasError: _hasError,
+          errorMessage: _errorMessage,
           isLoading: _isLoading,
+          isResending: _isResending,
+          resendMessage: _resendMessage,
           resendCooldown: _resendCooldown,
           onDigitChanged: _onDigitChanged,
           onSubmit: _submit,
-          onResend: _clearOtp,
+          onResend: _resendCode,
         ),
       ),
     );
@@ -138,15 +200,16 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
   }
 }
 
-// ── Sheet body ───────────────────────────────────────────────────────────────
-
 class _OtpSheetBody extends StatelessWidget {
   const _OtpSheetBody({
     required this.maskedNumber,
     required this.controllers,
     required this.focusNodes,
     required this.hasError,
+    required this.errorMessage,
     required this.isLoading,
+    required this.isResending,
+    required this.resendMessage,
     required this.resendCooldown,
     required this.onDigitChanged,
     required this.onSubmit,
@@ -157,11 +220,14 @@ class _OtpSheetBody extends StatelessWidget {
   final List<TextEditingController> controllers;
   final List<FocusNode> focusNodes;
   final bool hasError;
+  final String? errorMessage;
   final bool isLoading;
+  final bool isResending;
+  final String? resendMessage;
   final int resendCooldown;
   final void Function(int index, String value) onDigitChanged;
   final VoidCallback onSubmit;
-  final VoidCallback onResend;
+  final Future<void> Function() onResend;
 
   @override
   Widget build(BuildContext context) {
@@ -181,12 +247,12 @@ class _OtpSheetBody extends StatelessWidget {
           hasError: hasError,
           onChanged: onDigitChanged,
         ),
-        if (hasError) ...<Widget>[
+        if (errorMessage != null) ...<Widget>[
           const SizedBox(height: 12),
-          const Text(
-            'Incorrect code. Please try again.',
+          Text(
+            errorMessage!,
             textAlign: TextAlign.center,
-            style: TextStyle(color: KudlitColors.danger400, fontSize: 12),
+            style: const TextStyle(color: KudlitColors.danger400, fontSize: 12),
           ),
         ],
         const SizedBox(height: 24),
@@ -195,14 +261,27 @@ class _OtpSheetBody extends StatelessWidget {
           isLoading: isLoading,
           onTap: onSubmit,
         ),
+        if (resendMessage != null) ...<Widget>[
+          const SizedBox(height: 12),
+          Text(
+            resendMessage!,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.primary,
+              fontSize: 12,
+            ),
+          ),
+        ],
         const SizedBox(height: 20),
-        _ResendRow(cooldown: resendCooldown, onResend: onResend),
+        _ResendRow(
+          cooldown: resendCooldown,
+          isResending: isResending,
+          onResend: onResend,
+        ),
       ],
     );
   }
 }
-
-// ── OTP row ──────────────────────────────────────────────────────────────────
 
 class _OtpRow extends StatelessWidget {
   const _OtpRow({
@@ -303,13 +382,16 @@ class _OtpBox extends StatelessWidget {
   }
 }
 
-// ── Resend row ───────────────────────────────────────────────────────────────
-
 class _ResendRow extends StatelessWidget {
-  const _ResendRow({required this.onResend, this.cooldown = 0});
+  const _ResendRow({
+    required this.onResend,
+    this.cooldown = 0,
+    this.isResending = false,
+  });
 
-  final VoidCallback onResend;
+  final Future<void> Function() onResend;
   final int cooldown;
+  final bool isResending;
 
   @override
   Widget build(BuildContext context) {
@@ -322,7 +404,12 @@ class _ResendRow extends StatelessWidget {
           'Didn\'t get a code?  ',
           style: TextStyle(fontSize: 12.5, color: cs.onSurface.withAlpha(153)),
         ),
-        if (cooldown > 0)
+        if (isResending)
+          Text(
+            'Sending...',
+            style: TextStyle(fontSize: 12.5, color: cs.onSurface.withAlpha(80)),
+          )
+        else if (cooldown > 0)
           Text(
             'Resend in ${cooldown}s',
             style: TextStyle(fontSize: 12.5, color: cs.onSurface.withAlpha(80)),

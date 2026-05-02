@@ -5,10 +5,7 @@ import 'package:kudlit_ph/features/auth/domain/entities/auth_user.dart';
 import 'package:kudlit_ph/features/auth/domain/repositories/auth_repository.dart';
 
 class SignInWithEmailParams {
-  const SignInWithEmailParams({
-    required this.email,
-    required this.password,
-  });
+  const SignInWithEmailParams({required this.email, required this.password});
 
   final String email;
   final String password;
