@@ -1,15 +1,10 @@
-import 'dart:io';
-
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:kudlit_ph/core/design_system/kudlit_colors.dart';
 import 'package:kudlit_ph/features/auth/presentation/widgets/baybayin_backdrop.dart';
-import 'package:kudlit_ph/features/home/presentation/providers/app_preferences_provider.dart';
+import 'package:kudlit_ph/features/home/presentation/providers/model_setup_controller.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/model_setup_model_card.dart';
-import 'package:kudlit_ph/features/scanner/data/datasources/yolo_model_cache.dart';
-import 'package:kudlit_ph/features/scanner/presentation/providers/yolo_model_selection_provider.dart';
 import 'package:kudlit_ph/features/translator/domain/entities/ai_model_info.dart';
 import 'package:kudlit_ph/features/translator/presentation/providers/ai_inference_provider.dart';
 import 'package:kudlit_ph/features/translator/presentation/providers/ai_inference_state.dart';
@@ -27,10 +22,9 @@ class ModelSetupScreen extends ConsumerStatefulWidget {
 }
 
 class _ModelSetupScreenState extends ConsumerState<ModelSetupScreen> {
-  bool _busy = false;
-
   @override
   Widget build(BuildContext context) {
+    final ModelSetupState setupState = ref.watch(modelSetupControllerProvider);
     final AiInferenceState? inferenceState = ref
         .watch(aiInferenceNotifierProvider)
         .value;
@@ -44,9 +38,13 @@ class _ModelSetupScreenState extends ConsumerState<ModelSetupScreen> {
           const _SetupBackground(),
           _ModelSetupBody(
             model: model,
-            busy: _busy,
-            onDownload: model != null ? () => _onDownload(model) : null,
-            onSkip: _onSkip,
+            busy: setupState.busy,
+            onDownload: model == null
+                ? null
+                : () => ref
+                      .read(modelSetupControllerProvider.notifier)
+                      .download(model),
+            onSkip: () => ref.read(modelSetupControllerProvider.notifier).skip(),
           ),
         ],
       ),
@@ -59,61 +57,6 @@ class _ModelSetupScreenState extends ConsumerState<ModelSetupScreen> {
     AiDownloading(:final AiModelInfo model) => model,
     _ => null,
   };
-
-  Future<void> _onDownload(AiModelInfo llmModel) async {
-    if (_busy) return;
-    setState(() => _busy = true);
-
-    // 1. Gemma LLM (offline chatbot / Butty) — flutter_gemma / MediaPipe.
-    //    Fires in the background; AiInferenceNotifier tracks progress.
-    ref
-        .read(aiInferenceNotifierProvider.notifier)
-        .triggerLocalDownload(llmModel);
-
-    // 2. KudVis vision model (OCR / camera detection) — YoloModelCache.
-    //    Uses a separate vision-typed row from the catalog, never the LLM model.
-    if (!kIsWeb) {
-      try {
-        final List<AiModelInfo> visionModels =
-            await ref.read(availableYoloModelsProvider.future);
-        final AiModelInfo? visionModel =
-            visionModels.isNotEmpty ? visionModels.first : null;
-        if (visionModel != null) {
-          final String yoloUrl = Platform.isIOS
-              ? (visionModel.iosModelLink ?? visionModel.modelLink)
-              : (visionModel.androidModelLink ?? visionModel.modelLink);
-          if (yoloUrl.isNotEmpty) {
-            await YoloModelCache.instance.download(
-              visionModel.id,
-              yoloUrl,
-              version: visionModel.version,
-            );
-            ref.invalidate(yoloModelPathProvider);
-          }
-        }
-      } catch (e) {
-        debugPrint('[ModelSetup] YOLO download failed: $e');
-        // Non-fatal — camera pipeline retries on next use.
-      }
-    }
-
-    await ref
-        .read(appPreferencesNotifierProvider.notifier)
-        .setAiPreference(AiPreference.local);
-    await ref
-        .read(appPreferencesNotifierProvider.notifier)
-        .markModelsDownloaded();
-    // Router redirects automatically when hasDownloadedModels becomes true.
-  }
-
-  Future<void> _onSkip() async {
-    if (_busy) return;
-    setState(() => _busy = true);
-    // Set a session-only flag — no persistence.
-    // The router will navigate away this session, but on the next cold
-    // launch the setup screen shows again until models are downloaded.
-    ref.read(modelSetupSkippedProvider.notifier).state = true;
-  }
 }
 
 class _SetupBackground extends StatelessWidget {

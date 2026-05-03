@@ -7,7 +7,7 @@
       "id": "ref-wa",
       "mode": "reference",
       "label": "Wa",
-      "glyph": "wa",
+      "glyph": "w",
       "intro": "This is Wa.",
       "narration": "A vertical stroke splitting a base curve. The last two consonants!",
       "buttyTip": "Almost finished with the alphabet."
@@ -16,7 +16,7 @@
       "id": "draw-wa",
       "mode": "draw",
       "label": "Wa",
-      "glyph": "wa",
+      "glyph": "w",
       "prompt": "Draw the character Wa.",
       "successFeedback": "Looking good."
     },
@@ -24,7 +24,7 @@
       "id": "spell-wa",
       "mode": "freeInput",
       "label": "Wa",
-      "glyph": "wa",
+      "glyph": "w",
       "prompt": "Type the romanization.",
       "expected": ["wa"],
       "successFeedback": "Correct."
@@ -33,7 +33,7 @@
       "id": "ref-ya",
       "mode": "reference",
       "label": "Ya",
-      "glyph": "ya",
+      "glyph": "y",
       "intro": "And this is Ya.",
       "narration": "Three connecting curves forming the final base character.",
       "buttyTip": "This is it, the last one."
@@ -42,7 +42,7 @@
       "id": "draw-ya",
       "mode": "draw",
       "label": "Ya",
-      "glyph": "ya",
+      "glyph": "y",
       "prompt": "Draw the character Ya.",
       "successFeedback": "Great curves."
     },
@@ -50,7 +50,7 @@
       "id": "spell-ya",
       "mode": "freeInput",
       "label": "Ya",
-      "glyph": "ya",
+      "glyph": "y",
       "prompt": "Type the romanization.",
       "expected": ["ya"],
       "successFeedback": "Congratulations! You know all the base consonants."

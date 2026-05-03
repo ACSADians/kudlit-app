@@ -7,7 +7,7 @@
       "id": "ref-nga",
       "mode": "reference",
       "label": "Nga",
-      "glyph": "nga",
+      "glyph": "ng",
       "intro": "This is Nga.",
       "narration": "A common sound in Philippine languages. Look for the distinct curve.",
       "buttyTip": "Yes, 'nga' is a single character here!"
@@ -16,7 +16,7 @@
       "id": "draw-nga",
       "mode": "draw",
       "label": "Nga",
-      "glyph": "nga",
+      "glyph": "ng",
       "prompt": "Draw the character Nga.",
       "successFeedback": "Beautiful curve."
     },
@@ -24,7 +24,7 @@
       "id": "spell-nga",
       "mode": "freeInput",
       "label": "Nga",
-      "glyph": "nga",
+      "glyph": "ng",
       "prompt": "Type the romanization (three letters).",
       "expected": ["nga"],
       "successFeedback": "Correct."
@@ -33,7 +33,7 @@
       "id": "ref-pa",
       "mode": "reference",
       "label": "Pa",
-      "glyph": "pa",
+      "glyph": "p",
       "intro": "This is Pa.",
       "narration": "A loop on the left leading into a curve on the right.",
       "buttyTip": "Start with the loop."
@@ -42,7 +42,7 @@
       "id": "draw-pa",
       "mode": "draw",
       "label": "Pa",
-      "glyph": "pa",
+      "glyph": "p",
       "prompt": "Draw the character Pa.",
       "successFeedback": "Great loop."
     },
@@ -50,7 +50,7 @@
       "id": "spell-pa",
       "mode": "freeInput",
       "label": "Pa",
-      "glyph": "pa",
+      "glyph": "p",
       "prompt": "Type the romanization.",
       "expected": ["pa"],
       "successFeedback": "Tama."
@@ -59,7 +59,7 @@
       "id": "ref-sa",
       "mode": "reference",
       "label": "Sa",
-      "glyph": "sa",
+      "glyph": "s",
       "intro": "This is Sa.",
       "narration": "A wide character with a loop at the bottom.",
       "buttyTip": "Keep it balanced."
@@ -68,7 +68,7 @@
       "id": "draw-sa",
       "mode": "draw",
       "label": "Sa",
-      "glyph": "sa",
+      "glyph": "s",
       "prompt": "Draw the character Sa.",
       "successFeedback": "Nice balance."
     },
@@ -76,7 +76,7 @@
       "id": "spell-sa",
       "mode": "freeInput",
       "label": "Sa",
-      "glyph": "sa",
+      "glyph": "s",
       "prompt": "Type the romanization.",
       "expected": ["sa"],
       "successFeedback": "Right!"
@@ -85,7 +85,7 @@
       "id": "ref-ta",
       "mode": "reference",
       "label": "Ta",
-      "glyph": "ta",
+      "glyph": "t",
       "intro": "Finally, Ta.",
       "narration": "A sharp curve leading into a tail.",
       "buttyTip": "Almost there!"
@@ -94,7 +94,7 @@
       "id": "draw-ta",
       "mode": "draw",
       "label": "Ta",
-      "glyph": "ta",
+      "glyph": "t",
       "prompt": "Draw the character Ta.",
       "successFeedback": "Very sharp."
     },
@@ -102,7 +102,7 @@
       "id": "spell-ta",
       "mode": "freeInput",
       "label": "Ta",
-      "glyph": "ta",
+      "glyph": "t",
       "prompt": "Type the romanization.",
       "expected": ["ta"],
       "successFeedback": "You got it! The Loops are done."

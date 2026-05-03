@@ -1,10 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:kudlit_ph/features/home/presentation/providers/app_preferences_provider.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/learn_home/butty_talk_card.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/learn_home/learn_section_label.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/learn_home/lesson_card.dart';
 
-class LearnHomeBody extends StatelessWidget {
+const List<String> _lessonOrder = <String>[
+  'vowels-01',
+  'consonants-01',
+  'consonants-02',
+  'consonants-03',
+  'consonants-04',
+  'kudlit-01',
+];
+
+class LearnHomeBody extends ConsumerWidget {
   const LearnHomeBody({
     super.key,
     required this.onStartLesson,
@@ -17,7 +28,19 @@ class LearnHomeBody extends StatelessWidget {
   final double bottomPad;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final Set<String> completed = ref
+        .watch(appPreferencesNotifierProvider)
+        .maybeWhen(
+          data: (AppPreferences p) => p.completedLessons,
+          orElse: () => const <String>{},
+        );
+
+    bool locked(int lessonIndex) {
+      if (lessonIndex == 0) return false;
+      return !completed.contains(_lessonOrder[lessonIndex - 1]);
+    }
+
     return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(16, 20, 16, bottomPad + 16),
       child: Column(
@@ -36,6 +59,7 @@ class LearnHomeBody extends StatelessWidget {
               ('e', 'E / I'),
               ('o', 'O / U'),
             ],
+            isLocked: locked(0),
             onStart: () => onStartLesson('vowels-01'),
           ),
           const SizedBox(height: 8),
@@ -44,11 +68,12 @@ class LearnHomeBody extends StatelessWidget {
             title: 'Core Consonants',
             subtitle: 'Ba, Ka, Da/Ra, Ga',
             items: const <(String, String)>[
-              ('b', 'BA'),
-              ('k', 'KA'),
-              ('d', 'DA/RA'),
-              ('g', 'GA'),
+              ('b+', 'BA'),
+              ('k+', 'KA'),
+              ('d+', 'DA/RA'),
+              ('g+', 'GA'),
             ],
+            isLocked: locked(1),
             onStart: () => onStartLesson('consonants-01'),
           ),
           const SizedBox(height: 8),
@@ -57,11 +82,12 @@ class LearnHomeBody extends StatelessWidget {
             title: 'The Waves',
             subtitle: 'Ha, La, Ma, Na',
             items: const <(String, String)>[
-              ('h', 'HA'),
-              ('l', 'LA'),
-              ('m', 'MA'),
-              ('n', 'NA'),
+              ('h+', 'HA'),
+              ('l+', 'LA'),
+              ('m+', 'MA'),
+              ('n+', 'NA'),
             ],
+            isLocked: locked(2),
             onStart: () => onStartLesson('consonants-02'),
           ),
           const SizedBox(height: 8),
@@ -71,10 +97,11 @@ class LearnHomeBody extends StatelessWidget {
             subtitle: 'Nga, Pa, Sa, Ta',
             items: const <(String, String)>[
               ('ng', 'NGA'),
-              ('p', 'PA'),
-              ('s', 'SA'),
-              ('t', 'TA'),
+              ('p+', 'PA'),
+              ('s+', 'SA'),
+              ('t+', 'TA'),
             ],
+            isLocked: locked(3),
             onStart: () => onStartLesson('consonants-03'),
           ),
           const SizedBox(height: 8),
@@ -83,9 +110,10 @@ class LearnHomeBody extends StatelessWidget {
             title: 'The Tails',
             subtitle: 'Wa, Ya',
             items: const <(String, String)>[
-              ('w', 'WA'),
-              ('y', 'YA'),
+              ('w+', 'WA'),
+              ('y+', 'YA'),
             ],
+            isLocked: locked(4),
             onStart: () => onStartLesson('consonants-04'),
           ),
           const SizedBox(height: 8),
@@ -98,6 +126,7 @@ class LearnHomeBody extends StatelessWidget {
               ('be', 'BE/BI'),
               ('bo', 'BO/BU'),
             ],
+            isLocked: locked(5),
             onStart: () => onStartLesson('kudlit-01'),
           ),
         ],

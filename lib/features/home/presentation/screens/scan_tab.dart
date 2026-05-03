@@ -2,10 +2,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
 
 import 'package:kudlit_ph/core/utils/baybayify.dart';
 import 'package:kudlit_ph/features/scanner/domain/entities/baybayin_detection.dart';
+import 'package:kudlit_ph/features/scanner/presentation/providers/scan_tab_controller.dart';
 import 'package:kudlit_ph/features/scanner/presentation/providers/scanner_evaluation_provider.dart';
 import 'package:kudlit_ph/features/scanner/presentation/providers/scanner_provider.dart';
 import 'package:kudlit_ph/features/scanner/presentation/providers/yolo_model_selection_provider.dart';
@@ -17,103 +17,15 @@ import 'package:kudlit_ph/features/scanner/presentation/widgets/yolo_model_dropd
 ///
 /// Embeds [ScannerCamera] (which owns the YOLO inference), reads the latest
 /// detections from [ScannerNotifier], and renders the controls + result panel.
-class ScanTab extends ConsumerStatefulWidget {
+class ScanTab extends ConsumerWidget {
   const ScanTab({super.key});
 
   @override
-  ConsumerState<ScanTab> createState() => _ScanTabState();
-}
-
-class _ScanTabState extends ConsumerState<ScanTab> {
-  bool _resultVisible = false;
-  bool _flashOn = false;
-  Uint8List? _selectedImageBytes;
-  bool _isLoadingImage = false;
-
-  /// When true, live detection updates are paused (e.g. while the
-  /// permutations dialog is open) and the overlay shows a frozen snapshot.
-  bool _detectionsFrozen = false;
-
-  /// Detections frozen at the moment the shutter was pressed.
-  List<BaybayinDetection> _snapshot = const <BaybayinDetection>[];
-
-  Future<void> _toggleFlash() async {
-    final bool next = !_flashOn;
-    setState(() => _flashOn = next);
-    await ref.read(baybayinDetectorProvider).toggleTorch(enabled: next);
-  }
-
-  Future<void> _pickImageFromGallery() async {
-    final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-    if (image == null) return;
-
-    setState(() {
-      _isLoadingImage = true;
-    });
-
-    final Uint8List bytes = await image.readAsBytes();
-
-    setState(() {
-      _selectedImageBytes = bytes;
-      _isLoadingImage = false;
-      _resultVisible = true;
-    });
-
-    final List<BaybayinDetection> results = await ref
-        .read(baybayinDetectorProvider)
-        .detectImage(bytes);
-
-    if (mounted) {
-      ref.read(scannerNotifierProvider.notifier).update(results);
-      ref.read(scannerEvaluationProvider.notifier).evaluate(results, bytes);
-      setState(() {
-        _snapshot = List<BaybayinDetection>.of(results);
-      });
-    }
-  }
-
-  void _onShutterTapped() {
-    final List<BaybayinDetection> detections = ref.read(scannerNotifierProvider);
-    if (_resultVisible) {
-      setState(() {
-        _resultVisible = false;
-        _snapshot = const <BaybayinDetection>[];
-      });
-      return;
-    }
-
-    setState(() {
-      _snapshot = List<BaybayinDetection>.of(detections);
-      _resultVisible = true;
-    });
-    ref
-        .read(scannerEvaluationProvider.notifier)
-        .evaluate(detections, _selectedImageBytes);
-  }
-
-  void _clearSelectedImage() {
-    setState(() {
-      _selectedImageBytes = null;
-      _resultVisible = false;
-    });
-    ref.read(scannerNotifierProvider.notifier).update(<BaybayinDetection>[]);
-  }
-
-  Future<void> _showPermutationsDialog(List<String> permutations) async {
-    setState(() => _detectionsFrozen = true);
-    await showDialog<void>(
-      context: context,
-      builder: (BuildContext _) =>
-          _PermutationsDialog(permutations: permutations),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ScanTabController controller = ref.read(
+      scanTabControllerProvider.notifier,
     );
-    if (mounted) {
-      setState(() => _detectionsFrozen = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
+    final ScanTabState scanState = ref.watch(scanTabControllerProvider);
     final double safeBottom = MediaQuery.paddingOf(context).bottom;
     final double controlsBottom = safeBottom + 20;
     final List<BaybayinDetection> detections = ref.watch(
@@ -125,17 +37,22 @@ class _ScanTabState extends ConsumerState<ScanTab> {
       children: <Widget>[
         _ScanCameraStack(
           detections: detections,
-          flashOn: _flashOn,
-          onDetections: (List<BaybayinDetection> d) {
-            if (_selectedImageBytes == null && !_detectionsFrozen) {
-              ref.read(scannerNotifierProvider.notifier).update(d);
-            }
+          flashOn: scanState.flashOn,
+          onDetections: controller.applyLiveDetections,
+          onFlashToggle: kIsWeb ? null : () => controller.toggleFlash(),
+          selectedImageBytes: scanState.selectedImageBytes,
+          onPermutationsTap: (List<String> permutations) async {
+            controller.setDetectionsFrozen(true);
+            await showDialog<void>(
+              context: context,
+              builder: (BuildContext _) {
+                return _PermutationsDialog(permutations: permutations);
+              },
+            );
+            controller.setDetectionsFrozen(false);
           },
-          onFlashToggle: kIsWeb ? null : _toggleFlash,
-          selectedImageBytes: _selectedImageBytes,
-          onPermutationsTap: _showPermutationsDialog,
         ),
-        if (_isLoadingImage)
+        if (scanState.isLoadingImage)
           const Positioned.fill(
             child: Center(child: CircularProgressIndicator()),
           ),
@@ -161,28 +78,20 @@ class _ScanTabState extends ConsumerState<ScanTab> {
           right: 0,
           bottom: controlsBottom,
           child: _ScanControls(
-            flashOn: _flashOn,
-            onShutter: _onShutterTapped,
-            onFlashToggle: kIsWeb ? null : _toggleFlash,
-            onGalleryTap: _pickImageFromGallery,
+            flashOn: scanState.flashOn,
+            onShutter: controller.onShutterTapped,
+            onFlashToggle: kIsWeb ? null : () => controller.toggleFlash(),
+            onGalleryTap: () => controller.pickImageFromGallery(),
           ),
         ),
-        if (_resultVisible)
+        if (scanState.resultVisible)
           Positioned(
             left: 14,
             right: 14,
             bottom: controlsBottom + 96,
             child: _ScanResultPanel(
-              detections: _snapshot,
-              onDismiss: () {
-                if (_selectedImageBytes != null) {
-                  _clearSelectedImage();
-                }
-                setState(() {
-                  _resultVisible = false;
-                  _snapshot = const <BaybayinDetection>[];
-                });
-              },
+              detections: scanState.snapshot,
+              onDismiss: controller.dismissResult,
             ),
           ),
       ],

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -17,6 +16,7 @@ class AppPreferences {
     this.selectedModelId,
     this.hasSeenModelPrompt = false,
     this.hasDownloadedModels = false,
+    this.completedLessons = const <String>{},
   });
 
   final ThemeMode themeMode;
@@ -37,12 +37,16 @@ class AppPreferences {
   /// `/model-setup` screen is shown on the next cold launch.
   final bool hasDownloadedModels;
 
+  /// Set of lesson IDs the user has completed at least once.
+  final Set<String> completedLessons;
+
   AppPreferences copyWith({
     ThemeMode? themeMode,
     AiPreference? aiPreference,
     String? selectedModelId,
     bool? hasSeenModelPrompt,
     bool? hasDownloadedModels,
+    Set<String>? completedLessons,
   }) {
     return AppPreferences(
       themeMode: themeMode ?? this.themeMode,
@@ -50,6 +54,7 @@ class AppPreferences {
       selectedModelId: selectedModelId ?? this.selectedModelId,
       hasSeenModelPrompt: hasSeenModelPrompt ?? this.hasSeenModelPrompt,
       hasDownloadedModels: hasDownloadedModels ?? this.hasDownloadedModels,
+      completedLessons: completedLessons ?? this.completedLessons,
     );
   }
 }
@@ -61,6 +66,7 @@ const String _kAiKey = 'pref_ai';
 const String _kSelectedModelKey = 'pref_selected_model';
 const String _kModelPromptSeenKey = 'pref_model_prompt_seen';
 const String _kModelsDownloadedKey = 'pref_models_downloaded';
+const String _kCompletedLessonsKey = 'pref_completed_lessons';
 
 ThemeMode _themeFromString(String? value) {
   switch (value) {
@@ -103,6 +109,12 @@ class AppPreferencesNotifier extends _$AppPreferencesNotifier {
       selectedModelId: _prefs.getString(_kSelectedModelKey),
       hasSeenModelPrompt: _prefs.getBool(_kModelPromptSeenKey) ?? false,
       hasDownloadedModels: _prefs.getBool(_kModelsDownloadedKey) ?? false,
+      completedLessons: _prefs
+              .getString(_kCompletedLessonsKey)
+              ?.split(',')
+              .where((String s) => s.isNotEmpty)
+              .toSet() ??
+          const <String>{},
     );
   }
 
@@ -126,6 +138,14 @@ class AppPreferencesNotifier extends _$AppPreferencesNotifier {
     await _prefs.setBool(_kModelPromptSeenKey, true);
   }
 
+  Future<void> completeLesson(String lessonId) async {
+    final AppPreferences? current = state.asData?.value;
+    if (current == null) return;
+    final Set<String> updated = <String>{...current.completedLessons, lessonId};
+    state = AsyncData(current.copyWith(completedLessons: updated));
+    await _prefs.setString(_kCompletedLessonsKey, updated.join(','));
+  }
+
   /// Called after a successful AI model download.
   /// Once set, the `/model-setup` screen is never shown again on cold launch.
   Future<void> markModelsDownloaded() async {
@@ -145,4 +165,16 @@ class AppPreferencesNotifier extends _$AppPreferencesNotifier {
 /// In-memory flag set when the user taps "Not now" on the model setup screen.
 /// Allows the router to navigate away for this session only — resets on next
 /// cold launch so the setup screen is shown again until models are downloaded.
-final modelSetupSkippedProvider = StateProvider<bool>((Ref ref) => false);
+final NotifierProvider<ModelSetupSkippedNotifier, bool>
+modelSetupSkippedProvider = NotifierProvider<ModelSetupSkippedNotifier, bool>(
+  ModelSetupSkippedNotifier.new,
+);
+
+class ModelSetupSkippedNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void setSkipped() {
+    state = true;
+  }
+}
