@@ -17,12 +17,11 @@ Future<UserRole> currentUserRole(Ref ref) async {
   final User? user = client.auth.currentUser;
   if (user == null) return UserRole.user;
 
-  final Map<String, dynamic>? row =
-      await client
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .maybeSingle();
+  final Map<String, dynamic>? row = await client
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .maybeSingle();
 
   return UserRole.fromString(row?['role'] as String?);
 }

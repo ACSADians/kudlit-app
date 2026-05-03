@@ -1,5 +1,8 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 
 import 'package:kudlit_ph/core/design_system/kudlit_colors.dart';
 import 'package:kudlit_ph/features/admin/data/services/stroke_export_service.dart';
@@ -9,9 +12,6 @@ import 'package:kudlit_ph/features/admin/presentation/providers/stroke_recording
 import 'package:kudlit_ph/features/admin/presentation/providers/stroke_recording_state.dart';
 
 /// Admin-only screen for recording Baybayin stroke patterns.
-///
-/// Shows a full-screen drawing canvas with the target glyph overlaid at low
-/// opacity, a glyph-selector chip row, and undo / clear / save controls.
 class StrokeRecordingScreen extends ConsumerWidget {
   const StrokeRecordingScreen({super.key});
 
@@ -19,6 +19,9 @@ class StrokeRecordingScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final StrokeRecordingState state =
         ref.watch(strokeRecordingNotifierProvider);
+
+    final StrokeRecordingIdle? idle =
+        state is StrokeRecordingIdle ? state : null;
 
     return Scaffold(
       backgroundColor: KudlitColors.neutralBlack,
@@ -30,23 +33,24 @@ class StrokeRecordingScreen extends ConsumerWidget {
           style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
         ),
         actions: <Widget>[
-          if (state is StrokeRecordingIdle && state.hasStrokes)
-            _UndoButton(state: state),
-          if (state is StrokeRecordingIdle && state.hasStrokes)
-            _ClearButton(state: state),
+          if (idle != null && idle.hasStrokes) _UndoButton(state: idle),
+          if (idle != null && idle.hasStrokes) _ClearButton(state: idle),
         ],
       ),
       body: switch (state) {
         StrokeRecordingSaved() => _SavedView(
-            pattern: state.pattern,
-            onNext: () =>
-                ref.read(strokeRecordingNotifierProvider.notifier).resetAfterSave(),
-          ),
+          pattern: state.pattern,
+          sessionPatterns: state.sessionPatterns,
+          onNext: () => ref
+              .read(strokeRecordingNotifierProvider.notifier)
+              .resetAfterSave(),
+        ),
         StrokeRecordingError() => _ErrorView(
-            message: state.message,
-            onDismiss: () =>
-                ref.read(strokeRecordingNotifierProvider.notifier).dismissError(),
-          ),
+          message: state.message,
+          onDismiss: () => ref
+              .read(strokeRecordingNotifierProvider.notifier)
+              .dismissError(),
+        ),
         _ => _RecordingBody(state: state),
       },
     );
@@ -55,13 +59,13 @@ class StrokeRecordingScreen extends ConsumerWidget {
 
 // ─── Main recording body ─────────────────────────────────────────────────────
 
-class _RecordingBody extends ConsumerWidget {
+class _RecordingBody extends StatelessWidget {
   const _RecordingBody({required this.state});
 
   final StrokeRecordingState state;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final StrokeRecordingIdle? idle =
         state is StrokeRecordingIdle ? state as StrokeRecordingIdle : null;
 
@@ -76,16 +80,20 @@ class _RecordingBody extends ConsumerWidget {
       _ => kBaybayinGlyphs.first.label,
     };
 
+    final List<StrokePattern> sessionPatterns =
+        idle?.sessionPatterns ?? const <StrokePattern>[];
+
     return Column(
       children: <Widget>[
-        _GlyphSelector(
+        _ControlsBar(
           selectedGlyph: glyph,
-          onSelected: (String g, String l) =>
-              ref.read(strokeRecordingNotifierProvider.notifier).selectGlyph(g, l),
+          hasOverlay: idle?.overlayImageBytes != null,
         ),
+        if (sessionPatterns.isNotEmpty)
+          _SessionSavedStrip(patterns: sessionPatterns),
         Expanded(
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
             child: Column(
               children: <Widget>[
                 _StrokeCountBadge(idle: idle),
@@ -94,10 +102,14 @@ class _RecordingBody extends ConsumerWidget {
                   child: _DrawingCanvas(
                     idle: idle,
                     glyphChar: glyph,
+                    overlayImageBytes: idle?.overlayImageBytes,
+                    strokeWidth: idle?.strokeWidth ?? 4.0,
                     isSaving: state is StrokeRecordingSaving,
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
+                _ThicknessSlider(strokeWidth: idle?.strokeWidth ?? 4.0),
+                const SizedBox(height: 8),
                 _SaveButton(
                   idle: idle,
                   label: label,
@@ -113,10 +125,104 @@ class _RecordingBody extends ConsumerWidget {
   }
 }
 
-// ─── Glyph selector ──────────────────────────────────────────────────────────
+// ─── Controls bar (glyph dropdown + overlay picker) ───────────────────────────
 
-class _GlyphSelector extends StatelessWidget {
-  const _GlyphSelector({
+class _ControlsBar extends ConsumerWidget {
+  const _ControlsBar({
+    required this.selectedGlyph,
+    required this.hasOverlay,
+  });
+
+  final String selectedGlyph;
+  final bool hasOverlay;
+
+  Future<void> _pickImage(WidgetRef ref) async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1024,
+      maxHeight: 1024,
+    );
+    if (picked == null) return;
+    final Uint8List bytes = await picked.readAsBytes();
+    ref.read(strokeRecordingNotifierProvider.notifier).setOverlayImage(bytes);
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Container(
+      height: 52,
+      color: KudlitColors.blue200,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Row(
+        children: <Widget>[
+          Expanded(
+            child: _GlyphDropdown(
+              selectedGlyph: selectedGlyph,
+              onSelected: (String g, String l) => ref
+                  .read(strokeRecordingNotifierProvider.notifier)
+                  .selectGlyph(g, l),
+            ),
+          ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: () => _pickImage(ref),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: hasOverlay
+                    ? KudlitColors.blue700.withAlpha(160)
+                    : KudlitColors.blue100,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Icon(
+                    hasOverlay
+                        ? Icons.image_rounded
+                        : Icons.add_photo_alternate_outlined,
+                    size: 16,
+                    color: KudlitColors.neutralWhite,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    hasOverlay ? 'Image ✓' : 'Overlay',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: KudlitColors.neutralWhite,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (hasOverlay) ...<Widget>[
+            const SizedBox(width: 2),
+            IconButton(
+              icon: const Icon(
+                Icons.close_rounded,
+                size: 16,
+                color: KudlitColors.grey300,
+              ),
+              tooltip: 'Remove overlay',
+              constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+              padding: EdgeInsets.zero,
+              onPressed: () => ref
+                  .read(strokeRecordingNotifierProvider.notifier)
+                  .setOverlayImage(null),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Glyph dropdown ──────────────────────────────────────────────────────────
+
+class _GlyphDropdown extends StatelessWidget {
+  const _GlyphDropdown({
     required this.selectedGlyph,
     required this.onSelected,
   });
@@ -126,95 +232,253 @@ class _GlyphSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 52,
-      color: KudlitColors.blue200,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        itemCount: kBaybayinGlyphs.length,
-        separatorBuilder: (_, i) => const SizedBox(width: 6),
-        itemBuilder: (BuildContext context, int i) {
-          final ({String glyph, String label}) item = kBaybayinGlyphs[i];
-          final bool selected = item.glyph == selectedGlyph;
-          return _GlyphChip(
-            glyph: item.glyph,
-            label: item.label,
-            selected: selected,
-            onTap: () => onSelected(item.glyph, item.label),
-          );
+    return DropdownButtonHideUnderline(
+      child: DropdownButton<String>(
+        value: selectedGlyph,
+        isDense: true,
+        dropdownColor: KudlitColors.blue300,
+        iconEnabledColor: KudlitColors.neutralWhite,
+        selectedItemBuilder: (BuildContext context) {
+          return kBaybayinGlyphs
+              .map(
+                (({String glyph, String label}) item) => Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Text(
+                      item.glyph,
+                      style: const TextStyle(
+                        fontFamily: 'Baybayin Simple TAWBID',
+                        fontSize: 22,
+                        color: KudlitColors.neutralWhite,
+                        height: 1.2,
+                      ),
+                    ),
+                    const SizedBox(width: 7),
+                    Text(
+                      item.label,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: KudlitColors.neutralWhite,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+              .toList();
+        },
+        items: kBaybayinGlyphs
+            .map(
+              (({String glyph, String label}) item) =>
+                  DropdownMenuItem<String>(
+                    value: item.glyph,
+                    child: Row(
+                      children: <Widget>[
+                        SizedBox(
+                          width: 32,
+                          child: Text(
+                            item.glyph,
+                            style: const TextStyle(
+                              fontFamily: 'Baybayin Simple TAWBID',
+                              fontSize: 20,
+                              color: KudlitColors.neutralWhite,
+                              height: 1.2,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          item.label,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: KudlitColors.neutralWhite,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+            )
+            .toList(),
+        onChanged: (String? value) {
+          if (value == null) return;
+          final ({String glyph, String label}) item =
+              kBaybayinGlyphs.firstWhere((e) => e.glyph == value);
+          onSelected(item.glyph, item.label);
         },
       ),
     );
   }
 }
 
-class _GlyphChip extends StatelessWidget {
-  const _GlyphChip({
-    required this.glyph,
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
+// ─── Session saved strip ──────────────────────────────────────────────────────
 
-  final String glyph;
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
+class _SessionSavedStrip extends StatelessWidget {
+  const _SessionSavedStrip({required this.patterns});
+
+  final List<StrokePattern> patterns;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 160),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-        decoration: BoxDecoration(
-          color: selected ? KudlitColors.blue700 : KudlitColors.blue100,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Text(
-              glyph,
+    return Container(
+      height: 60,
+      color: KudlitColors.blue300.withAlpha(40),
+      child: Row(
+        children: <Widget>[
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 10),
+            child: Text(
+              'Done',
               style: TextStyle(
-                fontFamily: 'Baybayin Simple TAWBID',
-                fontSize: 18,
-                color: selected
-                    ? Colors.white
-                    : KudlitColors.neutralWhite,
-                height: 1.2,
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: KudlitColors.grey300,
+                letterSpacing: 0.5,
               ),
             ),
-            const SizedBox(width: 5),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                color: selected
-                    ? Colors.white70
-                    : KudlitColors.grey300,
-              ),
+          ),
+          Expanded(
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+              itemCount: patterns.length,
+              separatorBuilder: (_, i) => const SizedBox(width: 6),
+              itemBuilder: (BuildContext context, int i) =>
+                  _SessionPatternChip(pattern: patterns[i]),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
 
-// ─── Drawing canvas ──────────────────────────────────────────────────────────
+class _SessionPatternChip extends StatelessWidget {
+  const _SessionPatternChip({required this.pattern});
+
+  final StrokePattern pattern;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: KudlitColors.success400.withAlpha(30),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: KudlitColors.success400.withAlpha(80)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Text(
+            pattern.glyph,
+            style: const TextStyle(
+              fontFamily: 'Baybayin Simple TAWBID',
+              fontSize: 16,
+              color: KudlitColors.success400,
+              height: 1.2,
+            ),
+          ),
+          const SizedBox(width: 5),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                pattern.label,
+                style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: KudlitColors.success400,
+                ),
+              ),
+              Text(
+                '${pattern.strokes.length}s',
+                style: const TextStyle(
+                  fontSize: 9,
+                  color: KudlitColors.grey300,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Thickness slider ─────────────────────────────────────────────────────────
+
+class _ThicknessSlider extends ConsumerWidget {
+  const _ThicknessSlider({required this.strokeWidth});
+
+  final double strokeWidth;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Row(
+      children: <Widget>[
+        const Icon(
+          Icons.brush_rounded,
+          size: 14,
+          color: KudlitColors.grey300,
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: SliderTheme(
+            data: SliderTheme.of(context).copyWith(
+              activeTrackColor: KudlitColors.blue700,
+              inactiveTrackColor: KudlitColors.blue100,
+              thumbColor: KudlitColors.blue700,
+              overlayColor: KudlitColors.blue700.withAlpha(30),
+              trackHeight: 3,
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
+            ),
+            child: Slider(
+              value: strokeWidth,
+              min: 2,
+              max: 16,
+              divisions: 14,
+              onChanged: (double v) => ref
+                  .read(strokeRecordingNotifierProvider.notifier)
+                  .setStrokeWidth(v),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        SizedBox(
+          width: 20,
+          height: 20,
+          child: Center(
+            child: Container(
+              width: strokeWidth.clamp(2.0, 16.0),
+              height: strokeWidth.clamp(2.0, 16.0),
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: KudlitColors.blue700,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ─── Drawing canvas ───────────────────────────────────────────────────────────
 
 class _DrawingCanvas extends ConsumerStatefulWidget {
   const _DrawingCanvas({
     required this.idle,
     required this.glyphChar,
+    required this.overlayImageBytes,
+    required this.strokeWidth,
     required this.isSaving,
   });
 
   final StrokeRecordingIdle? idle;
   final String glyphChar;
+  final Uint8List? overlayImageBytes;
+  final double strokeWidth;
   final bool isSaving;
 
   @override
@@ -235,27 +499,32 @@ class _DrawingCanvasState extends ConsumerState<_DrawingCanvas> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: KudlitColors.grey400,
-            width: 1.5,
-          ),
+          border: Border.all(color: KudlitColors.grey400, width: 1.5),
         ),
         child: Stack(
           fit: StackFit.expand,
           children: <Widget>[
-            // Reference glyph overlay — low opacity so it guides but doesn't
-            // interfere with seeing the drawn strokes.
-            Center(
-              child: Text(
-                widget.glyphChar,
-                style: const TextStyle(
-                  fontFamily: 'Baybayin Simple TAWBID',
-                  fontSize: 220,
-                  color: Color(0x18172F69),
-                  height: 1,
+            // Reference overlay — custom image or Baybayin glyph text.
+            if (widget.overlayImageBytes != null)
+              Opacity(
+                opacity: 0.15,
+                child: Image.memory(
+                  widget.overlayImageBytes!,
+                  fit: BoxFit.contain,
+                ),
+              )
+            else
+              Center(
+                child: Text(
+                  widget.glyphChar,
+                  style: const TextStyle(
+                    fontFamily: 'Baybayin Simple TAWBID',
+                    fontSize: 220,
+                    color: Color(0x18172F69),
+                    height: 1,
+                  ),
                 ),
               ),
-            ),
             // Drawn strokes
             if (idle != null)
               LayoutBuilder(
@@ -269,6 +538,7 @@ class _DrawingCanvasState extends ConsumerState<_DrawingCanvas> {
                       strokes: idle.strokes,
                       current: idle.currentStroke,
                       canvasSize: size,
+                      strokeWidth: widget.strokeWidth,
                     ),
                     size: size,
                   );
@@ -278,8 +548,9 @@ class _DrawingCanvasState extends ConsumerState<_DrawingCanvas> {
             if (!widget.isSaving && idle != null)
               GestureDetector(
                 onPanStart: (DragStartDetails d) {
-                  final RenderBox? box = _canvasKey.currentContext
-                      ?.findRenderObject() as RenderBox?;
+                  final RenderBox? box =
+                      _canvasKey.currentContext?.findRenderObject()
+                          as RenderBox?;
                   if (box == null) return;
                   final Offset local = box.globalToLocal(d.globalPosition);
                   ref
@@ -287,8 +558,9 @@ class _DrawingCanvasState extends ConsumerState<_DrawingCanvas> {
                       .onPanStart(local, box.size);
                 },
                 onPanUpdate: (DragUpdateDetails d) {
-                  final RenderBox? box = _canvasKey.currentContext
-                      ?.findRenderObject() as RenderBox?;
+                  final RenderBox? box =
+                      _canvasKey.currentContext?.findRenderObject()
+                          as RenderBox?;
                   if (box == null) return;
                   final Offset local = box.globalToLocal(d.globalPosition);
                   ref
@@ -296,8 +568,9 @@ class _DrawingCanvasState extends ConsumerState<_DrawingCanvas> {
                       .onPanUpdate(local, box.size);
                 },
                 onPanEnd: (_) {
-                  final RenderBox? box = _canvasKey.currentContext
-                      ?.findRenderObject() as RenderBox?;
+                  final RenderBox? box =
+                      _canvasKey.currentContext?.findRenderObject()
+                          as RenderBox?;
                   if (box == null) return;
                   ref
                       .read(strokeRecordingNotifierProvider.notifier)
@@ -306,9 +579,7 @@ class _DrawingCanvasState extends ConsumerState<_DrawingCanvas> {
               ),
             if (widget.isSaving)
               const Center(
-                child: CircularProgressIndicator(
-                  color: KudlitColors.blue700,
-                ),
+                child: CircularProgressIndicator(color: KudlitColors.blue700),
               ),
           ],
         ),
@@ -324,17 +595,19 @@ class _TimedStrokePainter extends CustomPainter {
     required this.strokes,
     required this.current,
     required this.canvasSize,
+    required this.strokeWidth,
   });
 
   final List<StrokeData> strokes;
   final List<TimedPoint> current;
   final Size canvasSize;
+  final double strokeWidth;
 
   @override
   void paint(Canvas canvas, Size size) {
     final Paint paint = Paint()
       ..color = KudlitColors.blue300
-      ..strokeWidth = 4
+      ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round
       ..style = PaintingStyle.stroke;
@@ -365,7 +638,10 @@ class _TimedStrokePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_TimedStrokePainter old) => true;
+  bool shouldRepaint(_TimedStrokePainter old) =>
+      old.strokes != strokes ||
+      old.current != current ||
+      old.strokeWidth != strokeWidth;
 }
 
 // ─── Toolbar buttons ─────────────────────────────────────────────────────────
@@ -437,7 +713,7 @@ class _StrokeCountBadge extends StatelessWidget {
     final int count = idle?.strokes.length ?? 0;
     return Row(
       children: <Widget>[
-        Icon(
+        const Icon(
           Icons.gesture_rounded,
           size: 14,
           color: KudlitColors.grey300,
@@ -445,18 +721,7 @@ class _StrokeCountBadge extends StatelessWidget {
         const SizedBox(width: 4),
         Text(
           '$count stroke${count == 1 ? '' : 's'} recorded',
-          style: const TextStyle(
-            fontSize: 12,
-            color: KudlitColors.grey300,
-          ),
-        ),
-        const Spacer(),
-        const Text(
-          'Draw the glyph — lift finger to end each stroke',
-          style: TextStyle(
-            fontSize: 11,
-            color: KudlitColors.grey300,
-          ),
+          style: const TextStyle(fontSize: 12, color: KudlitColors.grey300),
         ),
       ],
     );
@@ -493,7 +758,8 @@ class _SaveButton extends ConsumerWidget {
         ),
         onPressed: canSave
             ? () async {
-                final RenderBox? box = context.findRenderObject() as RenderBox?;
+                final RenderBox? box =
+                    context.findRenderObject() as RenderBox?;
                 final Size size = box?.size ?? const Size(300, 300);
                 await ref
                     .read(strokeRecordingNotifierProvider.notifier)
@@ -513,9 +779,14 @@ class _SaveButton extends ConsumerWidget {
 // ─── Saved confirmation ───────────────────────────────────────────────────────
 
 class _SavedView extends StatefulWidget {
-  const _SavedView({required this.pattern, required this.onNext});
+  const _SavedView({
+    required this.pattern,
+    required this.sessionPatterns,
+    required this.onNext,
+  });
 
   final StrokePattern pattern;
+  final List<StrokePattern> sessionPatterns;
   final VoidCallback onNext;
 
   @override
@@ -529,8 +800,7 @@ class _SavedViewState extends State<_SavedView> {
   Future<void> _export() async {
     setState(() => _exporting = true);
     try {
-      final String name =
-          await exportStrokePatternAsJson(widget.pattern);
+      final String name = await exportStrokePatternAsJson(widget.pattern);
       if (mounted) setState(() => _exportedName = name);
     } catch (e) {
       if (mounted) {
@@ -545,89 +815,97 @@ class _SavedViewState extends State<_SavedView> {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            const Icon(
-              Icons.check_circle_rounded,
-              size: 72,
-              color: KudlitColors.success400,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              '"${widget.pattern.label}" saved',
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
-                color: KudlitColors.neutralWhite,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '${widget.pattern.strokes.length} strokes · '
-              '${widget.pattern.strokes.fold(0, (int s, StrokeData d) => s + d.points.length)} points',
-              style: const TextStyle(
-                fontSize: 13,
-                color: KudlitColors.grey300,
-              ),
-            ),
-            if (_exportedName != null) ...<Widget>[
-              const SizedBox(height: 8),
-              Row(
+    return Column(
+      children: <Widget>[
+        if (widget.sessionPatterns.isNotEmpty)
+          _SessionSavedStrip(patterns: widget.sessionPatterns),
+        Expanded(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
                   const Icon(
-                    Icons.check_rounded,
-                    size: 14,
+                    Icons.check_circle_rounded,
+                    size: 72,
                     color: KudlitColors.success400,
                   ),
-                  const SizedBox(width: 4),
+                  const SizedBox(height: 16),
                   Text(
-                    _exportedName!,
+                    '"${widget.pattern.label}" saved',
                     style: const TextStyle(
-                      fontSize: 12,
-                      color: KudlitColors.success400,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      color: KudlitColors.neutralWhite,
                     ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '${widget.pattern.strokes.length} strokes · '
+                    '${widget.pattern.strokes.fold(0, (int s, StrokeData d) => s + d.points.length)} points',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: KudlitColors.grey300,
+                    ),
+                  ),
+                  if (_exportedName != null) ...<Widget>[
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        const Icon(
+                          Icons.check_rounded,
+                          size: 14,
+                          color: KudlitColors.success400,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          _exportedName!,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: KudlitColors.success400,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                  const SizedBox(height: 32),
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: KudlitColors.neutralWhite,
+                      side: const BorderSide(color: KudlitColors.blue600),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: _exporting ? null : _export,
+                    icon: _exporting
+                        ? const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.ios_share_rounded, size: 16),
+                    label: Text(_exporting ? 'Exporting…' : 'Export as JSON'),
+                  ),
+                  const SizedBox(height: 12),
+                  FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: KudlitColors.blue700,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: widget.onNext,
+                    child: const Text('Record another'),
                   ),
                 ],
               ),
-            ],
-            const SizedBox(height: 32),
-            OutlinedButton.icon(
-              style: OutlinedButton.styleFrom(
-                foregroundColor: KudlitColors.neutralWhite,
-                side: const BorderSide(color: KudlitColors.blue600),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              onPressed: _exporting ? null : _export,
-              icon: _exporting
-                  ? const SizedBox(
-                      width: 14,
-                      height: 14,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.ios_share_rounded, size: 16),
-              label: Text(_exporting ? 'Exporting…' : 'Export as JSON'),
             ),
-            const SizedBox(height: 12),
-            FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: KudlitColors.blue700,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              onPressed: widget.onNext,
-              child: const Text('Record another'),
-            ),
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
 }

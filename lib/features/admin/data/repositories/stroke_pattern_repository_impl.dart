@@ -7,8 +7,9 @@ import 'package:kudlit_ph/features/admin/domain/entities/stroke_pattern.dart';
 import 'package:kudlit_ph/features/admin/domain/repositories/stroke_pattern_repository.dart';
 
 class StrokePatternRepositoryImpl implements StrokePatternRepository {
-  const StrokePatternRepositoryImpl({required SupabaseStrokePatternDatasource datasource})
-      : _datasource = datasource;
+  const StrokePatternRepositoryImpl({
+    required SupabaseStrokePatternDatasource datasource,
+  }) : _datasource = datasource;
 
   final SupabaseStrokePatternDatasource _datasource;
 
@@ -23,10 +24,13 @@ class StrokePatternRepositoryImpl implements StrokePatternRepository {
   }
 
   @override
-  Future<Either<Failure, List<StrokePattern>>> fetchByGlyph(String glyph) async {
+  Future<Either<Failure, List<StrokePattern>>> fetchByGlyph(
+    String glyph,
+  ) async {
     try {
-      final List<StrokePattern> patterns =
-          await _datasource.fetchByGlyph(glyph);
+      final List<StrokePattern> patterns = await _datasource.fetchByGlyph(
+        glyph,
+      );
       return right(patterns);
     } on ServerException catch (e) {
       return left(Failure.network(message: e.message));

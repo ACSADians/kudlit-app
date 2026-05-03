@@ -35,10 +35,7 @@ class SettingsList extends StatelessWidget {
     return ListView(
       padding: EdgeInsets.fromLTRB(0, 8, 0, bottomPadding + 32),
       children: <Widget>[
-        if (u != null)
-          ProfileHeroCard(user: u)
-        else
-          AccountSection(user: null),
+        if (u != null) ProfileHeroCard(user: u) else AccountSection(user: null),
         const SizedBox(height: 28),
         if (u != null) ...<Widget>[
           ActivitySection(onActionTap: onActionTap),

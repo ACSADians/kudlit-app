@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:kudlit_ph/features/home/presentation/providers/app_preferences_provider.dart';
-import 'package:kudlit_ph/features/translator/domain/entities/gemma_model_info.dart';import 'package:kudlit_ph/features/translator/presentation/providers/ai_inference_provider.dart';import 'package:kudlit_ph/features/translator/presentation/providers/ai_inference_state.dart';
+import 'package:kudlit_ph/features/translator/domain/entities/gemma_model_info.dart';
+import 'package:kudlit_ph/features/translator/presentation/providers/ai_inference_provider.dart';
+import 'package:kudlit_ph/features/translator/presentation/providers/ai_inference_state.dart';
 
 import 'profile_management_action_button.dart';
 
@@ -15,10 +17,12 @@ class LlmDownloadTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final AiInferenceNotifier notifier =
-        ref.read(aiInferenceNotifierProvider.notifier);
-    final AsyncValue<AiInferenceState> stateAsync =
-        ref.watch(aiInferenceNotifierProvider);
+    final AiInferenceNotifier notifier = ref.read(
+      aiInferenceNotifierProvider.notifier,
+    );
+    final AsyncValue<AiInferenceState> stateAsync = ref.watch(
+      aiInferenceNotifierProvider,
+    );
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -66,17 +70,18 @@ class _LlmStatusRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return switch (state) {
       AiReady(:final AiPreference mode, :final GemmaModelInfo activeModel) =>
-        _ReadyRow(modelName: activeModel.name, cloudMode: mode == AiPreference.cloud),
-      AiLocalModelMissing() =>
-        _ActionRow(
-          badge: const _StatusBadge(label: 'Not downloaded', ok: false),
-          primary: 'Download',
-          onPrimary: onDownload,
+        _ReadyRow(
+          modelName: activeModel.name,
+          cloudMode: mode == AiPreference.cloud,
         ),
+      AiLocalModelMissing() => _ActionRow(
+        badge: const _StatusBadge(label: 'Not downloaded', ok: false),
+        primary: 'Download',
+        onPrimary: onDownload,
+      ),
       AiDownloading(:final GemmaModelInfo model, :final int progress) =>
         _ProgressRow(label: model.name, progress: progress, onCancel: onCancel),
-      AiInferenceError(:final String message) =>
-        _ErrRow(message: message),
+      AiInferenceError(:final String message) => _ErrRow(message: message),
       _ => const _CheckingRow(),
     };
   }
@@ -94,9 +99,7 @@ class _ReadyRow extends StatelessWidget {
       return const _StatusBadge(label: 'Cloud mode — not needed', ok: null);
     }
     return Row(
-      children: <Widget>[
-        _StatusBadge(label: '$modelName installed', ok: true),
-      ],
+      children: <Widget>[_StatusBadge(label: '$modelName installed', ok: true)],
     );
   }
 }
@@ -227,13 +230,13 @@ class _StatusBadge extends StatelessWidget {
     final Color bg = ok == true
         ? Colors.green.shade800.withAlpha(40)
         : ok == false
-            ? Colors.red.shade800.withAlpha(40)
-            : Theme.of(context).colorScheme.surfaceContainerHigh;
+        ? Colors.red.shade800.withAlpha(40)
+        : Theme.of(context).colorScheme.surfaceContainerHigh;
     final Color fg = ok == true
         ? Colors.green.shade300
         : ok == false
-            ? Colors.red.shade300
-            : Theme.of(context).colorScheme.onSurface.withAlpha(150);
+        ? Colors.red.shade300
+        : Theme.of(context).colorScheme.onSurface.withAlpha(150);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -270,7 +273,10 @@ class _ErrRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       'Error: $message',
-      style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.error),
+      style: TextStyle(
+        fontSize: 12,
+        color: Theme.of(context).colorScheme.error,
+      ),
     );
   }
 }

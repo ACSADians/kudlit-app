@@ -15,8 +15,9 @@ import 'package:kudlit_ph/features/admin/domain/entities/stroke_pattern.dart';
 /// Returns the generated file name.
 Future<String> exportStrokePatternAsJson(StrokePattern pattern) async {
   final StrokePatternModel model = StrokePatternModel.fromDomain(pattern);
-  final String jsonString =
-      const JsonEncoder.withIndent('  ').convert(model.toExportJson());
+  final String jsonString = const JsonEncoder.withIndent(
+    '  ',
+  ).convert(model.toExportJson());
 
   final String fileName =
       'stroke_${pattern.glyph}_${pattern.createdAt.millisecondsSinceEpoch}.json';

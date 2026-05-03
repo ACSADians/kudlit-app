@@ -7,7 +7,7 @@ import 'package:kudlit_ph/features/admin/domain/entities/stroke_pattern.dart';
 /// Remote data source for [StrokePattern] backed by Supabase.
 class SupabaseStrokePatternDatasource {
   const SupabaseStrokePatternDatasource({required SupabaseClient client})
-      : _client = client;
+    : _client = client;
 
   final SupabaseClient _client;
 
@@ -17,24 +17,24 @@ class SupabaseStrokePatternDatasource {
         'user_id': pattern.userId,
         'glyph': pattern.glyph,
         'label': pattern.label,
-        'strokes': pattern.strokes
-            .map((StrokeData s) => s.toJson())
-            .toList(),
+        'strokes': pattern.strokes.map((StrokeData s) => s.toJson()).toList(),
         'canvas_width': pattern.canvasWidth,
         'canvas_height': pattern.canvasHeight,
         'device_info': pattern.deviceInfo,
       };
 
-      final Map<String, dynamic> row =
-          await _client
-              .from('stroke_patterns')
-              .insert(payload)
-              .select()
-              .single();
+      final Map<String, dynamic> row = await _client
+          .from('stroke_patterns')
+          .insert(payload)
+          .select()
+          .single();
 
       return _fromRow(row);
     } on PostgrestException catch (e) {
-      throw ServerException(message: e.message, statusCode: int.tryParse(e.code ?? ''));
+      throw ServerException(
+        message: e.message,
+        statusCode: int.tryParse(e.code ?? ''),
+      );
     } catch (e) {
       throw ServerException(message: e.toString());
     }
@@ -42,19 +42,18 @@ class SupabaseStrokePatternDatasource {
 
   Future<List<StrokePattern>> fetchByGlyph(String glyph) async {
     try {
-      final List<dynamic> rows =
-          await _client
-              .from('stroke_patterns')
-              .select()
-              .eq('glyph', glyph)
-              .order('created_at', ascending: false);
+      final List<dynamic> rows = await _client
+          .from('stroke_patterns')
+          .select()
+          .eq('glyph', glyph)
+          .order('created_at', ascending: false);
 
-      return rows
-          .cast<Map<String, dynamic>>()
-          .map(_fromRow)
-          .toList();
+      return rows.cast<Map<String, dynamic>>().map(_fromRow).toList();
     } on PostgrestException catch (e) {
-      throw ServerException(message: e.message, statusCode: int.tryParse(e.code ?? ''));
+      throw ServerException(
+        message: e.message,
+        statusCode: int.tryParse(e.code ?? ''),
+      );
     } catch (e) {
       throw ServerException(message: e.toString());
     }
@@ -77,8 +76,8 @@ class SupabaseStrokePatternDatasource {
       strokes: strokes,
       canvasWidth: (row['canvas_width'] as num).toDouble(),
       canvasHeight: (row['canvas_height'] as num).toDouble(),
-      deviceInfo: (row['device_info'] as Map<String, dynamic>?) ??
-          <String, dynamic>{},
+      deviceInfo:
+          (row['device_info'] as Map<String, dynamic>?) ?? <String, dynamic>{},
       createdAt: DateTime.parse(row['created_at'] as String),
     );
   }

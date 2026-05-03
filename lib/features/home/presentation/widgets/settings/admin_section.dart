@@ -13,8 +13,7 @@ class AdminSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final AsyncValue<UserRole> roleAsync =
-        ref.watch(currentUserRoleProvider);
+    final AsyncValue<UserRole> roleAsync = ref.watch(currentUserRoleProvider);
 
     return roleAsync.when(
       loading: () => const SizedBox.shrink(),

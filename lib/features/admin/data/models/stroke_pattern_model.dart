@@ -42,16 +42,16 @@ class StrokePatternModel extends StrokePattern {
   }
 
   Map<String, dynamic> toRow() => <String, dynamic>{
-        'user_id': userId,
-        'glyph': glyph,
-        'label': label,
-        'strokes': strokes
-            .map((StrokeData s) => StrokeDataModel.fromDomain(s).toJson())
-            .toList(),
-        'canvas_width': canvasWidth,
-        'canvas_height': canvasHeight,
-        'device_info': deviceInfo,
-      };
+    'user_id': userId,
+    'glyph': glyph,
+    'label': label,
+    'strokes': strokes
+        .map((StrokeData s) => StrokeDataModel.fromDomain(s).toJson())
+        .toList(),
+    'canvas_width': canvasWidth,
+    'canvas_height': canvasHeight,
+    'device_info': deviceInfo,
+  };
 
   // ─── Portable JSON export ─────────────────────────────────────────────────
 
@@ -82,19 +82,19 @@ class StrokePatternModel extends StrokePattern {
   /// }
   /// ```
   Map<String, dynamic> toExportJson() => <String, dynamic>{
-        'schema_version': _kSchemaVersion,
-        'id': id,
-        'user_id': userId,
-        'glyph': glyph,
-        'label': label,
-        'canvas_width': canvasWidth,
-        'canvas_height': canvasHeight,
-        'device_info': deviceInfo,
-        'created_at': createdAt.toUtc().toIso8601String(),
-        'strokes': strokes
-            .map((StrokeData s) => StrokeDataModel.fromDomain(s).toJson())
-            .toList(),
-      };
+    'schema_version': _kSchemaVersion,
+    'id': id,
+    'user_id': userId,
+    'glyph': glyph,
+    'label': label,
+    'canvas_width': canvasWidth,
+    'canvas_height': canvasHeight,
+    'device_info': deviceInfo,
+    'created_at': createdAt.toUtc().toIso8601String(),
+    'strokes': strokes
+        .map((StrokeData s) => StrokeDataModel.fromDomain(s).toJson())
+        .toList(),
+  };
 
   factory StrokePatternModel.fromExportJson(Map<String, dynamic> json) {
     final List<dynamic> rawStrokes =
@@ -120,18 +120,17 @@ class StrokePatternModel extends StrokePattern {
   }
 
   /// Creates a [StrokePatternModel] from a domain entity.
-  factory StrokePatternModel.fromDomain(StrokePattern p) =>
-      StrokePatternModel(
-        id: p.id,
-        userId: p.userId,
-        glyph: p.glyph,
-        label: p.label,
-        strokes: p.strokes,
-        canvasWidth: p.canvasWidth,
-        canvasHeight: p.canvasHeight,
-        deviceInfo: p.deviceInfo,
-        createdAt: p.createdAt,
-      );
+  factory StrokePatternModel.fromDomain(StrokePattern p) => StrokePatternModel(
+    id: p.id,
+    userId: p.userId,
+    glyph: p.glyph,
+    label: p.label,
+    strokes: p.strokes,
+    canvasWidth: p.canvasWidth,
+    canvasHeight: p.canvasHeight,
+    deviceInfo: p.deviceInfo,
+    createdAt: p.createdAt,
+  );
 }
 
 /// Data-layer model for [StrokeData].
@@ -149,26 +148,22 @@ class StrokeDataModel extends StrokeData {
   }
 
   factory StrokeDataModel.fromDomain(StrokeData s) => StrokeDataModel(
-        points: s.points
-            .map((TimedPoint p) => TimedPointModel.fromDomain(p))
-            .toList(),
-      );
+    points: s.points
+        .map((TimedPoint p) => TimedPointModel.fromDomain(p))
+        .toList(),
+  );
 
   @override
   Map<String, dynamic> toJson() => <String, dynamic>{
-        'points': points
-            .map((TimedPoint p) => TimedPointModel.fromDomain(p).toJson())
-            .toList(),
-      };
+    'points': points
+        .map((TimedPoint p) => TimedPointModel.fromDomain(p).toJson())
+        .toList(),
+  };
 }
 
 /// Data-layer model for [TimedPoint].
 class TimedPointModel extends TimedPoint {
-  const TimedPointModel({
-    required super.x,
-    required super.y,
-    required super.t,
-  });
+  const TimedPointModel({required super.x, required super.y, required super.t});
 
   factory TimedPointModel.fromJson(Map<String, dynamic> json) =>
       TimedPointModel(
@@ -181,9 +176,5 @@ class TimedPointModel extends TimedPoint {
       TimedPointModel(x: p.x, y: p.y, t: p.t);
 
   @override
-  Map<String, dynamic> toJson() => <String, dynamic>{
-        'x': x,
-        'y': y,
-        't': t,
-      };
+  Map<String, dynamic> toJson() => <String, dynamic>{'x': x, 'y': y, 't': t};
 }

@@ -6,8 +6,7 @@ part of 'stroke_recording_notifier.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$strokeRecordingNotifierHash() =>
-    r'stroke_recording_notifier_provider';
+String _$strokeRecordingNotifierHash() => r'stroke_recording_notifier_provider';
 
 /// See also [StrokeRecordingNotifier].
 @ProviderFor(StrokeRecordingNotifier)

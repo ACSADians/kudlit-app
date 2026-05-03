@@ -6,16 +6,15 @@ import 'package:kudlit_ph/features/admin/data/repositories/stroke_pattern_reposi
 import 'package:kudlit_ph/features/admin/domain/repositories/stroke_pattern_repository.dart';
 
 final Provider<SupabaseStrokePatternDatasource>
-    supabaseStrokePatternDatasourceProvider =
+supabaseStrokePatternDatasourceProvider =
     Provider<SupabaseStrokePatternDatasource>(
-  (Ref ref) => SupabaseStrokePatternDatasource(
-    client: Supabase.instance.client,
-  ),
-);
+      (Ref ref) =>
+          SupabaseStrokePatternDatasource(client: Supabase.instance.client),
+    );
 
 final Provider<StrokePatternRepository> strokePatternRepositoryProvider =
     Provider<StrokePatternRepository>(
-  (Ref ref) => StrokePatternRepositoryImpl(
-    datasource: ref.watch(supabaseStrokePatternDatasourceProvider),
-  ),
-);
+      (Ref ref) => StrokePatternRepositoryImpl(
+        datasource: ref.watch(supabaseStrokePatternDatasourceProvider),
+      ),
+    );

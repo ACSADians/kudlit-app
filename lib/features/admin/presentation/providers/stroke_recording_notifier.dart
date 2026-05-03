@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -13,22 +15,63 @@ part 'stroke_recording_notifier.g.dart';
 
 @riverpod
 class StrokeRecordingNotifier extends _$StrokeRecordingNotifier {
+  // Session-level values preserved across glyph changes and state transitions.
+  Uint8List? _overlayBytes;
+  double _strokeWidth = 4.0;
+  final List<StrokePattern> _sessionPatterns = <StrokePattern>[];
+
+  /// Constructs an idle state using the current session-level values.
+  StrokeRecordingIdle _makeIdle(
+    String glyph,
+    String label, {
+    List<StrokeData> strokes = const <StrokeData>[],
+    List<TimedPoint> currentStroke = const <TimedPoint>[],
+    DateTime? strokeStartTime,
+    bool clearStrokeStart = false,
+  }) {
+    return StrokeRecordingIdle(
+      selectedGlyph: glyph,
+      selectedLabel: label,
+      strokes: strokes,
+      currentStroke: currentStroke,
+      strokeStartTime: clearStrokeStart ? null : strokeStartTime,
+      overlayImageBytes: _overlayBytes,
+      strokeWidth: _strokeWidth,
+      sessionPatterns: List<StrokePattern>.unmodifiable(_sessionPatterns),
+    );
+  }
+
   @override
   StrokeRecordingState build() {
     final ({String glyph, String label}) first = kBaybayinGlyphs.first;
-    return StrokeRecordingIdle(
-      selectedGlyph: first.glyph,
-      selectedLabel: first.label,
-    );
+    return _makeIdle(first.glyph, first.label);
   }
 
   // ─── Glyph selection ──────────────────────────────────────────────────────
 
   void selectGlyph(String glyph, String label) {
-    state = StrokeRecordingIdle(
-      selectedGlyph: glyph,
-      selectedLabel: label,
+    state = _makeIdle(glyph, label);
+  }
+
+  // ─── Overlay image ────────────────────────────────────────────────────────
+
+  void setOverlayImage(Uint8List? bytes) {
+    _overlayBytes = bytes;
+    if (state is! StrokeRecordingIdle) return;
+    final StrokeRecordingIdle s = state as StrokeRecordingIdle;
+    state = s.copyWith(
+      overlayImageBytes: bytes,
+      clearOverlay: bytes == null,
     );
+  }
+
+  // ─── Stroke width ─────────────────────────────────────────────────────────
+
+  void setStrokeWidth(double width) {
+    _strokeWidth = width;
+    if (state is! StrokeRecordingIdle) return;
+    final StrokeRecordingIdle s = state as StrokeRecordingIdle;
+    state = s.copyWith(strokeWidth: width);
   }
 
   // ─── Drawing events ───────────────────────────────────────────────────────
@@ -97,10 +140,7 @@ class StrokeRecordingNotifier extends _$StrokeRecordingNotifier {
   void clearAll() {
     if (state is! StrokeRecordingIdle) return;
     final StrokeRecordingIdle s = state as StrokeRecordingIdle;
-    state = StrokeRecordingIdle(
-      selectedGlyph: s.selectedGlyph,
-      selectedLabel: s.selectedLabel,
-    );
+    state = _makeIdle(s.selectedGlyph, s.selectedLabel);
   }
 
   // ─── Save ─────────────────────────────────────────────────────────────────
@@ -143,7 +183,14 @@ class StrokeRecordingNotifier extends _$StrokeRecordingNotifier {
         selectedLabel: s.selectedLabel,
         strokes: s.strokes,
       ),
-      (saved) => state = StrokeRecordingSaved(pattern: saved),
+      (saved) {
+        _sessionPatterns.add(saved);
+        state = StrokeRecordingSaved(
+          pattern: saved,
+          sessionPatterns:
+              List<StrokePattern>.unmodifiable(_sessionPatterns),
+        );
+      },
     );
   }
 
@@ -151,19 +198,16 @@ class StrokeRecordingNotifier extends _$StrokeRecordingNotifier {
   void resetAfterSave() {
     if (state is! StrokeRecordingSaved) return;
     final StrokeRecordingSaved s = state as StrokeRecordingSaved;
-    state = StrokeRecordingIdle(
-      selectedGlyph: s.pattern.glyph,
-      selectedLabel: s.pattern.label,
-    );
+    state = _makeIdle(s.pattern.glyph, s.pattern.label);
   }
 
   /// After an error, go back to idle preserving the strokes.
   void dismissError() {
     if (state is! StrokeRecordingError) return;
     final StrokeRecordingError s = state as StrokeRecordingError;
-    state = StrokeRecordingIdle(
-      selectedGlyph: s.selectedGlyph,
-      selectedLabel: s.selectedLabel,
+    state = _makeIdle(
+      s.selectedGlyph,
+      s.selectedLabel,
       strokes: s.strokes,
     );
   }

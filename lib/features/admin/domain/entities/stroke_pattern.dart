@@ -10,8 +10,8 @@ class StrokeData {
   final List<TimedPoint> points;
 
   Map<String, dynamic> toJson() => <String, dynamic>{
-        'points': points.map((TimedPoint p) => p.toJson()).toList(),
-      };
+    'points': points.map((TimedPoint p) => p.toJson()).toList(),
+  };
 
   factory StrokeData.fromJson(Map<String, dynamic> json) {
     final List<dynamic> raw = json['points'] as List<dynamic>;
