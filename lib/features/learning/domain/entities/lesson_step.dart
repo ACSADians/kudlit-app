@@ -9,6 +9,7 @@ class LessonStep {
     required this.mode,
     required this.label,
     required this.glyph,
+    this.glyphImage,
     this.intro,
     this.prompt,
     this.narration,
@@ -23,6 +24,10 @@ class LessonStep {
   final LessonMode mode;
   final String label;
   final String glyph;
+
+  /// Optional URL for a custom glyph image. When set, the UI shows this
+  /// image instead of rendering [glyph] with the Baybayin font.
+  final String? glyphImage;
   final String? intro;
   final String? prompt;
   final String? narration;

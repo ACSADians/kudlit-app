@@ -26,6 +26,7 @@ class ReferenceModeBody extends StatelessWidget {
           Center(
             child: ReferenceGlyphCard(
               glyph: step.glyph,
+              glyphImage: step.glyphImage,
               label: step.label,
               hideGlyph: step.hideGlyph,
             ),

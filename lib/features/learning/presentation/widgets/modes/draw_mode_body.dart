@@ -136,7 +136,9 @@ class DrawModeBodyState extends ConsumerState<DrawModeBody> {
               return;
             }
           } else {
-            debugPrint('[DrawMode] no detections above threshold — marking retry');
+            debugPrint(
+              '[DrawMode] no detections above threshold — marking retry',
+            );
             ctrl.submitDetection('');
             return;
           }
@@ -147,7 +149,9 @@ class DrawModeBodyState extends ConsumerState<DrawModeBody> {
     }
 
     // Only fall back to stub on web or if capture/model fails (not on 0 detections).
-    debugPrint('[DrawMode] falling back to submitDraw stub (capture or model error)');
+    debugPrint(
+      '[DrawMode] falling back to submitDraw stub (capture or model error)',
+    );
     final List<List<Offset>> snapshot = _strokes
         .map(List<Offset>.from)
         .toList(growable: false);
@@ -201,8 +205,9 @@ class DrawModeBodyState extends ConsumerState<DrawModeBody> {
 
       final ui.Picture picture = recorder.endRecording();
       final ui.Image image = await picture.toImage(width, height);
-      final ByteData? data =
-          await image.toByteData(format: ui.ImageByteFormat.png);
+      final ByteData? data = await image.toByteData(
+        format: ui.ImageByteFormat.png,
+      );
       final Uint8List? bytes = data?.buffer.asUint8List();
 
       return bytes;
@@ -318,6 +323,7 @@ class DrawModeBodyState extends ConsumerState<DrawModeBody> {
           const SizedBox(height: 12),
           _GlyphToggle(
             glyph: widget.step.glyph,
+            glyphImage: widget.step.glyphImage,
             label: widget.step.label,
             hideGlyph: widget.step.hideGlyph,
             visible: _glyphVisible,
@@ -579,6 +585,7 @@ class _GlyphToggle extends StatelessWidget {
   const _GlyphToggle({
     required this.glyph,
     required this.label,
+    this.glyphImage,
     required this.hideGlyph,
     required this.visible,
     required this.onToggle,
@@ -586,6 +593,7 @@ class _GlyphToggle extends StatelessWidget {
 
   final String glyph;
   final String label;
+  final String? glyphImage;
 
   /// If the step permanently hides the glyph (challenge mode), the toggle
   /// button is not shown — the learner can never reveal the answer.
@@ -600,6 +608,7 @@ class _GlyphToggle extends StatelessWidget {
     if (hideGlyph) {
       return ReferenceGlyphCard(
         glyph: glyph,
+        glyphImage: glyphImage,
         label: label,
         compact: true,
         hideGlyph: true,
@@ -614,7 +623,12 @@ class _GlyphToggle extends StatelessWidget {
         alignment: Alignment.topRight,
         clipBehavior: Clip.none,
         children: <Widget>[
-          ReferenceGlyphCard(glyph: glyph, label: label, compact: true),
+          ReferenceGlyphCard(
+            glyph: glyph,
+            glyphImage: glyphImage,
+            label: label,
+            compact: true,
+          ),
           Positioned(
             top: -6,
             right: -6,
@@ -652,4 +666,3 @@ class _GlyphToggle extends StatelessWidget {
     );
   }
 }
-
