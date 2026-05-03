@@ -96,10 +96,38 @@ class AiInferenceRepositoryImpl implements AiInferenceRepository {
         systemInstruction: systemInstruction,
       );
     }
-    return localDatasource.generate(
+    return _localWithCloudFallback(
       history,
       systemInstruction: systemInstruction,
     );
+  }
+
+  /// Tries local inference; transparently falls back to cloud on any error
+  /// (e.g. model not downloaded, session not initialised).
+  ///
+  /// Uses `await for` instead of `yield*` so that stream errors emitted by
+  /// the local datasource are caught by the surrounding try/catch.
+  Stream<String> _localWithCloudFallback(
+    List<ChatMessage> history, {
+    String? systemInstruction,
+  }) async* {
+    bool localFailed = false;
+    try {
+      await for (final String token in localDatasource.generate(
+        history,
+        systemInstruction: systemInstruction,
+      )) {
+        yield token;
+      }
+    } catch (_) {
+      localFailed = true;
+    }
+    if (localFailed) {
+      yield* cloudDatasource.generate(
+        history,
+        systemInstruction: systemInstruction,
+      );
+    }
   }
 
   // ─── 2. Image analysis ────────────────────────────────────────────────────
@@ -110,12 +138,49 @@ class AiInferenceRepositoryImpl implements AiInferenceRepository {
     String mimeType = 'image/png',
     String? prompt,
   }) {
-    // Always cloud — local model does not support vision input.
-    return cloudDatasource.analyzeImage(
+    if (_useCloud) {
+      return cloudDatasource.analyzeImage(
+        imageBytes,
+        mimeType: mimeType,
+        prompt: prompt,
+      );
+    }
+    return _localAnalyzeWithCloudFallback(
       imageBytes,
       mimeType: mimeType,
       prompt: prompt,
     );
+  }
+
+  /// Tries local image analysis; falls back to cloud if local is unsupported
+  /// or errors (local Gemma does not support vision input).
+  ///
+  /// Uses `await for` instead of `yield*` so that stream errors emitted by
+  /// the local datasource are caught by the surrounding try/catch.
+  Stream<String> _localAnalyzeWithCloudFallback(
+    Uint8List imageBytes, {
+    String mimeType = 'image/png',
+    String? prompt,
+  }) async* {
+    bool localFailed = false;
+    try {
+      await for (final String token in localDatasource.analyzeImage(
+        imageBytes,
+        mimeType: mimeType,
+        prompt: prompt,
+      )) {
+        yield token;
+      }
+    } catch (_) {
+      localFailed = true;
+    }
+    if (localFailed) {
+      yield* cloudDatasource.analyzeImage(
+        imageBytes,
+        mimeType: mimeType,
+        prompt: prompt,
+      );
+    }
   }
 
   // ─── 3. Challenge generation ──────────────────────────────────────────────
@@ -125,8 +190,22 @@ class AiInferenceRepositoryImpl implements AiInferenceRepository {
     List<String>? characters,
   }) async {
     try {
-      final BaybayinChallenge challenge = await cloudDatasource
-          .generateChallenge(characters: characters);
+      late final BaybayinChallenge challenge;
+      if (_useCloud) {
+        challenge = await cloudDatasource.generateChallenge(
+          characters: characters,
+        );
+      } else {
+        try {
+          challenge = await localDatasource.generateChallenge(
+            characters: characters,
+          );
+        } catch (_) {
+          challenge = await cloudDatasource.generateChallenge(
+            characters: characters,
+          );
+        }
+      }
       return right(challenge);
     } on ServerException catch (e) {
       return left(Failure.network(message: e.message));
