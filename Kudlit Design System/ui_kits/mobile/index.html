@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Kudlit — Mobile UI Kit</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link rel="stylesheet" href="../../colors_and_type.css" />
+<style>
+  html, body { margin: 0; padding: 0; min-height: 100vh; font-family: 'Geist', ui-sans-serif, system-ui, sans-serif; }
+  body {
+    background: radial-gradient(ellipse at top, hsl(227, 92%, 95%) 0%, hsl(226, 91%, 88%) 60%, hsl(225, 39%, 75%) 100%);
+    display: flex; justify-content: center; align-items: flex-start;
+    padding: 40px 20px; box-sizing: border-box;
+  }
+  .stage {
+    display: flex; gap: 28px; align-items: flex-start; flex-wrap: wrap;
+    justify-content: center; max-width: 1400px;
+  }
+  .phone-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .phone-label { font-size: 12px; color: hsl(226, 65%, 25%); font-weight: 500; opacity: .7; letter-spacing: .04em; text-transform: uppercase; }
+  .switcher {
+    background: hsl(226, 91%, 91%);
+    border: 1px solid hsl(233, 21%, 85%);
+    border-radius: 9999px; padding: 4px; display: inline-flex; gap: 2px;
+    box-shadow: 0 4px 12px rgba(14,20,37,0.08);
+    margin-bottom: 20px; flex-wrap: wrap; justify-content: center;
+  }
+  .switcher button {
+    border: none; background: transparent; padding: 7px 14px;
+    border-radius: 9999px; font-family: inherit; font-size: 13px;
+    font-weight: 500; color: hsl(225, 36%, 39%); cursor: pointer;
+    transition: all 300ms cubic-bezier(.16,1,.3,1);
+  }
+  .switcher button.active { background: hsl(226, 65%, 25%); color: hsl(227, 92%, 95%); }
+  .page-title { text-align: center; margin-bottom: 8px; }
+  .page-title h1 { font-size: 28px; font-weight: 700; color: hsl(226, 65%, 25%); margin: 0 0 4px; letter-spacing: -0.02em;}
+  .page-title p { font-size: 13px; color: hsl(231, 15%, 45%); margin: 0;}
+</style>
+</head>
+<body>
+
+<div>
+  <div class="page-title">
+    <h1>Kudlit Mobile</h1>
+    <p>Click a screen to switch views. Or tap inside the phone.</p>
+  </div>
+  <div id="switcher" style="text-align:center;"></div>
+  <div id="root"></div>
+</div>
+
+<!-- React, Babel -->
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+
+<!-- Kit components (order matters — atoms first) -->
+<script type="text/babel" src="KudlitAtoms.jsx"></script>
+<script type="text/babel" src="android-frame.jsx"></script>
+<script type="text/babel" src="LoginScreen.jsx"></script>
+<script type="text/babel" src="HomeScreen.jsx"></script>
+<script type="text/babel" src="ScannerScreen.jsx"></script>
+<script type="text/babel" src="TransliteratorScreen.jsx"></script>
+<script type="text/babel" src="QuizScreen.jsx"></script>
+
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+function KudlitApp({ screen, setScreen }) {
+  const renderScreen = () => {
+    switch (screen) {
+      case 'login':         return <LoginScreen onLogin={() => setScreen('home')} />;
+      case 'home':          return <HomeScreen onNavigate={setScreen} />;
+      case 'scan':          return <ScannerScreen onNavigate={setScreen} />;
+      case 'transliterate': return <TransliteratorScreen onNavigate={setScreen} />;
+      case 'quiz':
+      case 'lesson':        return <QuizScreen onNavigate={setScreen} />;
+      default:              return <HomeScreen onNavigate={setScreen} />;
+    }
+  };
+
+  const showChrome = screen !== 'login' && screen !== 'scan';
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }} data-screen-label={`Kudlit / ${screen}`}>
+      {showChrome && <KudlitTopbar />}
+      {renderScreen()}
+      {showChrome && <KudlitBottomNav active={screen === 'transliterate' ? 'scan' : (screen === 'quiz' || screen === 'lesson' ? 'learn' : screen)} onTab={tab => {
+        if (tab === 'home') setScreen('home');
+        if (tab === 'scan') setScreen('scan');
+        if (tab === 'learn') setScreen('quiz');
+        if (tab === 'profile') setScreen('home');
+      }} />}
+    </div>
+  );
+}
+
+function Root() {
+  const [screen, setScreen] = useState(() => localStorage.getItem('kudlit.screen') || 'home');
+  useEffect(() => { localStorage.setItem('kudlit.screen', screen); }, [screen]);
+  useEffect(() => {
+    // re-render lucide icons on every screen change
+    if (window.lucide) setTimeout(() => window.lucide.createIcons(), 50);
+  }, [screen]);
+
+  const screens = [
+    ['login', 'Login'],
+    ['home', 'Home'],
+    ['scan', 'Scanner'],
+    ['transliterate', 'Transliterator'],
+    ['quiz', 'Quiz'],
+  ];
+
+  return (
+    <div>
+      <div className="switcher" style={{ display:'inline-flex' }}>
+        {screens.map(([id, lbl]) => (
+          <button key={id} className={screen === id ? 'active' : ''} onClick={() => setScreen(id)}>{lbl}</button>
+        ))}
+      </div>
+      <div className="stage">
+        <div className="phone-wrap">
+          <AndroidDevice width={412} height={892}>
+            <KudlitApp screen={screen} setScreen={setScreen} />
+          </AndroidDevice>
+          <div className="phone-label">Pixel 8 · 412×892</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<Root />);
+</script>
+</body>
+</html>

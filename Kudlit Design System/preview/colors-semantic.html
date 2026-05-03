@@ -1,0 +1,57 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html, body { margin:0; padding:0; background: var(--neutral-white); }
+  body { padding:20px; font-family: var(--font-sans); }
+  .row { display:flex; gap:8px; margin-bottom:8px; align-items:center; }
+  .sw { flex:1; height:44px; border-radius:8px; padding:6px 8px; color:white; font-size:10px; font-family:var(--font-mono); display:flex; flex-direction:column; justify-content:flex-end; border:1px solid rgba(14,20,37,.06); }
+  .sw .n { font-weight:600; font-size:10px; }
+  .tag { font-family:var(--font-sans); font-size:11px; color:var(--grey-200); width:62px; letter-spacing:.06em; text-transform:uppercase; font-weight:600; display:flex; align-items:center; }
+  .note { font-size:10px; color:var(--grey-300); margin-top:4px; line-height:1.4; }
+</style>
+</head><body>
+
+<div class="row"><span class="tag">Danger</span>
+  <div class="sw" style="background:var(--danger-50); color:var(--danger-600);"><div class="n">50</div></div>
+  <div class="sw" style="background:var(--danger-100); color:var(--danger-600);"><div class="n">100</div></div>
+  <div class="sw" style="background:var(--danger-200); color:var(--danger-600);"><div class="n">200</div></div>
+  <div class="sw" style="background:var(--danger-300);"><div class="n">300</div></div>
+  <div class="sw" style="background:var(--danger-400);"><div class="n">400</div></div>
+  <div class="sw" style="background:var(--danger-500);"><div class="n">500</div></div>
+  <div class="sw" style="background:var(--danger-600);"><div class="n">600</div></div>
+</div>
+
+<div class="row"><span class="tag">Success</span>
+  <div class="sw" style="background:var(--success-50); color:var(--success-600);"><div class="n">50</div></div>
+  <div class="sw" style="background:var(--success-100); color:var(--success-600);"><div class="n">100</div></div>
+  <div class="sw" style="background:var(--success-200); color:var(--success-600);"><div class="n">200</div></div>
+  <div class="sw" style="background:var(--success-300); color:var(--success-600);"><div class="n">300</div></div>
+  <div class="sw" style="background:var(--success-400);"><div class="n">400</div></div>
+  <div class="sw" style="background:var(--success-500);"><div class="n">500</div></div>
+  <div class="sw" style="background:var(--success-600);"><div class="n">600</div></div>
+</div>
+
+<div class="row"><span class="tag">Warning</span>
+  <div class="sw" style="background:var(--warning-50); color:var(--warning-600);"><div class="n">50</div></div>
+  <div class="sw" style="background:var(--warning-100); color:var(--warning-600);"><div class="n">100</div></div>
+  <div class="sw" style="background:var(--warning-200); color:var(--warning-600);"><div class="n">200</div></div>
+  <div class="sw" style="background:var(--warning-300); color:var(--warning-600);"><div class="n">300</div></div>
+  <div class="sw" style="background:var(--warning-400);"><div class="n">400</div></div>
+  <div class="sw" style="background:var(--warning-500);"><div class="n">500</div></div>
+  <div class="sw" style="background:var(--warning-600);"><div class="n">600</div></div>
+</div>
+
+<div class="row"><span class="tag">Info</span>
+  <div class="sw" style="background:var(--info-50); color:var(--info-600);"><div class="n">50</div></div>
+  <div class="sw" style="background:var(--info-100); color:var(--info-600);"><div class="n">100</div></div>
+  <div class="sw" style="background:var(--info-200); color:var(--info-600);"><div class="n">200</div></div>
+  <div class="sw" style="background:var(--info-300); color:var(--info-600);"><div class="n">300</div></div>
+  <div class="sw" style="background:var(--info-400);"><div class="n">400</div></div>
+  <div class="sw" style="background:var(--info-500);"><div class="n">500</div></div>
+  <div class="sw" style="background:var(--info-600);"><div class="n">600</div></div>
+</div>
+
+<div class="note">50–200 tints biased toward brand paper (<code style="font-family:var(--font-mono);">hsl(226, 91%, 91%)</code>) so alert surfaces sit naturally beside the app's blue-tinted neutrals.</div>
+
+</body></html>
