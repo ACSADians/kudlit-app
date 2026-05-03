@@ -1,63 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:kudlit_ph/features/home/presentation/providers/butty_chat_controller.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/butty_chat/butty_header.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/butty_chat/chat_input_bar.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/butty_chat/chat_message_list.dart';
-import 'package:kudlit_ph/features/home/presentation/widgets/butty_chat/chat_msg.dart';
+import 'package:kudlit_ph/features/home/presentation/widgets/butty_chat/suggested_questions_row.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/floating_tab_nav.dart';
 
-String buttyReply(String input) {
-  final String lower = input.toLowerCase();
-  if (lower.contains('hello') ||
-      lower.contains('hi') ||
-      lower.contains('kumusta')) {
-    return 'Kumusta! I\'m Butty, your Baybayin guide. What would you like to know?';
-  }
-  if (lower.contains('baybayin')) {
-    return 'Baybayin is an ancient pre-colonial Philippine script. '
-        'It\'s an abugida \u2014 each character represents a syllable, not just a letter.';
-  }
-  if (lower.contains('kudlit')) {
-    return 'A kudlit is a diacritic placed above or below a Baybayin character '
-        'to change its vowel sound. Above gives E or I; below gives O or U.';
-  }
-  if (lower.contains('lesson') ||
-      lower.contains('learn') ||
-      lower.contains('start')) {
-    return 'Head to the Learn tab and tap Lesson 1 \u2014 '
-        'I\'ll walk you through each character step by step.';
-  }
-  if (lower.contains('vowel')) {
-    return 'Baybayin has three vowel characters: A, E/I, and O/U. '
-        'Two vowels share one glyph \u2014 a feature called vowel pairing.';
-  }
-  if (lower.contains('consonant')) {
-    return 'Without a kudlit, every Baybayin consonant reads with an implied "a" '
-        'sound. Add a kudlit to change the vowel.';
-  }
-  return 'Good question. I\'m still growing, but try the Lesson 1 in the '
-      'Learn tab and I\'ll walk you through the basics of Baybayin writing.';
-}
-
-class ButtyChatScreen extends StatefulWidget {
+class ButtyChatScreen extends ConsumerStatefulWidget {
   const ButtyChatScreen({super.key});
 
   @override
-  State<ButtyChatScreen> createState() => _ButtyChatScreenState();
+  ConsumerState<ButtyChatScreen> createState() => _ButtyChatScreenState();
 }
 
-class _ButtyChatScreenState extends State<ButtyChatScreen> {
-  final List<ChatMsg> _messages = <ChatMsg>[
-    (
-      isButty: true,
-      text:
-          'Kumusta! Ask me anything about Baybayin \u2014 the script, the kudlit, '
-          'history, or how to write. I\'m here.',
-    ),
-  ];
+class _ButtyChatScreenState extends ConsumerState<ButtyChatScreen> {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scroll = ScrollController();
-  bool _responding = false;
+  int _lastMessageCount = 0;
 
   @override
   void dispose() {
@@ -66,23 +27,19 @@ class _ButtyChatScreenState extends State<ButtyChatScreen> {
     super.dispose();
   }
 
-  void _handleSend() {
+  Future<void> _handleSend() async {
     final String text = _controller.text.trim();
-    if (text.isEmpty || _responding) return;
+    if (text.isEmpty) {
+      return;
+    }
+
     _controller.clear();
-    setState(() {
-      _messages.add((isButty: false, text: text));
-      _responding = true;
-    });
-    _scrollToBottom();
-    Future<void>.delayed(const Duration(milliseconds: 700), () {
-      if (!mounted) return;
-      setState(() {
-        _messages.add((isButty: true, text: buttyReply(text)));
-        _responding = false;
-      });
-      _scrollToBottom();
-    });
+    await ref.read(buttyChatControllerProvider.notifier).send(text);
+  }
+
+  void _handleSuggestion(String question) {
+    _controller.text = question;
+    _handleSend();
   }
 
   void _scrollToBottom() {
@@ -99,6 +56,12 @@ class _ButtyChatScreenState extends State<ButtyChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final ButtyChatState chatState = ref.watch(buttyChatControllerProvider);
+    if (_lastMessageCount != chatState.messages.length) {
+      _lastMessageCount = chatState.messages.length;
+      _scrollToBottom();
+    }
+
     return DecoratedBox(
       decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface),
       child: Column(
@@ -106,14 +69,19 @@ class _ButtyChatScreenState extends State<ButtyChatScreen> {
           const ButtyHeader(),
           Expanded(
             child: ChatMessageList(
-              messages: _messages,
+              messages: chatState.messages,
               scroll: _scroll,
-              responding: _responding,
+              responding: chatState.responding,
             ),
           ),
+          if (chatState.messages.length == 1 && !chatState.responding)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: SuggestedQuestionsRow(onTap: _handleSuggestion),
+            ),
           ChatInputBar(
             controller: _controller,
-            responding: _responding,
+            responding: chatState.responding,
             onSend: _handleSend,
           ),
           SizedBox(

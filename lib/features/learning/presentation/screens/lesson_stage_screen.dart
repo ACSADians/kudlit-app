@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:kudlit_ph/features/home/presentation/providers/app_preferences_provider.dart';
 import 'package:kudlit_ph/features/learning/domain/entities/lesson_mode.dart';
 import 'package:kudlit_ph/features/learning/domain/entities/lesson_step.dart';
 import 'package:kudlit_ph/features/learning/presentation/providers/lesson_controller.dart';
@@ -68,6 +69,19 @@ class _LessonStageScreenState extends ConsumerState<LessonStageScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<AsyncValue<LessonState?>>(
+      lessonControllerProvider,
+      (AsyncValue<LessonState?>? prev, AsyncValue<LessonState?> next) {
+        final bool wasCompleted = prev?.value?.completed ?? false;
+        final bool isCompleted = next.value?.completed ?? false;
+        if (!wasCompleted && isCompleted) {
+          ref
+              .read(appPreferencesNotifierProvider.notifier)
+              .completeLesson(widget.lessonId);
+        }
+      },
+    );
+
     final AsyncValue<LessonState?> async = ref.watch(lessonControllerProvider);
     // Watch the drawing-pad YOLO model so it starts loading immediately and
     // Riverpod keeps the instance alive for the duration of this screen.

@@ -44,6 +44,10 @@ final supabaseGemmaModelsDatasourceProvider =
       $allTransitiveDependencies: null,
       retry: null,
     );
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef SupabaseAiModelsDatasourceRef = Ref;
+
 
 @ProviderFor(localGemmaDatasource)
 final localGemmaDatasourceProvider = Provider<LocalGemmaDatasource>.internal(
@@ -57,6 +61,11 @@ final localGemmaDatasourceProvider = Provider<LocalGemmaDatasource>.internal(
   retry: null,
 );
 
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef LocalGemmaDatasourceRef = Ref;
+
+
 @ProviderFor(cloudGemmaDatasource)
 final cloudGemmaDatasourceProvider = Provider<CloudGemmaDatasource>.internal(
   cloudGemmaDatasource,
@@ -69,6 +78,11 @@ final cloudGemmaDatasourceProvider = Provider<CloudGemmaDatasource>.internal(
   retry: null,
 );
 
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef CloudGemmaDatasourceRef = Ref;
+
+
 @ProviderFor(sqliteChatDatasource)
 final sqliteChatDatasourceProvider = Provider<SqliteChatDatasource>.internal(
   sqliteChatDatasource,
@@ -80,6 +94,11 @@ final sqliteChatDatasourceProvider = Provider<SqliteChatDatasource>.internal(
   $allTransitiveDependencies: null,
   retry: null,
 );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef SqliteChatDatasourceRef = Ref;
+
 
 @ProviderFor(aiInferenceRepository)
 final aiInferenceRepositoryProvider = Provider<AiInferenceRepository>.internal(
@@ -117,6 +136,9 @@ final generateBaybayinChallengeProvider =
       $allTransitiveDependencies: null,
       retry: null,
     );
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef AiInferenceRepositoryRef = Ref;
 
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

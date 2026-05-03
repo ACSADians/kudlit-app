@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 
 class BeginButton extends StatelessWidget {
-  const BeginButton({super.key, required this.onStart});
+  const BeginButton({
+    super.key,
+    required this.onStart,
+    this.isLocked = false,
+  });
 
   final VoidCallback onStart;
+  final bool isLocked;
 
   @override
   Widget build(BuildContext context) {
@@ -11,23 +16,43 @@ class BeginButton extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(18, 10, 18, 18),
       child: GestureDetector(
-        onTap: onStart,
+        onTap: isLocked ? null : onStart,
         child: Container(
           height: 48,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: cs.primary,
+            color: isLocked ? cs.surfaceContainerHighest : cs.primary,
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Text(
-            'Begin Lesson',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: cs.onPrimary,
-              letterSpacing: 0.2,
-            ),
-          ),
+          child: isLocked
+              ? Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Icon(
+                      Icons.lock_rounded,
+                      size: 14,
+                      color: cs.onSurface.withAlpha(100),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Complete the previous lesson',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: cs.onSurface.withAlpha(100),
+                      ),
+                    ),
+                  ],
+                )
+              : Text(
+                  'Begin Lesson',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: cs.onPrimary,
+                    letterSpacing: 0.2,
+                  ),
+                ),
         ),
       ),
     );

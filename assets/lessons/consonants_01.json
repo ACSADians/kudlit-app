@@ -1,0 +1,111 @@
+{
+  "id": "consonants-01",
+  "title": "The Core Four",
+  "subtitle": "Ba, Ka, Da/Ra, Ga",
+  "steps": [
+    {
+      "id": "ref-ba",
+      "mode": "reference",
+      "label": "Ba",
+      "glyph": "b",
+      "intro": "Let's start with Ba.",
+      "narration": "It looks a bit like a heart. Remember, a consonant without a mark has an inherent 'a' sound.",
+      "buttyTip": "When you're ready, tap Got it to draw Ba."
+    },
+    {
+      "id": "draw-ba",
+      "mode": "draw",
+      "label": "Ba",
+      "glyph": "b",
+      "prompt": "Draw the character Ba.",
+      "successFeedback": "Nice heart shape!"
+    },
+    {
+      "id": "spell-ba",
+      "mode": "freeInput",
+      "label": "Ba",
+      "glyph": "b",
+      "prompt": "Type the romanization of this character.",
+      "expected": ["ba"],
+      "successFeedback": "Correct. Ba is your first consonant."
+    },
+    {
+      "id": "ref-ka",
+      "mode": "reference",
+      "label": "Ka",
+      "glyph": "k",
+      "intro": "Next is Ka.",
+      "narration": "Two wavy lines connected by a downward stroke.",
+      "buttyTip": "Take your time tracing Ka."
+    },
+    {
+      "id": "draw-ka",
+      "mode": "draw",
+      "label": "Ka",
+      "glyph": "k",
+      "prompt": "Draw the character Ka.",
+      "successFeedback": "Good job."
+    },
+    {
+      "id": "spell-ka",
+      "mode": "freeInput",
+      "label": "Ka",
+      "glyph": "k",
+      "prompt": "Type the romanization of this character.",
+      "expected": ["ka"],
+      "successFeedback": "Tama! You learned Ka."
+    },
+    {
+      "id": "ref-da-ra",
+      "mode": "reference",
+      "label": "Da / Ra",
+      "glyph": "d",
+      "intro": "Da and Ra share the same shape.",
+      "narration": "Traditionally, Da and Ra are written the same way. It's a single curved line.",
+      "buttyTip": "Context tells you if it's Da or Ra."
+    },
+    {
+      "id": "draw-da-ra",
+      "mode": "draw",
+      "label": "Da / Ra",
+      "glyph": "d",
+      "prompt": "Draw the Da / Ra character.",
+      "successFeedback": "Excellent."
+    },
+    {
+      "id": "spell-da-ra",
+      "mode": "freeInput",
+      "label": "Da / Ra",
+      "glyph": "d",
+      "prompt": "Type either romanization for this character.",
+      "expected": ["da", "ra"],
+      "successFeedback": "Correct! Either Da or Ra is right."
+    },
+    {
+      "id": "ref-ga",
+      "mode": "reference",
+      "label": "Ga",
+      "glyph": "g",
+      "intro": "Finally, Ga.",
+      "narration": "It looks like a number 3.",
+      "buttyTip": "Our last core consonant!"
+    },
+    {
+      "id": "draw-ga",
+      "mode": "draw",
+      "label": "Ga",
+      "glyph": "g",
+      "prompt": "Draw the character Ga.",
+      "successFeedback": "Very smooth."
+    },
+    {
+      "id": "spell-ga",
+      "mode": "freeInput",
+      "label": "Ga",
+      "glyph": "g",
+      "prompt": "Type the romanization of this character.",
+      "expected": ["ga"],
+      "successFeedback": "Great! You finished the Core Four."
+    }
+  ]
+}

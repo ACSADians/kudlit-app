@@ -1,0 +1,111 @@
+{
+  "id": "consonants-02",
+  "title": "The Waves",
+  "subtitle": "Ha, La, Ma, Na",
+  "steps": [
+    {
+      "id": "ref-ha",
+      "mode": "reference",
+      "label": "Ha",
+      "glyph": "h",
+      "intro": "This is Ha.",
+      "narration": "It looks like a wave crashing. A strong, sweeping motion.",
+      "buttyTip": "Get ready to ride the wave."
+    },
+    {
+      "id": "draw-ha",
+      "mode": "draw",
+      "label": "Ha",
+      "glyph": "h",
+      "prompt": "Draw the character Ha.",
+      "successFeedback": "Nice wave."
+    },
+    {
+      "id": "spell-ha",
+      "mode": "freeInput",
+      "label": "Ha",
+      "glyph": "h",
+      "prompt": "Type the romanization.",
+      "expected": ["ha"],
+      "successFeedback": "Correct."
+    },
+    {
+      "id": "ref-la",
+      "mode": "reference",
+      "label": "La",
+      "glyph": "l",
+      "intro": "This is La.",
+      "narration": "Three gentle peaks. Keep your hand steady.",
+      "buttyTip": "It's like writing the letter 'm' in cursive."
+    },
+    {
+      "id": "draw-la",
+      "mode": "draw",
+      "label": "La",
+      "glyph": "l",
+      "prompt": "Draw the character La.",
+      "successFeedback": "Smooth peaks."
+    },
+    {
+      "id": "spell-la",
+      "mode": "freeInput",
+      "label": "La",
+      "glyph": "l",
+      "prompt": "Type the romanization.",
+      "expected": ["la"],
+      "successFeedback": "Tama."
+    },
+    {
+      "id": "ref-ma",
+      "mode": "reference",
+      "label": "Ma",
+      "glyph": "m",
+      "intro": "Meet Ma.",
+      "narration": "It looks similar to a 'u' or a cup holding water.",
+      "buttyTip": "Very simple and clean."
+    },
+    {
+      "id": "draw-ma",
+      "mode": "draw",
+      "label": "Ma",
+      "glyph": "m",
+      "prompt": "Draw the character Ma.",
+      "successFeedback": "Perfect cup."
+    },
+    {
+      "id": "spell-ma",
+      "mode": "freeInput",
+      "label": "Ma",
+      "glyph": "m",
+      "prompt": "Type the romanization.",
+      "expected": ["ma"],
+      "successFeedback": "Right!"
+    },
+    {
+      "id": "ref-na",
+      "mode": "reference",
+      "label": "Na",
+      "glyph": "n",
+      "intro": "Lastly for this group, Na.",
+      "narration": "Similar to Ma, but with a flat top connecting the sides.",
+      "buttyTip": "Don't confuse it with Ma!"
+    },
+    {
+      "id": "draw-na",
+      "mode": "draw",
+      "label": "Na",
+      "glyph": "n",
+      "prompt": "Draw the character Na.",
+      "successFeedback": "Great job."
+    },
+    {
+      "id": "spell-na",
+      "mode": "freeInput",
+      "label": "Na",
+      "glyph": "n",
+      "prompt": "Type the romanization.",
+      "expected": ["na"],
+      "successFeedback": "You mastered The Waves!"
+    }
+  ]
+}

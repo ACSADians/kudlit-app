@@ -1,0 +1,59 @@
+{
+  "id": "kudlit-01",
+  "title": "The Kudlit",
+  "subtitle": "Changing vowel sounds",
+  "steps": [
+    {
+      "id": "ref-bi",
+      "mode": "reference",
+      "label": "Bi / Be",
+      "glyph": "bi",
+      "intro": "Changing the sound.",
+      "narration": "You know Ba. To make it Bi or Be, we add a mark called a kudlit ABOVE the character.",
+      "buttyTip": "Top kudlit = i or e."
+    },
+    {
+      "id": "draw-bi",
+      "mode": "draw",
+      "label": "Bi / Be",
+      "glyph": "bi",
+      "prompt": "Draw the character Ba, then add the dot on top.",
+      "successFeedback": "Perfect dot."
+    },
+    {
+      "id": "spell-bi",
+      "mode": "freeInput",
+      "label": "Bi / Be",
+      "glyph": "bi",
+      "prompt": "Type either romanization.",
+      "expected": ["bi", "be"],
+      "successFeedback": "Correct."
+    },
+    {
+      "id": "ref-bu",
+      "mode": "reference",
+      "label": "Bu / Bo",
+      "glyph": "bu",
+      "intro": "The bottom kudlit.",
+      "narration": "To make it Bu or Bo, we place the kudlit BELOW the character.",
+      "buttyTip": "Bottom kudlit = u or o."
+    },
+    {
+      "id": "draw-bu",
+      "mode": "draw",
+      "label": "Bu / Bo",
+      "glyph": "bu",
+      "prompt": "Draw the character Ba, then add the dot on the bottom.",
+      "successFeedback": "Nice."
+    },
+    {
+      "id": "spell-bu",
+      "mode": "freeInput",
+      "label": "Bu / Bo",
+      "glyph": "bu",
+      "prompt": "Type either romanization.",
+      "expected": ["bu", "bo"],
+      "successFeedback": "Tama! You know how to use the kudlit."
+    }
+  ]
+}

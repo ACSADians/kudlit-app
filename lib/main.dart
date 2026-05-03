@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_gemma/core/api/flutter_gemma.dart';
@@ -14,9 +15,11 @@ Future<void> main() async {
     url: SupabaseConfig.url,
     anonKey: SupabaseConfig.anonKey,
   );
-  final String hfToken = dotenv.env['HUGGINGFACE_TOKEN'] ?? '';
-  await FlutterGemma.initialize(
-    huggingFaceToken: hfToken.isEmpty ? null : hfToken,
-  );
+  if (!kIsWeb) {
+    final String hfToken = dotenv.env['HUGGINGFACE_TOKEN'] ?? '';
+    await FlutterGemma.initialize(
+      huggingFaceToken: hfToken.isEmpty ? null : hfToken,
+    );
+  }
   runApp(const ProviderScope(child: KudlitApp()));
 }
