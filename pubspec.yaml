@@ -69,6 +69,7 @@ dependencies:
   genkit: ^0.10.0-dev.8
   genkit_google_genai: ^0.0.1-dev.8
   schemantic: ^0.0.1-dev.9
+  flutter_markdown_plus: ^1.0.7
 
 dev_dependencies:
   flutter_test:

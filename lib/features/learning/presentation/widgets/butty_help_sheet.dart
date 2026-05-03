@@ -1,35 +1,117 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:kudlit_ph/features/learning/domain/entities/lesson_step.dart';
+import 'package:kudlit_ph/features/translator/domain/entities/chat_message.dart';
+import 'package:kudlit_ph/features/translator/domain/repositories/ai_inference_repository.dart';
+import 'package:kudlit_ph/features/translator/presentation/providers/translator_providers.dart';
 
-class ButtyHelpSheet extends StatefulWidget {
+String _buildSystemPrompt(LessonStep step) {
+  final StringBuffer sb = StringBuffer();
+  sb.writeln(
+    'You are Butty, a bubbly Baybayin learning companion inside the '
+    'Kudlit app.',
+  );
+  sb.writeln();
+  sb.writeln('## Thinking format (REQUIRED)');
+  sb.writeln(
+    'You MUST wrap your internal reasoning in <think> ... </think> tags '
+    'BEFORE writing your reply. This block is hidden from the learner — use '
+    'it freely to plan what to say. Example structure:',
+  );
+  sb.writeln();
+  sb.writeln('<think>');
+  sb.writeln('... your private reasoning here ...');
+  sb.writeln('</think>');
+  sb.writeln('... your actual reply to the learner here ...');
+  sb.writeln();
+  sb.writeln('## Reply rules');
+  sb.writeln('- 1–3 short sentences in the reply — never longer.');
+  sb.writeln('- Warm and encouraging tone, not lecturing.');
+  sb.writeln(
+    '- Only discuss Baybayin script, Filipino language, Philippine history, '
+    'and Filipino culture. Politely decline anything else.',
+  );
+  sb.writeln();
+  sb.writeln('## Current lesson step');
+  sb.writeln('  Character / label: ${step.label}  (glyph: ${step.glyph})');
+  if (step.narration != null) sb.writeln('  Narration: ${step.narration}');
+  if (step.hint != null) sb.writeln('  Hint: ${step.hint}');
+  if (step.buttyTip != null) sb.writeln("  Butty's tip: ${step.buttyTip}");
+  sb.writeln(
+    '  Activity type: ${step.mode.name} '
+    '(reference = read/observe, draw = write the glyph, '
+    'freeInput = type the answer)',
+  );
+  sb.writeln();
+  sb.writeln(
+    'The learner may be struggling with this step. '
+    'Use your <think> block to decide the best nudge, then give it briefly.',
+  );
+  return sb.toString();
+}
+
+/// Splits a raw model response into its think-block content and the final
+/// answer. Returns empty strings for absent sections.
+({String think, String answer}) _parseResponse(String raw) {
+  const String openTag = '<think>';
+  const String closeTag = '</think>';
+  final int openIdx = raw.indexOf(openTag);
+  if (openIdx == -1) return (think: '', answer: raw.trim());
+  final int closeIdx = raw.indexOf(closeTag, openIdx);
+  if (closeIdx == -1) {
+    // Think block still open — still in reasoning phase.
+    return (think: raw.substring(openIdx + openTag.length), answer: '');
+  }
+  final String think = raw.substring(openIdx + openTag.length, closeIdx).trim();
+  final String answer = raw.substring(closeIdx + closeTag.length).trim();
+  return (think: think, answer: answer);
+}
+
+class ButtyHelpSheet extends ConsumerStatefulWidget {
   const ButtyHelpSheet({super.key, required this.step});
 
   final LessonStep step;
 
   @override
-  State<ButtyHelpSheet> createState() => _ButtyHelpSheetState();
+  ConsumerState<ButtyHelpSheet> createState() => _ButtyHelpSheetState();
 }
 
-class _ButtyHelpSheetState extends State<ButtyHelpSheet> {
+class _ButtyHelpSheetState extends ConsumerState<ButtyHelpSheet> {
   late final List<_HelpMessage> _messages;
+
+  /// Parallel history list passed to the AI (user + model turns only).
+  final List<ChatMessage> _history = <ChatMessage>[];
+
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scroll = ScrollController();
-  bool _replying = false;
+
+  /// Raw accumulated buffer from the stream. Null = idle.
+  String? _streamingText;
+
+  /// Parsed answer portion of [_streamingText]. Empty = still in think phase.
+  String? _streamingAnswer;
+
+  StreamSubscription<String>? _streamSub;
 
   @override
   void initState() {
     super.initState();
     _messages = <_HelpMessage>[
       _HelpMessage.butty(
-        "We're on '${widget.step.label}'. Want me to show the stroke order, "
-        'explain the sound, or something else?',
+        "Hey! We're on '${widget.step.label}' — "
+        'want me to explain the stroke, the sound, or something else?',
       ),
     ];
   }
 
   @override
   void dispose() {
+    _streamSub?.cancel();
     _controller.dispose();
     _scroll.dispose();
     super.dispose();
@@ -42,20 +124,75 @@ class _ButtyHelpSheetState extends State<ButtyHelpSheet> {
 
   Future<void> _send() async {
     final String text = _controller.text.trim();
-    if (text.isEmpty || _replying) return;
+    if (text.isEmpty || _streamingText != null) return;
     _controller.clear();
+
+    _history.add(
+      ChatMessage(text: text, isUser: true, timestamp: DateTime.now()),
+    );
     setState(() {
       _messages.add(_HelpMessage.user(text));
-      _replying = true;
+      _streamingText = '';
     });
     _scrollToBottom();
-    await Future<void>.delayed(const Duration(milliseconds: 700));
-    if (!mounted) return;
-    setState(() {
-      _messages.add(_HelpMessage.butty(_stubReply(text, widget.step)));
-      _replying = false;
-    });
-    _scrollToBottom();
+
+    final AiInferenceRepository repo = ref.read(aiInferenceRepositoryProvider);
+    final StringBuffer buffer = StringBuffer();
+
+    _streamSub = repo
+        .generateResponse(
+          _history,
+          systemInstruction: _buildSystemPrompt(widget.step),
+        )
+        .listen(
+          (String token) {
+            buffer.write(token);
+            final ({String think, String answer}) parsed = _parseResponse(
+              buffer.toString(),
+            );
+            if (!mounted) return;
+            setState(() {
+              _streamingText = buffer.toString();
+              _streamingAnswer = parsed.answer;
+            });
+            _scrollToBottom();
+          },
+          onDone: () {
+            final ({String think, String answer}) parsed = _parseResponse(
+              buffer.toString(),
+            );
+            final String reply = parsed.answer.isEmpty
+                ? buffer.toString()
+                : parsed.answer;
+            final String? think = parsed.think.isEmpty ? null : parsed.think;
+            _history.add(
+              ChatMessage(
+                text: reply,
+                isUser: false,
+                timestamp: DateTime.now(),
+              ),
+            );
+            if (!mounted) return;
+            setState(() {
+              _messages.add(_HelpMessage.butty(reply, thinkContent: think));
+              _streamingText = null;
+              _streamingAnswer = null;
+            });
+          },
+          onError: (Object error) {
+            if (!mounted) return;
+            debugPrint(error.toString());
+            setState(() {
+              _messages.add(
+                _HelpMessage.butty(
+                  "Oops, couldn't reach the server. Try again?",
+                ),
+              );
+              _streamingText = null;
+              _streamingAnswer = null;
+            });
+          },
+        );
   }
 
   void _scrollToBottom() {
@@ -100,14 +237,19 @@ class _ButtyHelpSheetState extends State<ButtyHelpSheet> {
                   ),
                   children: <Widget>[
                     for (final _HelpMessage m in _messages) _Bubble(message: m),
-                    if (_replying) const _TypingDots(),
+                    if (_streamingText != null)
+                      (_streamingAnswer == null || _streamingAnswer!.isEmpty)
+                          ? const _TypingDots()
+                          : _Bubble(
+                              message: _HelpMessage.butty(_streamingAnswer!),
+                            ),
                   ],
                 ),
               ),
               _ChipRow(onChip: _handleChip),
               _ComposerBar(
                 controller: _controller,
-                enabled: !_replying,
+                enabled: _streamingText == null,
                 onSend: _send,
               ),
             ],
@@ -116,23 +258,6 @@ class _ButtyHelpSheetState extends State<ButtyHelpSheet> {
       },
     );
   }
-}
-
-String _stubReply(String input, LessonStep step) {
-  final String lower = input.toLowerCase();
-  if (lower.contains('stroke') || lower.contains('order')) {
-    return 'For ${step.label}, start at the top and follow the curve in one '
-        'continuous motion. Stroke-order animation is coming soon.';
-  }
-  if (lower.contains('sound') || lower.contains('pronoun')) {
-    return '${step.label} is pronounced as in Filipino — short and clean.';
-  }
-  if (lower.contains('mean') || lower.contains('what')) {
-    return '${step.label} is a Baybayin glyph. '
-        '${step.narration ?? step.hint ?? "Study the shape, then draw it."}';
-  }
-  return "Good question. I'm still learning, but for ${step.label}: "
-      '${step.hint ?? step.narration ?? "follow the reference glyph closely."}';
 }
 
 class _SheetHandle extends StatelessWidget {
@@ -305,23 +430,38 @@ class _Bubble extends StatelessWidget {
     final bool isButty = message.isButty;
     return Align(
       alignment: isButty ? Alignment.centerLeft : Alignment.centerRight,
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.75,
-        ),
-        decoration: BoxDecoration(
-          color: isButty ? cs.surfaceContainerHigh : cs.primary,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Text(
-          message.text,
-          style: TextStyle(
-            color: isButty ? cs.onSurface : cs.onPrimary,
-            height: 1.35,
+      child: Column(
+        crossAxisAlignment: isButty
+            ? CrossAxisAlignment.start
+            : CrossAxisAlignment.end,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          if (isButty && message.thinkContent != null)
+            _ThinkPanel(content: message.thinkContent!),
+          GestureDetector(
+            onLongPress: () {
+              Clipboard.setData(ClipboardData(text: message.text));
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Copied to clipboard'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            },
+            child: Container(
+              margin: const EdgeInsets.symmetric(vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width * 0.75,
+              ),
+              decoration: BoxDecoration(
+                color: isButty ? cs.surfaceContainerHigh : cs.primary,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: MarkdownBody(data: message.text),
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -351,15 +491,95 @@ class _TypingDots extends StatelessWidget {
   }
 }
 
-class _HelpMessage {
-  const _HelpMessage._(this.text, {required this.isButty});
+class _ThinkPanel extends StatefulWidget {
+  const _ThinkPanel({required this.content});
 
-  factory _HelpMessage.butty(String text) =>
-      _HelpMessage._(text, isButty: true);
+  final String content;
+
+  @override
+  State<_ThinkPanel> createState() => _ThinkPanelState();
+}
+
+class _ThinkPanelState extends State<_ThinkPanel> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 2),
+      constraints: BoxConstraints(
+        maxWidth: MediaQuery.of(context).size.width * 0.75,
+      ),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerLow,
+        border: Border.all(color: cs.outlineVariant),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () => setState(() => _expanded = !_expanded),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Icon(
+                    Icons.psychology_outlined,
+                    size: 14,
+                    color: cs.onSurface.withValues(alpha: 0.5),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Butty thought about this',
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: cs.onSurface.withValues(alpha: 0.5),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    _expanded
+                        ? Icons.expand_less_rounded
+                        : Icons.expand_more_rounded,
+                    size: 14,
+                    color: cs.onSurface.withValues(alpha: 0.5),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (_expanded)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+              child: Text(
+                widget.content,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: cs.onSurface.withValues(alpha: 0.5),
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HelpMessage {
+  const _HelpMessage._(this.text, {required this.isButty, this.thinkContent});
+
+  factory _HelpMessage.butty(String text, {String? thinkContent}) =>
+      _HelpMessage._(text, isButty: true, thinkContent: thinkContent);
 
   factory _HelpMessage.user(String text) =>
       _HelpMessage._(text, isButty: false);
 
   final String text;
   final bool isButty;
+
+  /// Non-null for Butty messages that contained a think block.
+  final String? thinkContent;
 }
