@@ -1,5 +1,6 @@
 import 'package:meta/meta.dart';
 
+import 'glyph_stroke.dart';
 import 'lesson_mode.dart';
 
 @immutable
@@ -18,6 +19,7 @@ class LessonStep {
     this.buttyTip,
     this.expected = const <String>[],
     this.hideGlyph = false,
+    this.strokeOrder = const <GlyphStroke>[],
   });
 
   final String id;
@@ -42,4 +44,8 @@ class LessonStep {
   /// When true, the Baybayin glyph is hidden — used for recall/challenge
   /// steps where the learner must produce the glyph from memory.
   final bool hideGlyph;
+
+  /// Recorded stroke order for this glyph, fetched from [stroke_patterns]
+  /// by [glyph]. Empty when no recording exists yet.
+  final List<GlyphStroke> strokeOrder;
 }

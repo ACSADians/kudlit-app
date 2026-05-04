@@ -1,3 +1,4 @@
+import 'package:kudlit_ph/features/learning/domain/entities/glyph_stroke.dart';
 import 'package:kudlit_ph/features/learning/domain/entities/lesson_mode.dart';
 import 'package:kudlit_ph/features/learning/domain/entities/lesson_step.dart';
 
@@ -16,11 +17,16 @@ class LessonStepModel extends LessonStep {
     super.buttyTip,
     super.expected,
     super.hideGlyph,
+    super.strokeOrder,
   });
 
-  factory LessonStepModel.fromJson(Map<String, dynamic> json) {
+  factory LessonStepModel.fromJson(
+    Map<String, dynamic> json, {
+    List<GlyphStroke> strokeOrder = const <GlyphStroke>[],
+  }) {
     final List<dynamic> rawExpected =
         (json['expected'] as List<dynamic>?) ?? const <dynamic>[];
+    final List<dynamic>? rawStrokes = json['strokeOrder'] as List<dynamic>?;
     return LessonStepModel(
       id: json['id'] as String,
       mode: LessonMode.fromJson(json['mode'] as String),
@@ -37,6 +43,31 @@ class LessonStepModel extends LessonStep {
           .map((dynamic e) => (e as String).trim().toLowerCase())
           .toList(growable: false),
       hideGlyph: (json['hideGlyph'] as bool?) ?? false,
+      strokeOrder: rawStrokes != null
+          ? rawStrokes
+              .cast<Map<String, dynamic>>()
+              .map(GlyphStroke.fromJson)
+              .toList(growable: false)
+          : strokeOrder,
     );
   }
+
+  /// Creates a copy with [strokeOrder] replaced.
+  LessonStepModel withStrokeOrder(List<GlyphStroke> strokes) =>
+      LessonStepModel(
+        id: id,
+        mode: mode,
+        label: label,
+        glyph: glyph,
+        glyphImage: glyphImage,
+        intro: intro,
+        prompt: prompt,
+        narration: narration,
+        hint: hint,
+        successFeedback: successFeedback,
+        buttyTip: buttyTip,
+        expected: expected,
+        hideGlyph: hideGlyph,
+        strokeOrder: strokes,
+      );
 }

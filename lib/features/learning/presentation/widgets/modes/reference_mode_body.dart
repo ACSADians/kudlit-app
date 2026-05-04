@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:kudlit_ph/features/learning/domain/entities/lesson_step.dart';
 import 'package:kudlit_ph/features/learning/presentation/providers/lesson_state.dart';
 import 'package:kudlit_ph/features/learning/presentation/widgets/reference_glyph_card.dart';
+import 'package:kudlit_ph/features/learning/presentation/widgets/stroke_order_sheet.dart';
 
 class ReferenceModeBody extends StatelessWidget {
   const ReferenceModeBody({
@@ -43,9 +44,24 @@ class ReferenceModeBody extends StatelessWidget {
             ),
           const Spacer(),
           OutlinedButton.icon(
-            onPressed: null,
+            onPressed: step.strokeOrder.isEmpty
+                ? null
+                : () => showModalBottomSheet<void>(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (_) => StrokeOrderSheet(
+                        glyph: step.glyph,
+                        label: step.label,
+                        strokes: step.strokeOrder,
+                      ),
+                    ),
             icon: const Icon(Icons.play_arrow_rounded),
-            label: const Text('Show stroke order (soon)'),
+            label: Text(
+              step.strokeOrder.isEmpty
+                  ? 'Stroke order (no recording yet)'
+                  : 'Show stroke order',
+            ),
             style: OutlinedButton.styleFrom(
               minimumSize: const Size.fromHeight(48),
               side: BorderSide(color: cs.outlineVariant),
