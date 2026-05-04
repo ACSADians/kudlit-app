@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:kudlit_ph/features/home/presentation/providers/app_preferences_provider.dart';
 import 'package:kudlit_ph/features/home/presentation/providers/butty_chat_controller.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/butty_chat/butty_header.dart';
+import 'package:kudlit_ph/features/home/presentation/widgets/butty_chat/butty_model_mode_selector.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/butty_chat/chat_input_bar.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/butty_chat/chat_message_list.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/butty_chat/suggested_questions_row.dart';
@@ -27,6 +31,10 @@ class _ButtyChatScreenState extends ConsumerState<ButtyChatScreen> {
     super.dispose();
   }
 
+  void _onSendTap() {
+    unawaited(_handleSend());
+  }
+
   Future<void> _handleSend() async {
     final String text = _controller.text.trim();
     if (text.isEmpty) {
@@ -39,7 +47,7 @@ class _ButtyChatScreenState extends ConsumerState<ButtyChatScreen> {
 
   void _handleSuggestion(String question) {
     _controller.text = question;
-    _handleSend();
+    _onSendTap();
   }
 
   void _scrollToBottom() {
@@ -56,7 +64,32 @@ class _ButtyChatScreenState extends ConsumerState<ButtyChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
     final ButtyChatState chatState = ref.watch(buttyChatControllerProvider);
+    final AsyncValue<AppPreferences> prefsAsync = ref.watch(
+      appPreferencesNotifierProvider,
+    );
+    final AsyncValue<ButtyOfflineStatus> offlineStatusAsync = ref.watch(
+      buttyOfflineStatusProvider,
+    );
+    final AiPreference mode =
+        prefsAsync.value?.aiPreference ?? AiPreference.cloud;
+    final ButtyOfflineStatus? offlineStatus = offlineStatusAsync.value;
+    final bool offlinePending =
+        mode == AiPreference.local && offlineStatusAsync.isLoading;
+    final bool offlineUnavailable =
+        mode == AiPreference.local &&
+        !offlineStatusAsync.isLoading &&
+        !(offlineStatus?.installed ?? false);
+    final bool inputEnabled =
+        !chatState.responding && !offlinePending && !offlineUnavailable;
+    final String? disabledHint = switch (mode) {
+      AiPreference.local when offlinePending =>
+        'Preparing offline Gemma for Butty...',
+      AiPreference.local when offlineUnavailable =>
+        offlineStatus?.detail ?? 'Offline Gemma is not ready yet.',
+      _ => null,
+    };
     if (_lastMessageCount != chatState.messages.length) {
       _lastMessageCount = chatState.messages.length;
       _scrollToBottom();
@@ -74,7 +107,44 @@ class _ButtyChatScreenState extends ConsumerState<ButtyChatScreen> {
               responding: chatState.responding,
             ),
           ),
-          if (chatState.messages.length == 1 && !chatState.responding)
+          if (offlinePending || offlineUnavailable)
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: cs.surfaceContainer,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: cs.outline),
+              ),
+              child: Row(
+                children: <Widget>[
+                  if (offlinePending) ...<Widget>[
+                    SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: cs.primary,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                  ],
+                  Expanded(
+                    child: Text(
+                      disabledHint ?? 'Preparing offline Gemma...',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: cs.onSurface.withAlpha(170),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          if (chatState.messages.length == 1 &&
+              !chatState.responding &&
+              inputEnabled)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: SuggestedQuestionsRow(onTap: _handleSuggestion),
@@ -82,7 +152,9 @@ class _ButtyChatScreenState extends ConsumerState<ButtyChatScreen> {
           ChatInputBar(
             controller: _controller,
             responding: chatState.responding,
-            onSend: _handleSend,
+            enabled: inputEnabled,
+            disabledHint: disabledHint,
+            onSend: _onSendTap,
           ),
           SizedBox(
             height:

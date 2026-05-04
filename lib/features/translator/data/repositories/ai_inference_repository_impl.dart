@@ -91,11 +91,17 @@ class AiInferenceRepositoryImpl implements AiInferenceRepository {
     String? systemInstruction,
   }) {
     if (_useCloud) {
+      debugPrint(
+        '[Gemma] generateResponse route=cloud | messages=${history.length}',
+      );
       return cloudDatasource.generate(
         history,
         systemInstruction: systemInstruction,
       );
     }
+    debugPrint(
+      '[Gemma] generateResponse route=local-preferred | messages=${history.length}',
+    );
     return _localWithCloudFallback(
       history,
       systemInstruction: systemInstruction,
@@ -113,20 +119,26 @@ class AiInferenceRepositoryImpl implements AiInferenceRepository {
   }) async* {
     bool localFailed = false;
     try {
+      debugPrint('[Gemma] local inference starting');
       await for (final String token in localDatasource.generate(
         history,
         systemInstruction: systemInstruction,
       )) {
         yield token;
       }
-    } catch (_) {
+      debugPrint('[Gemma] local inference completed');
+    } catch (e) {
       localFailed = true;
+      debugPrint('[Gemma] local inference failed -> falling back to cloud');
+      debugPrint('[Gemma] local failure detail: $e');
     }
     if (localFailed) {
+      debugPrint('[Gemma] cloud fallback starting');
       yield* cloudDatasource.generate(
         history,
         systemInstruction: systemInstruction,
       );
+      debugPrint('[Gemma] cloud fallback completed');
     }
   }
 
