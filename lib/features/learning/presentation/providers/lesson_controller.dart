@@ -127,10 +127,19 @@ class LessonController extends _$LessonController {
 
       await for (final String chunk in responseStream) {
         buffer.write(chunk);
+        final ({String think, String answer}) parsed =
+            GemmaPrompts.parseThinkBlock(buffer.toString());
+        // Show nothing while still inside the <think> block.
+        final String visible = parsed.answer.isEmpty
+            ? parsed.think.isEmpty
+                ? ''
+                : '\u2026' // ellipsis placeholder while thinking
+            : parsed.answer;
         final LessonState? updated = state.value;
-        if (updated != null && updated.currentStepIndex == current.currentStepIndex) {
+        if (updated != null &&
+            updated.currentStepIndex == current.currentStepIndex) {
           state = AsyncData<LessonState?>(
-            updated.copyWith(buttyMessage: buffer.toString()),
+            updated.copyWith(buttyMessage: visible),
           );
         }
       }
