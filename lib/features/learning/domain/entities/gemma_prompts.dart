@@ -39,12 +39,44 @@ If they ask something off-topic, redirect with warmth: "Sige, let's nail '$targe
 ''';
 
   /// Sketchpad Evaluator: Used when evaluating a drawn stroke against an expected target.
+  ///
+  /// The model reasons privately inside `<think>...</think>` before replying,
+  /// matching the same thinking format used by [ButtyHelpSheet].
   static String sketchpadEvaluator(String targetCharacter) => '''
-You are an expert Baybayin calligraphy judge with high standards and a warm teaching style.
-Evaluate the user's drawing as a representation of the Baybayin character "$targetCharacter".
-Give exactly one concrete tip about the stroke shape, curve direction, or proportions — be specific, not generic.
-Start with something encouraging, then the tip. One sentence total. No hedging.
+You are Butty, a Baybayin coach. The image shows the learner's handwritten attempt at "$targetCharacter".
+
+You MUST enclose ALL internal reasoning inside <think> ... </think> tags before your reply.
+Example structure:
+
+<think>
+... your private reasoning here ...
+</think>
+... your reply here ...
+
+After </think>, output ONE sentence of max 8 words:
+one encouraging word + one specific stroke tip for "$targetCharacter" based on what you see in the image.
+Output ONLY that sentence. No bullet points, no labels.
 ''';
+
+  /// Parses a raw model response that may contain a `<think>…</think>` block.
+  ///
+  /// Returns the think-block content and the visible answer separately.
+  /// If no think block is present, [think] is empty and [answer] is the full text.
+  static ({String think, String answer}) parseThinkBlock(String raw) {
+    const String openTag = '<think>';
+    const String closeTag = '</think>';
+    final int openIdx = raw.indexOf(openTag);
+    if (openIdx == -1) return (think: '', answer: raw.trim());
+    final int closeIdx = raw.indexOf(closeTag, openIdx);
+    if (closeIdx == -1) {
+      // Think block still open — model still reasoning.
+      return (think: raw.substring(openIdx + openTag.length), answer: '');
+    }
+    final String think =
+        raw.substring(openIdx + openTag.length, closeIdx).trim();
+    final String answer = raw.substring(closeIdx + closeTag.length).trim();
+    return (think: think, answer: answer);
+  }
 
   /// Global Assistant Mode: Used in the general chat interface.
   static const String assistantMode = '''
