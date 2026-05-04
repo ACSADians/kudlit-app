@@ -132,9 +132,7 @@ class _ButtyHelpSheetState extends ConsumerState<ButtyHelpSheet> {
           (String token) {
             buffer.write(token);
             final ({String think, String answer}) parsed =
-                GemmaPrompts.parseThinkBlock(
-              buffer.toString(),
-            );
+                GemmaPrompts.parseThinkBlock(buffer.toString());
             if (!mounted) return;
             setState(() {
               _streamingText = buffer.toString();
@@ -144,9 +142,7 @@ class _ButtyHelpSheetState extends ConsumerState<ButtyHelpSheet> {
           },
           onDone: () {
             final ({String think, String answer}) parsed =
-                GemmaPrompts.parseThinkBlock(
-              buffer.toString(),
-            );
+                GemmaPrompts.parseThinkBlock(buffer.toString());
             final String reply = parsed.answer.isEmpty
                 ? buffer.toString()
                 : parsed.answer;

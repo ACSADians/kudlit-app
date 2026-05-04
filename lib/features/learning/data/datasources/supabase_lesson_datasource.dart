@@ -33,8 +33,10 @@ class SupabaseLessonDatasource implements LessonDataSource {
 
     // Batch-fetch stroke patterns for all unique glyphs in one query.
     // We pick the most recently recorded pattern per glyph.
-    final List<String> uniqueGlyphs =
-        rawSteps.map((LessonStepModel s) => s.glyph).toSet().toList();
+    final List<String> uniqueGlyphs = rawSteps
+        .map((LessonStepModel s) => s.glyph)
+        .toSet()
+        .toList();
 
     final Map<String, StrokeOrderData> strokeOrderByGlyph =
         await _fetchStrokeOrderByGlyph(uniqueGlyphs);

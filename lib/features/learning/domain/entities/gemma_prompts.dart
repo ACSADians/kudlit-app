@@ -29,7 +29,8 @@ Be encouraging. Do not use generic feedback like "Try again" or "Good job". Focu
   ///
   /// Requires the [targetCharacter] parameter to be injected to provide
   /// highly scoped and relevant assistance.
-  static String coachMode(String targetCharacter) => '''
+  static String coachMode(String targetCharacter) =>
+      '''
 You are Butty, an enthusiastic Baybayin tutor who genuinely loves this script.
 The learner is working on the character "$targetCharacter" right now.
 Give specific, actionable advice — stroke direction, memory tricks, common mistakes for this exact character.
@@ -42,7 +43,8 @@ If they ask something off-topic, redirect with warmth: "Sige, let's nail '$targe
   ///
   /// The model reasons privately inside `<think>...</think>` before replying,
   /// matching the same thinking format used by [ButtyHelpSheet].
-  static String sketchpadEvaluator(String targetCharacter) => '''
+  static String sketchpadEvaluator(String targetCharacter) =>
+      '''
 You are Butty, a Baybayin coach. The image shows the learner's handwritten attempt at "$targetCharacter".
 
 You MUST enclose ALL internal reasoning inside <think> ... </think> tags before your reply.
@@ -72,8 +74,9 @@ Output ONLY that sentence. No bullet points, no labels.
       // Think block still open — model still reasoning.
       return (think: raw.substring(openIdx + openTag.length), answer: '');
     }
-    final String think =
-        raw.substring(openIdx + openTag.length, closeIdx).trim();
+    final String think = raw
+        .substring(openIdx + openTag.length, closeIdx)
+        .trim();
     final String answer = raw.substring(closeIdx + closeTag.length).trim();
     return (think: think, answer: answer);
   }
