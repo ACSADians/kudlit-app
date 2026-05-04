@@ -129,6 +129,14 @@ class _TranslateSketchpadModePanelState
               ),
             ),
           ],
+          const SizedBox(height: 4),
+          Text(
+            'Sketch feedback uses your selected Gemma mode.',
+            style: TextStyle(
+              fontSize: 11,
+              color: Theme.of(context).colorScheme.onSurface.withAlpha(120),
+            ),
+          ),
           const SizedBox(height: 10),
           Text(
             _latestStrokes.isEmpty

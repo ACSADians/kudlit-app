@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -80,6 +81,14 @@ class ModelSetupController extends Notifier<ModelSetupState> {
               version: visionModel.version,
             );
             ref.invalidate(yoloModelPathProvider);
+            // Pre-warm the camera scope path so the scan tab opens instantly.
+            unawaited(
+              ref
+                  .read(
+                    yoloModelPathProvider(YoloModelScope.camera).future,
+                  )
+                  .catchError((_) => ''),
+            );
           }
         }
       } catch (e) {

@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:kudlit_ph/core/utils/baybayify.dart';
 import 'package:kudlit_ph/features/scanner/domain/entities/baybayin_detection.dart';
+import 'package:kudlit_ph/features/home/presentation/widgets/butty_chat/butty_bubble.dart';
+import 'package:kudlit_ph/features/home/presentation/widgets/butty_chat/typing_bubble.dart';
 import 'package:kudlit_ph/features/scanner/presentation/providers/scan_tab_controller.dart';
 import 'package:kudlit_ph/features/scanner/presentation/providers/scanner_evaluation_provider.dart';
 import 'package:kudlit_ph/features/scanner/presentation/providers/scanner_provider.dart';
@@ -56,12 +58,6 @@ class ScanTab extends ConsumerWidget {
           const Positioned.fill(
             child: Center(child: CircularProgressIndicator()),
           ),
-        const Positioned(
-          top: 0,
-          left: 0,
-          right: 0,
-          child: SafeArea(bottom: false, child: _ScanningIndicator()),
-        ),
         const Positioned(
           top: 0,
           right: 12,
@@ -137,17 +133,6 @@ class _ScanCameraStack extends StatelessWidget {
         ),
       ],
     );
-  }
-}
-
-// ── Scanning indicator ────────────────────────────────────────────────────────
-
-class _ScanningIndicator extends StatelessWidget {
-  const _ScanningIndicator();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Padding(padding: EdgeInsets.only(top: 10), child: Center());
   }
 }
 
@@ -373,6 +358,7 @@ class _ScanResultPanelState extends ConsumerState<_ScanResultPanel> {
               onNext: _next,
             ),
           ],
+          const _ButtyTranslationArea(),
         ],
       ),
     );
@@ -397,17 +383,15 @@ class _ResultHandle extends StatelessWidget {
   }
 }
 
-class _ResultText extends ConsumerWidget {
+class _ResultText extends StatelessWidget {
   const _ResultText({required this.current, required this.tokenPreview});
 
   final String current;
   final String tokenPreview;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
-    final AsyncValue<String> evaluation = ref.watch(scannerEvaluationProvider);
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -442,29 +426,6 @@ class _ResultText extends ConsumerWidget {
             ),
           ),
         ],
-        const SizedBox(height: 8),
-        evaluation.when(
-          data: (String text) => Text(
-            text.isEmpty ? 'Analyzing...' : text,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: cs.onSurface.withAlpha(190),
-              height: 1.3,
-            ),
-          ),
-          loading: () => Text(
-            'Analyzing...',
-            style: TextStyle(
-              fontSize: 14,
-              color: cs.onSurface.withAlpha(150),
-            ),
-          ),
-          error: (Object err, StackTrace _) => Text(
-            'Error: $err',
-            style: TextStyle(color: cs.error),
-          ),
-        ),
       ],
     );
   }
@@ -595,6 +556,82 @@ class _ActionChip extends StatelessWidget {
           border: Border.all(color: cs.outline),
         ),
         child: Icon(icon, size: 15, color: cs.onSurface.withAlpha(150)),
+      ),
+    );
+  }
+}
+
+// ── Butty translation area ────────────────────────────────────────────────────
+
+class _ButtyTranslationArea extends ConsumerWidget {
+  const _ButtyTranslationArea();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ScanEvalState evalState = ref.watch(scannerEvaluationProvider);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        const SizedBox(height: 8),
+        evalState.translation.when(
+          loading: () => const TypingBubble(),
+          data: (String text) => text.isEmpty
+              ? const SizedBox.shrink()
+              : ButtyBubble(text: text),
+          error: (Object e, StackTrace s) => ButtyBubble(
+            text: 'Ay nako, I had trouble reading that. Try again?',
+          ),
+        ),
+        if (evalState.canRequestFollowUp) ...<Widget>[
+          const SizedBox(height: 2),
+          _TellMeMoreButton(
+            onTap: () =>
+                ref.read(scannerEvaluationProvider.notifier).requestFollowUp(),
+          ),
+        ],
+        if (evalState.followUp != null) ...<Widget>[
+          const SizedBox(height: 4),
+          evalState.followUp!.when(
+            loading: () => const TypingBubble(),
+            data: (String text) => text.isEmpty
+                ? const SizedBox.shrink()
+                : ButtyBubble(text: text),
+            error: (Object e, StackTrace s) => const SizedBox.shrink(),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _TellMeMoreButton extends StatelessWidget {
+  const _TellMeMoreButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: cs.primaryContainer.withAlpha(100),
+            borderRadius: BorderRadius.circular(99),
+            border: Border.all(color: cs.primary.withAlpha(80)),
+          ),
+          child: Text(
+            'Tell me more',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: cs.primary,
+            ),
+          ),
+        ),
       ),
     );
   }

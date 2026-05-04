@@ -130,7 +130,6 @@ class TranslateScreen extends ConsumerWidget {
                         .checkInput(),
                   ),
                   onCopy: () => _copyOutput(context, textState),
-                  onShare: () => _shareOutput(context, textState),
                 ),
                 TranslateWorkspaceMode.sketchpad => TranslateSketchpadModePanel(
                   state: sketchState,
@@ -180,26 +179,4 @@ class TranslateScreen extends ConsumerWidget {
     }
   }
 
-  Future<void> _shareOutput(
-    BuildContext context,
-    TranslateTextState state,
-  ) async {
-    final String output = state.latinToBaybayin
-        ? state.baybayinText
-        : state.latinText;
-    if (output.trim().isEmpty) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Generate output first.')));
-      }
-      return;
-    }
-    await Clipboard.setData(ClipboardData(text: output));
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Output copied. Share it from any app.')),
-      );
-    }
-  }
 }

@@ -140,6 +140,9 @@ final availableYoloModelsProvider = FutureProvider<List<AiModelInfo>>((
     supabaseAiModelsDatasourceProvider,
   );
   final List<AiModelInfo> models = await ds.fetchModels(type: ModelKind.vision);
+  // Catalog doesn't change at runtime — keep alive to avoid re-fetching on
+  // every scan tab visit.
+  ref.keepAlive();
   return models;
 });
 
@@ -221,6 +224,9 @@ final yoloModelPathProvider = FutureProvider.family<String, String>((
   if (path == null) {
     throw StateError('YOLO model download succeeded but no file is on disk.');
   }
+  // Keep the resolved path alive so navigating away from the scan tab and
+  // back doesn't re-trigger the download-check → loading sequence.
+  ref.keepAlive();
   return path;
 });
 

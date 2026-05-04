@@ -87,11 +87,14 @@ class TranslateSketchpadController extends Notifier<TranslateSketchpadState> {
     final String prompt =
         'Evaluate this Baybayin sketch for target "${state.target.trim()}". '
         'Start with encouragement, then one concrete stroke tip.';
+
     final AiPreference mode =
         ref.read(appPreferencesNotifierProvider).value?.aiPreference ??
         AiPreference.cloud;
 
-    if (kIsWeb || mode == AiPreference.cloud) {
+    if (!kIsWeb && mode == AiPreference.local) {
+      await _analyzeLocalFirstWithCloudFallback(imageBytes, prompt: prompt);
+    } else {
       await _streamAnalysis(
         stream: ref
             .read(cloudGemmaDatasourceProvider)
@@ -99,36 +102,42 @@ class TranslateSketchpadController extends Notifier<TranslateSketchpadState> {
         source: TranslateAiResultSource.online,
         rethrowOnError: false,
       );
-      return;
     }
+  }
 
-    final TranslateOfflineStatus offline = await ref.read(
-      translateOfflineStatusProvider.future,
-    );
-    if (!offline.usable) {
+  Future<void> _analyzeLocalFirstWithCloudFallback(
+    Uint8List imageBytes, {
+    required String prompt,
+  }) async {
+    final StringBuffer buffer = StringBuffer();
+    bool localFailed = false;
+    try {
+      await for (final String chunk in ref
+          .read(localGemmaDatasourceProvider)
+          .analyzeImage(imageBytes, prompt: prompt)) {
+        buffer.write(chunk);
+        state = state.copyWith(
+          aiBusy: true,
+          aiResponse: buffer.toString(),
+          aiSource: TranslateAiResultSource.offline,
+        );
+      }
       state = state.copyWith(
         aiBusy: false,
-        aiResponse: 'Offline model is unavailable for this action.',
+        aiResponse: buffer.toString(),
+        aiSource: TranslateAiResultSource.offline,
       );
       return;
+    } catch (e) {
+      localFailed = true;
+      debugPrint('[Sketchpad] local analyzeImage failed: $e, trying cloud');
     }
-
-    try {
-      await _streamAnalysis(
-        stream: ref
-            .read(localGemmaDatasourceProvider)
-            .analyzeImage(imageBytes, prompt: prompt),
-        source: TranslateAiResultSource.offline,
-        rethrowOnError: true,
-      );
-    } catch (_) {
+    if (localFailed) {
       await _streamAnalysis(
         stream: ref
             .read(cloudGemmaDatasourceProvider)
             .analyzeImage(imageBytes, prompt: prompt),
         source: TranslateAiResultSource.fallback,
-        prefix:
-            'Offline failed for sketch feedback, so cloud fallback was used.\n\n',
         rethrowOnError: false,
       );
     }

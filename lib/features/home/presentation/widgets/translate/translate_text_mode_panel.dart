@@ -18,7 +18,6 @@ class TranslateTextModePanel extends StatelessWidget {
     required this.onExplain,
     required this.onCheckInput,
     required this.onCopy,
-    required this.onShare,
   });
 
   final TranslateTextState state;
@@ -30,7 +29,6 @@ class TranslateTextModePanel extends StatelessWidget {
   final VoidCallback onExplain;
   final VoidCallback onCheckInput;
   final VoidCallback onCopy;
-  final VoidCallback onShare;
 
   @override
   Widget build(BuildContext context) {
@@ -39,8 +37,8 @@ class TranslateTextModePanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          SizedBox(
-            height: 220,
+          ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 160),
             child: OutputStage(
               baybayinText: state.baybayinText,
               latinText: state.latinText,
@@ -50,10 +48,10 @@ class TranslateTextModePanel extends StatelessWidget {
           _TextActionsRow(
             busy: state.aiBusy,
             enabled: inputEnabled && state.hasInput,
+            copyEnabled: state.hasInput,
             onExplain: onExplain,
             onCheckInput: onCheckInput,
             onCopy: onCopy,
-            onShare: onShare,
           ),
           if (disabledReason != null) ...<Widget>[
             const SizedBox(height: 8),
@@ -207,18 +205,18 @@ class _TextActionsRow extends StatelessWidget {
   const _TextActionsRow({
     required this.busy,
     required this.enabled,
+    required this.copyEnabled,
     required this.onExplain,
     required this.onCheckInput,
     required this.onCopy,
-    required this.onShare,
   });
 
   final bool busy;
   final bool enabled;
+  final bool copyEnabled;
   final VoidCallback onExplain;
   final VoidCallback onCheckInput;
   final VoidCallback onCopy;
-  final VoidCallback onShare;
 
   @override
   Widget build(BuildContext context) {
@@ -236,8 +234,7 @@ class _TextActionsRow extends StatelessWidget {
           enabled: enabled && !busy,
           onTap: onCheckInput,
         ),
-        _ActionButton(label: 'Copy', enabled: enabled, onTap: onCopy),
-        _ActionButton(label: 'Copy to Share', enabled: enabled, onTap: onShare),
+        _ActionButton(label: 'Copy', enabled: copyEnabled, onTap: onCopy),
       ],
     );
   }

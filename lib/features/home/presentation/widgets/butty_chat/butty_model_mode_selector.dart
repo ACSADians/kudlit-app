@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:kudlit_ph/features/home/presentation/providers/app_preferences_provider.dart';
 import 'package:kudlit_ph/features/translator/data/datasources/local_gemma_datasource.dart';
-import 'package:kudlit_ph/features/translator/domain/entities/gemma_model_info.dart';
 import 'package:kudlit_ph/features/translator/presentation/providers/ai_inference_provider.dart';
 import 'package:kudlit_ph/features/translator/presentation/providers/ai_inference_state.dart';
 import 'package:kudlit_ph/features/translator/presentation/providers/translator_providers.dart';
@@ -23,45 +22,20 @@ class ButtyOfflineStatus {
 
 final FutureProvider<ButtyOfflineStatus> buttyOfflineStatusProvider =
     FutureProvider<ButtyOfflineStatus>((Ref ref) async {
-      final AppPreferences prefs = await ref.watch(
-        appPreferencesNotifierProvider.future,
+      final LocalGemmaReadiness r = await ref.watch(
+        localModelReadinessProvider.future,
       );
-      final List<GemmaModelInfo> models = await ref.watch(
-        availableGemmaModelsProvider.future,
-      );
-
-      if (models.isEmpty) {
-        return const ButtyOfflineStatus(
-          installed: false,
-          detail: 'No Gemma model is configured for offline chat.',
-        );
-      }
-
-      GemmaModelInfo active = models[models.length ~/ 2];
-      if (prefs.selectedModelId != null) {
-        for (final GemmaModelInfo model in models) {
-          if (model.id == prefs.selectedModelId) {
-            active = model;
-            break;
-          }
-        }
-      }
-
-      final LocalGemmaDatasource localDatasource = ref.read(
-        localGemmaDatasourceProvider,
-      );
-      final LocalGemmaReadiness readiness = await localDatasource
-          .probeReadiness(active);
-
       return ButtyOfflineStatus(
-        installed: readiness.usable,
-        modelName: active.name,
-        detail: readiness.detail,
+        installed: r.usable,
+        modelName: r.modelName,
+        detail: r.detail,
       );
     });
 
 class ButtyModelModeSelector extends ConsumerWidget {
-  const ButtyModelModeSelector({super.key});
+  const ButtyModelModeSelector({super.key, this.showHelperText = true});
+
+  final bool showHelperText;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -89,37 +63,44 @@ class ButtyModelModeSelector extends ConsumerWidget {
       _ => 'Checking whether the offline Gemma model is installed…',
     };
 
+    final Widget pills = Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainer,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: cs.outline),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          _ModePill(
+            label: 'Online',
+            active: currentMode == AiPreference.cloud,
+            onTap: () => _setMode(ref, AiPreference.cloud),
+          ),
+          _ModePill(
+            label: 'Offline',
+            active: currentMode == AiPreference.local,
+            enabled: offlineReady && !offlineChecking,
+            onTap: () => _setMode(ref, AiPreference.local),
+          ),
+        ],
+      ),
+    );
+
+    if (!showHelperText) return pills;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Container(
-          padding: const EdgeInsets.all(3),
-          decoration: BoxDecoration(
-            color: cs.surfaceContainer,
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: cs.outline),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              _ModePill(
-                label: 'Online',
-                active: currentMode == AiPreference.cloud,
-                onTap: () => _setMode(ref, AiPreference.cloud),
-              ),
-              _ModePill(
-                label: 'Offline',
-                active: currentMode == AiPreference.local,
-                enabled: offlineReady && !offlineChecking,
-                onTap: () => _setMode(ref, AiPreference.local),
-              ),
-            ],
-          ),
-        ),
+        pills,
         const SizedBox(height: 6),
         Text(
           helperText,
-          style: TextStyle(fontSize: 10.5, color: Colors.white.withAlpha(170)),
+          style: TextStyle(
+            fontSize: 10.5,
+            color: cs.onSurface.withAlpha(170),
+          ),
         ),
       ],
     );

@@ -1,9 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:meta/meta.dart';
 
-import 'package:kudlit_ph/features/home/presentation/providers/app_preferences_provider.dart';
 import 'package:kudlit_ph/features/translator/data/datasources/local_gemma_datasource.dart';
-import 'package:kudlit_ph/features/translator/domain/entities/gemma_model_info.dart';
 import 'package:kudlit_ph/features/translator/presentation/providers/translator_providers.dart';
 
 enum TranslateWorkspaceMode { text, sketchpad }
@@ -63,46 +61,13 @@ class TranslatePageController extends Notifier<TranslatePageState> {
 
 final FutureProvider<TranslateOfflineStatus> translateOfflineStatusProvider =
     FutureProvider<TranslateOfflineStatus>((Ref ref) async {
-      final AppPreferences prefs = await ref.watch(
-        appPreferencesNotifierProvider.future,
+      final LocalGemmaReadiness r = await ref.watch(
+        localModelReadinessProvider.future,
       );
-      final List<GemmaModelInfo> models = await ref.watch(
-        availableGemmaModelsProvider.future,
-      );
-
-      if (models.isEmpty) {
-        return const TranslateOfflineStatus(
-          installed: false,
-          usable: false,
-          detail: 'Offline model is unavailable on this device.',
-        );
-      }
-
-      final GemmaModelInfo active = _resolveActiveModel(
-        models,
-        preferredId: prefs.selectedModelId,
-      );
-      final LocalGemmaReadiness readiness = await ref
-          .read(localGemmaDatasourceProvider)
-          .probeReadiness(active);
       return TranslateOfflineStatus(
-        installed: readiness.installed,
-        usable: readiness.usable,
-        detail: readiness.detail,
-        modelName: active.name,
+        installed: r.installed,
+        usable: r.usable,
+        detail: r.detail,
+        modelName: r.modelName,
       );
     });
-
-GemmaModelInfo _resolveActiveModel(
-  List<GemmaModelInfo> models, {
-  String? preferredId,
-}) {
-  if (preferredId != null) {
-    for (final GemmaModelInfo model in models) {
-      if (model.id == preferredId) {
-        return model;
-      }
-    }
-  }
-  return models[models.length ~/ 2];
-}
