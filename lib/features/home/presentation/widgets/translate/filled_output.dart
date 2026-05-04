@@ -14,15 +14,18 @@ class FilledOutput extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        Text(
-          baybayin,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontFamily: 'Baybayin Simple TAWBID',
-            fontSize: 54,
-            color: cs.onSurface,
-            letterSpacing: 10,
-            height: 1.2,
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            baybayin,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: 'Baybayin Simple TAWBID',
+              fontSize: 54,
+              color: cs.onSurface,
+              letterSpacing: 10,
+              height: 1.2,
+            ),
           ),
         ),
         const SizedBox(height: 16),

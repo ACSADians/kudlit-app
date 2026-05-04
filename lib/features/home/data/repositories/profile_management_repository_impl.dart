@@ -131,4 +131,24 @@ class ProfileManagementRepositoryImpl implements ProfileManagementRepository {
       return Left(Failure.unknown(message: e.toString()));
     }
   }
+
+  @override
+  Future<Either<Failure, Unit>> saveLessonProgress({
+    required String lessonId,
+    required bool completed,
+    required int score,
+  }) async {
+    try {
+      await _remote.saveLessonProgress(
+        lessonId: lessonId,
+        completed: completed,
+        score: score,
+      );
+      return const Right(unit);
+    } on ServerException catch (e) {
+      return Left(Failure.unknown(message: e.message));
+    } catch (e) {
+      return Left(Failure.unknown(message: e.toString()));
+    }
+  }
 }

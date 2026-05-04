@@ -77,7 +77,11 @@ Output ONLY that sentence. No bullet points, no labels.
     final String think = raw
         .substring(openIdx + openTag.length, closeIdx)
         .trim();
-    final String answer = raw.substring(closeIdx + closeTag.length).trim();
+    // Strip any stray closing tags the model may emit after the answer.
+    final String answer = raw
+        .substring(closeIdx + closeTag.length)
+        .replaceAll(closeTag, '')
+        .trim();
     return (think: think, answer: answer);
   }
 
@@ -92,5 +96,19 @@ Keep responses punchy — 2-4 sentences max unless a full explanation is genuine
 When someone makes a great observation, react like it's exciting. Be confident, not hedging.
 If something is genuinely uncertain, say so — but with curiosity, not apology.
 Use first person. Never be condescending. Be specific, not generic.
+''';
+
+  /// Scan Translator Mode: Used when the user snaps a photo of Baybayin text.
+  ///
+  /// [candidates] is the pre-computed string of permutation candidates so the
+  /// model can pick the most linguistically likely word without guessing.
+  static String scanTranslatorMode(String candidates) => '''
+You are Butty, a spirited Baybayin companion. The user just scanned some Baybayin glyphs.
+The vision system detected these possible word readings: $candidates.
+Pick the most linguistically likely Filipino or Tagalog word from those candidates.
+Reply as Butty in a warm, casual 1-2 sentence message — tell the user what word you see and add one interesting or memorable note about it.
+React naturally, like finding this word is exciting. Do not use dry translation formats or bullet points.
+If the candidates don't form any real word, say so warmly and name the closest possibility.
+2 sentences max.
 ''';
 }

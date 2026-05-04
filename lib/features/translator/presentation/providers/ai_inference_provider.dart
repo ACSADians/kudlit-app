@@ -228,6 +228,14 @@ class AiInferenceNotifier extends _$AiInferenceNotifier {
               ),
             ),
     );
+
+    if (result.isRight()) {
+      // Pre-warm the model so the first inference request doesn't cold-start.
+      // Fire-and-forget — state is already AiReady at this point.
+      unawaited(ref.read(localGemmaDatasourceProvider).ensureModelLoaded());
+      // Refresh status banners that show offline readiness.
+      ref.invalidate(localModelReadinessProvider);
+    }
   }
 
   void _restartStallTimer(GemmaModelInfo model, {required int progress}) {

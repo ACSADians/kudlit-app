@@ -1,11 +1,14 @@
 // ignore: unnecessary_import — flutter_riverpod is needed for Ref resolution
+import 'dart:async';
+
 import 'package:flutter/painting.dart' show Offset;
-import 'package:flutter/foundation.dart' show Uint8List;
+import 'package:flutter/foundation.dart' show Uint8List, debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import 'package:kudlit_ph/core/error/failures.dart';
+import 'package:kudlit_ph/features/home/presentation/providers/profile_management_provider.dart';
 import 'package:kudlit_ph/features/learning/domain/entities/gemma_prompts.dart';
 import 'package:kudlit_ph/features/learning/domain/entities/lesson.dart';
 import 'package:kudlit_ph/features/learning/domain/entities/lesson_mode.dart';
@@ -81,12 +84,17 @@ class LessonController extends _$LessonController {
         .where((String p) => p.isNotEmpty)
         .toList();
     final bool isCorrect = parts.any((String p) => step.expected.contains(p));
+    final bool isFirstAttempt = current.attemptStatus == AttemptStatus.idle ||
+        current.attemptStatus == AttemptStatus.checking;
     state = AsyncData<LessonState?>(
       current.copyWith(
         attemptStatus: isCorrect ? AttemptStatus.correct : AttemptStatus.retry,
         buttyMessage: isCorrect
             ? (step.successFeedback ?? 'Correct!')
             : (step.hint ?? 'Not quite — keep practicing.'),
+        firstAttemptPasses: isCorrect && isFirstAttempt
+            ? current.firstAttemptPasses + 1
+            : current.firstAttemptPasses,
       ),
     );
   }
@@ -178,6 +186,7 @@ class LessonController extends _$LessonController {
 
     final String normalized = value.trim().toLowerCase();
     final bool isCorrect = step.expected.contains(normalized);
+    final bool isFirstAttempt = current.attemptStatus == AttemptStatus.idle;
 
     state = AsyncData<LessonState?>(
       current.copyWith(
@@ -185,6 +194,9 @@ class LessonController extends _$LessonController {
         buttyMessage: isCorrect
             ? (step.successFeedback ?? 'Correct.')
             : (step.hint ?? 'Not quite — try again.'),
+        firstAttemptPasses: isCorrect && isFirstAttempt
+            ? current.firstAttemptPasses + 1
+            : current.firstAttemptPasses,
       ),
     );
   }
@@ -193,8 +205,12 @@ class LessonController extends _$LessonController {
   void acknowledge() {
     final LessonState? current = state.value;
     if (current == null) return;
+    // Reference steps are always first-attempt (no wrong answer possible).
     state = AsyncData<LessonState?>(
-      current.copyWith(attemptStatus: AttemptStatus.correct),
+      current.copyWith(
+        attemptStatus: AttemptStatus.correct,
+        firstAttemptPasses: current.firstAttemptPasses + 1,
+      ),
     );
   }
 
@@ -204,13 +220,13 @@ class LessonController extends _$LessonController {
     if (current == null) return;
     final int nextIndex = current.currentStepIndex + 1;
     if (nextIndex >= current.lesson.steps.length) {
-      state = AsyncData<LessonState?>(
-        current.copyWith(
-          completed: true,
-          attemptStatus: AttemptStatus.idle,
-          buttyMessage: 'Lesson complete. Magaling!',
-        ),
+      final LessonState completed = current.copyWith(
+        completed: true,
+        attemptStatus: AttemptStatus.idle,
+        buttyMessage: 'Lesson complete. Magaling!',
       );
+      state = AsyncData<LessonState?>(completed);
+      unawaited(_saveLessonProgress(completed));
       return;
     }
     final LessonStep nextStep = current.lesson.steps[nextIndex];
@@ -232,6 +248,23 @@ class LessonController extends _$LessonController {
         buttyMessage: _introFor(current.currentStep),
       ),
     );
+  }
+
+  Future<void> _saveLessonProgress(LessonState completed) async {
+    try {
+      await ref
+          .read(profileManagementRepositoryProvider)
+          .saveLessonProgress(
+            lessonId: completed.lesson.id,
+            completed: true,
+            score: completed.score,
+          );
+      debugPrint(
+        '[LessonController] progress saved: ${completed.lesson.id} score=${completed.score}',
+      );
+    } catch (e) {
+      debugPrint('[LessonController] progress save failed (non-fatal): $e');
+    }
   }
 
   static String _introFor(LessonStep step) {

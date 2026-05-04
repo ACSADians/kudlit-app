@@ -13,11 +13,11 @@ import 'package:kudlit_ph/features/home/presentation/widgets/yolo_sim_overlay.da
 
 /// How often the detection output is forwarded to [ScannerCamera.onDetections].
 /// The YOLO model keeps running every frame; only the UI updates are throttled.
-const Duration _kDetectionInterval = Duration(milliseconds: 500);
+const Duration _kDetectionInterval = Duration(milliseconds: 250);
 
 /// Minimum confidence required for a detection to be surfaced.
-/// Raised to 0.65 — the Baybayin model is domain-specific so anything below
-/// this is almost certainly a false positive on non-Baybayin scenes.
+/// 0.8 — conservative threshold suited to Baybayin's high inter-class visual
+/// similarity (e.g., 'ba' vs 'da' strokes). Lower only after model retraining.
 const double _kConfidenceThreshold = 0.8;
 
 /// IoU threshold for non-max suppression.
@@ -76,6 +76,16 @@ class _ScannerCameraState extends ConsumerState<ScannerCamera> {
   /// How many consecutive throttle intervals the current set of detections
   /// has been seen. Resets to 0 when a frame comes back empty.
   int _consecutiveHits = 0;
+
+  String _modelErrorMessage(Object error) {
+    final String raw = error.toString();
+    if (raw.contains('No enabled')) return 'No scanner model is configured yet.';
+    if (raw.contains('no download URL')) return 'Model download URL is missing.';
+    if (raw.contains('no file is on disk')) {
+      return 'Download may have been interrupted. Check your connection and retry.';
+    }
+    return 'Could not load the scanner model. Check your connection and retry.';
+  }
 
   void _onYoloResult(List<YOLOResult> results) {
     if (_throttle.elapsed < _kDetectionInterval) return;
@@ -156,8 +166,12 @@ class _ScannerCameraState extends ConsumerState<ScannerCamera> {
     );
     return pathAsync.when(
       loading: () => const ModelNotReadyScreen(),
-      error: (Object error, StackTrace stackTrace) =>
-          const ModelNotReadyScreen(),
+      error: (Object error, StackTrace _) => ModelNotReadyScreen.error(
+        errorMessage: _modelErrorMessage(error),
+        onRetry: () => ref.invalidate(
+          yoloModelPathProvider(YoloModelScope.camera),
+        ),
+      ),
       data: (String modelPath) {
         final YoloBaybayinDetector detector =
             ref.watch(baybayinDetectorProvider) as YoloBaybayinDetector;

@@ -21,49 +21,44 @@ class ButtyHeader extends StatelessWidget {
         bottom: false,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: <Widget>[
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
+              Stack(
                 children: <Widget>[
-                  Stack(
-                    children: <Widget>[
-                      Container(
-                        width: 46,
-                        height: 46,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: cs.primaryContainer,
-                        ),
-                        child: ClipOval(
-                          child: Image.asset(
-                            'assets/brand/ButtyRead.webp',
-                            fit: BoxFit.cover,
-                          ),
-                        ),
+                  Container(
+                    width: 46,
+                    height: 46,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: cs.primaryContainer,
+                    ),
+                    child: ClipOval(
+                      child: Image.asset(
+                        'assets/brand/ButtyRead.webp',
+                        fit: BoxFit.cover,
                       ),
-                      Positioned(
-                        bottom: 1,
-                        right: 1,
-                        child: Container(
-                          width: 12,
-                          height: 12,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF46B986),
-                            shape: BoxShape.circle,
-                            border: Border.all(color: headerBg, width: 2),
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                  const SizedBox(width: 12),
-                  const Expanded(child: ButtyHeaderText()),
+                  Positioned(
+                    bottom: 1,
+                    right: 1,
+                    child: Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF46B986),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: headerBg, width: 2),
+                      ),
+                    ),
+                  ),
                 ],
               ),
-              const SizedBox(height: 10),
-              const ButtyModelModeSelector(),
+              const SizedBox(width: 12),
+              const Expanded(child: ButtyHeaderText()),
+              const SizedBox(width: 10),
+              const ButtyModelModeSelector(showHelperText: false),
             ],
           ),
         ),

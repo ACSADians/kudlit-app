@@ -80,7 +80,7 @@ class _ButtyChatScreenState extends ConsumerState<ButtyChatScreen> {
     final bool offlineUnavailable =
         mode == AiPreference.local &&
         !offlineStatusAsync.isLoading &&
-        !(offlineStatus?.installed ?? false);
+        !(offlineStatus?.usable ?? false);
     final bool inputEnabled =
         !chatState.responding && !offlinePending && !offlineUnavailable;
     final String? disabledHint = switch (mode) {
