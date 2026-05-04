@@ -74,13 +74,23 @@ class _LlmStatusRow extends StatelessWidget {
           modelName: activeModel.name,
           cloudMode: mode == AiPreference.cloud,
         ),
-      AiLocalModelMissing() => _ActionRow(
+      AiLocalModelMissing(:final String? note) => _ActionRow(
         badge: const _StatusBadge(label: 'Not downloaded', ok: false),
         primary: 'Download',
         onPrimary: onDownload,
+        note: note,
       ),
-      AiDownloading(:final GemmaModelInfo model, :final int progress) =>
-        _ProgressRow(label: model.name, progress: progress, onCancel: onCancel),
+      AiDownloading(
+        :final GemmaModelInfo model,
+        :final int progress,
+        :final String? statusMessage,
+      ) =>
+        _ProgressRow(
+          label: model.name,
+          progress: progress,
+          onCancel: onCancel,
+          statusMessage: statusMessage,
+        ),
       AiInferenceError(:final String message) => _ErrRow(message: message),
       _ => const _CheckingRow(),
     };
@@ -109,23 +119,39 @@ class _ActionRow extends StatelessWidget {
     required this.badge,
     required this.primary,
     required this.onPrimary,
+    this.note,
   });
 
   final Widget badge;
   final String primary;
   final VoidCallback onPrimary;
+  final String? note;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    final ColorScheme cs = Theme.of(context).colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        badge,
-        const Spacer(),
-        ProfileManagementActionButton(
-          label: primary,
-          isPrimary: true,
-          onTap: onPrimary,
+        Row(
+          children: <Widget>[
+            badge,
+            const Spacer(),
+            ProfileManagementActionButton(
+              label: primary,
+              isPrimary: true,
+              onTap: onPrimary,
+            ),
+          ],
         ),
+        if (note != null) ...<Widget>[
+          const SizedBox(height: 8),
+          Text(
+            note!,
+            style: TextStyle(fontSize: 11, color: cs.onSurface.withAlpha(150)),
+          ),
+        ],
       ],
     );
   }
@@ -136,11 +162,13 @@ class _ProgressRow extends StatelessWidget {
     required this.label,
     required this.progress,
     required this.onCancel,
+    this.statusMessage,
   });
 
   final String label;
   final int progress;
   final VoidCallback onCancel;
+  final String? statusMessage;
 
   @override
   Widget build(BuildContext context) {
@@ -165,6 +193,13 @@ class _ProgressRow extends StatelessWidget {
             ),
           ],
         ),
+        if (statusMessage != null) ...<Widget>[
+          const SizedBox(height: 4),
+          Text(
+            statusMessage!,
+            style: TextStyle(color: cs.onSurface.withAlpha(150), fontSize: 11),
+          ),
+        ],
         const SizedBox(height: 6),
         LinearProgressIndicator(value: progress / 100),
       ],

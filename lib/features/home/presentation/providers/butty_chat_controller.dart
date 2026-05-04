@@ -1,6 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:meta/meta.dart';
 
+import 'package:kudlit_ph/features/home/presentation/providers/app_preferences_provider.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/butty_chat/chat_msg.dart';
 import 'package:kudlit_ph/features/learning/domain/entities/gemma_prompts.dart';
 import 'package:kudlit_ph/features/translator/domain/entities/chat_message.dart';
@@ -8,10 +9,7 @@ import 'package:kudlit_ph/features/translator/presentation/providers/ai_inferenc
 
 @immutable
 class ButtyChatState {
-  const ButtyChatState({
-    required this.messages,
-    required this.responding,
-  });
+  const ButtyChatState({required this.messages, required this.responding});
 
   factory ButtyChatState.initial() {
     return const ButtyChatState(
@@ -32,10 +30,7 @@ class ButtyChatState {
   final List<ChatMsg> messages;
   final bool responding;
 
-  ButtyChatState copyWith({
-    List<ChatMsg>? messages,
-    bool? responding,
-  }) {
+  ButtyChatState copyWith({List<ChatMsg>? messages, bool? responding}) {
     return ButtyChatState(
       messages: messages ?? this.messages,
       responding: responding ?? this.responding,
@@ -59,19 +54,28 @@ class ButtyChatController extends Notifier<ButtyChatState> {
       return;
     }
 
+    final AiPreference mode =
+        ref.read(appPreferencesNotifierProvider).value?.aiPreference ??
+        AiPreference.cloud;
+    debugPrint(
+      '[Butty] send requested | mode=${mode.name} | chars=${trimmed.length}',
+    );
+
     final List<ChatMsg> nextMessages = <ChatMsg>[
       ...state.messages,
       (isButty: false, text: trimmed),
     ];
     state = state.copyWith(messages: nextMessages, responding: true);
 
-    final List<ChatMessage> history = nextMessages.map((ChatMsg msg) {
-      return ChatMessage(
-        text: msg.text,
-        isUser: !msg.isButty,
-        timestamp: DateTime.now(),
-      );
-    }).toList(growable: false);
+    final List<ChatMessage> history = nextMessages
+        .map((ChatMsg msg) {
+          return ChatMessage(
+            text: msg.text,
+            isUser: !msg.isButty,
+            timestamp: DateTime.now(),
+          );
+        })
+        .toList(growable: false);
 
     try {
       final Stream<String> responseStream = ref
@@ -80,12 +84,10 @@ class ButtyChatController extends Notifier<ButtyChatState> {
             history,
             systemInstruction: GemmaPrompts.assistantMode,
           );
+      debugPrint('[Butty] response stream opened');
 
       state = state.copyWith(
-        messages: <ChatMsg>[
-          ...state.messages,
-          (isButty: true, text: ''),
-        ],
+        messages: <ChatMsg>[...state.messages, (isButty: true, text: '')],
       );
 
       final StringBuffer buffer = StringBuffer();
@@ -98,7 +100,11 @@ class ButtyChatController extends Notifier<ButtyChatState> {
           ],
         );
       }
+      debugPrint(
+        '[Butty] response completed | chars=${buffer.toString().length}',
+      );
     } catch (_) {
+      debugPrint('[Butty] response failed');
       state = state.copyWith(
         messages: <ChatMsg>[
           ...state.messages,
@@ -109,6 +115,7 @@ class ButtyChatController extends Notifier<ButtyChatState> {
         ],
       );
     } finally {
+      debugPrint('[Butty] responding=false');
       state = state.copyWith(responding: false);
     }
   }

@@ -21,7 +21,7 @@ class GemmaChip extends StatelessWidget {
           const OnlineDot(),
           const SizedBox(width: 5),
           Text(
-            'Gemma 4',
+            'Online Gemma 4',
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w600,
