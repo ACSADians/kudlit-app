@@ -45,29 +45,28 @@ class LessonStepModel extends LessonStep {
       hideGlyph: (json['hideGlyph'] as bool?) ?? false,
       strokeOrder: rawStrokes != null
           ? rawStrokes
-              .cast<Map<String, dynamic>>()
-              .map(GlyphStroke.fromJson)
-              .toList(growable: false)
+                .cast<Map<String, dynamic>>()
+                .map(GlyphStroke.fromJson)
+                .toList(growable: false)
           : strokeOrder,
     );
   }
 
   /// Creates a copy with [strokeOrder] replaced.
-  LessonStepModel withStrokeOrder(List<GlyphStroke> strokes) =>
-      LessonStepModel(
-        id: id,
-        mode: mode,
-        label: label,
-        glyph: glyph,
-        glyphImage: glyphImage,
-        intro: intro,
-        prompt: prompt,
-        narration: narration,
-        hint: hint,
-        successFeedback: successFeedback,
-        buttyTip: buttyTip,
-        expected: expected,
-        hideGlyph: hideGlyph,
-        strokeOrder: strokes,
-      );
+  LessonStepModel withStrokeOrder(List<GlyphStroke> strokes) => LessonStepModel(
+    id: id,
+    mode: mode,
+    label: label,
+    glyph: glyph,
+    glyphImage: glyphImage,
+    intro: intro,
+    prompt: prompt,
+    narration: narration,
+    hint: hint,
+    successFeedback: successFeedback,
+    buttyTip: buttyTip,
+    expected: expected,
+    hideGlyph: hideGlyph,
+    strokeOrder: strokes,
+  );
 }

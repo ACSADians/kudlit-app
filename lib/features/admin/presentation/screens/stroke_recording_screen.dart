@@ -17,11 +17,13 @@ class StrokeRecordingScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final StrokeRecordingState state =
-        ref.watch(strokeRecordingNotifierProvider);
+    final StrokeRecordingState state = ref.watch(
+      strokeRecordingNotifierProvider,
+    );
 
-    final StrokeRecordingIdle? idle =
-        state is StrokeRecordingIdle ? state : null;
+    final StrokeRecordingIdle? idle = state is StrokeRecordingIdle
+        ? state
+        : null;
 
     return Scaffold(
       backgroundColor: KudlitColors.neutralBlack,
@@ -47,9 +49,8 @@ class StrokeRecordingScreen extends ConsumerWidget {
         ),
         StrokeRecordingError() => _ErrorView(
           message: state.message,
-          onDismiss: () => ref
-              .read(strokeRecordingNotifierProvider.notifier)
-              .dismissError(),
+          onDismiss: () =>
+              ref.read(strokeRecordingNotifierProvider.notifier).dismissError(),
         ),
         _ => _RecordingBody(state: state),
       },
@@ -66,8 +67,9 @@ class _RecordingBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final StrokeRecordingIdle? idle =
-        state is StrokeRecordingIdle ? state as StrokeRecordingIdle : null;
+    final StrokeRecordingIdle? idle = state is StrokeRecordingIdle
+        ? state as StrokeRecordingIdle
+        : null;
 
     final String glyph = switch (state) {
       StrokeRecordingIdle(:final String selectedGlyph) => selectedGlyph,
@@ -128,10 +130,7 @@ class _RecordingBody extends StatelessWidget {
 // ─── Controls bar (glyph dropdown + overlay picker) ───────────────────────────
 
 class _ControlsBar extends ConsumerWidget {
-  const _ControlsBar({
-    required this.selectedGlyph,
-    required this.hasOverlay,
-  });
+  const _ControlsBar({required this.selectedGlyph, required this.hasOverlay});
 
   final String selectedGlyph;
   final bool hasOverlay;
@@ -222,10 +221,7 @@ class _ControlsBar extends ConsumerWidget {
 // ─── Glyph dropdown ──────────────────────────────────────────────────────────
 
 class _GlyphDropdown extends StatelessWidget {
-  const _GlyphDropdown({
-    required this.selectedGlyph,
-    required this.onSelected,
-  });
+  const _GlyphDropdown({required this.selectedGlyph, required this.onSelected});
 
   final String selectedGlyph;
   final void Function(String glyph, String label) onSelected;
@@ -269,40 +265,39 @@ class _GlyphDropdown extends StatelessWidget {
         },
         items: kBaybayinGlyphs
             .map(
-              (({String glyph, String label}) item) =>
-                  DropdownMenuItem<String>(
-                    value: item.glyph,
-                    child: Row(
-                      children: <Widget>[
-                        SizedBox(
-                          width: 32,
-                          child: Text(
-                            item.glyph,
-                            style: const TextStyle(
-                              fontFamily: 'Baybayin Simple TAWBID',
-                              fontSize: 20,
-                              color: KudlitColors.neutralWhite,
-                              height: 1.2,
-                            ),
-                          ),
+              (({String glyph, String label}) item) => DropdownMenuItem<String>(
+                value: item.glyph,
+                child: Row(
+                  children: <Widget>[
+                    SizedBox(
+                      width: 32,
+                      child: Text(
+                        item.glyph,
+                        style: const TextStyle(
+                          fontFamily: 'Baybayin Simple TAWBID',
+                          fontSize: 20,
+                          color: KudlitColors.neutralWhite,
+                          height: 1.2,
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          item.label,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: KudlitColors.neutralWhite,
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 8),
+                    Text(
+                      item.label,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: KudlitColors.neutralWhite,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             )
             .toList(),
         onChanged: (String? value) {
           if (value == null) return;
-          final ({String glyph, String label}) item =
-              kBaybayinGlyphs.firstWhere((e) => e.glyph == value);
+          final ({String glyph, String label}) item = kBaybayinGlyphs
+              .firstWhere((e) => e.glyph == value);
           onSelected(item.glyph, item.label);
         },
       ),
@@ -417,11 +412,7 @@ class _ThicknessSlider extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Row(
       children: <Widget>[
-        const Icon(
-          Icons.brush_rounded,
-          size: 14,
-          color: KudlitColors.grey300,
-        ),
+        const Icon(Icons.brush_rounded, size: 14, color: KudlitColors.grey300),
         const SizedBox(width: 6),
         Expanded(
           child: SliderTheme(
@@ -758,8 +749,7 @@ class _SaveButton extends ConsumerWidget {
         ),
         onPressed: canSave
             ? () async {
-                final RenderBox? box =
-                    context.findRenderObject() as RenderBox?;
+                final RenderBox? box = context.findRenderObject() as RenderBox?;
                 final Size size = box?.size ?? const Size(300, 300);
                 await ref
                     .read(strokeRecordingNotifierProvider.notifier)
@@ -804,9 +794,9 @@ class _SavedViewState extends State<_SavedView> {
       if (mounted) setState(() => _exportedName = name);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Export failed: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Export failed: $e')));
       }
     } finally {
       if (mounted) setState(() => _exporting = false);
@@ -944,10 +934,7 @@ class _ErrorView extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 13,
-                color: KudlitColors.grey300,
-              ),
+              style: const TextStyle(fontSize: 13, color: KudlitColors.grey300),
             ),
             const SizedBox(height: 24),
             OutlinedButton(

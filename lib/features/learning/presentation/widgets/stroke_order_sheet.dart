@@ -39,10 +39,9 @@ class _StrokeOrderSheetState extends State<StrokeOrderSheet>
       duration: Duration(milliseconds: totalMs.clamp(400, 8000)),
     );
     _ctrl.addStatusListener(_onStatus);
-    Future<void>.delayed(
-      const Duration(milliseconds: 200),
-      () { if (mounted) _ctrl.forward(); },
-    );
+    Future<void>.delayed(const Duration(milliseconds: 200), () {
+      if (mounted) _ctrl.forward();
+    });
   }
 
   void _onStatus(AnimationStatus status) {
@@ -113,8 +112,9 @@ class _StrokeOrderSheetState extends State<StrokeOrderSheet>
                 children: <Widget>[
                   Text(
                     'Stroke order',
-                    style: text.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w700),
+                    style: text.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   Text(
                     widget.label,
@@ -139,8 +139,7 @@ class _StrokeOrderSheetState extends State<StrokeOrderSheet>
           AnimatedBuilder(
             animation: _ctrl,
             builder: (BuildContext context, Widget? _) {
-              final double progress =
-                  _ctrl.value * widget.strokes.length;
+              final double progress = _ctrl.value * widget.strokes.length;
               return Container(
                 height: 260,
                 width: double.infinity,
@@ -179,9 +178,7 @@ class _StrokeOrderSheetState extends State<StrokeOrderSheet>
               ),
               const SizedBox(width: 8),
               FilledButton.icon(
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size(120, 44),
-                ),
+                style: FilledButton.styleFrom(minimumSize: const Size(120, 44)),
                 onPressed: _togglePlayback,
                 icon: Icon(
                   _playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
@@ -230,7 +227,13 @@ class _StrokeOrderPainter extends CustomPainter {
     // Draw the currently animating stroke.
     if (fullyDone < strokes.length && activeFrac > 0) {
       _drawStroke(canvas, size, strokes[fullyDone], activeFrac, activeColor);
-      _drawStartBadge(canvas, size, strokes[fullyDone], fullyDone + 1, activeColor);
+      _drawStartBadge(
+        canvas,
+        size,
+        strokes[fullyDone],
+        fullyDone + 1,
+        activeColor,
+      );
     }
   }
 
@@ -299,10 +302,7 @@ class _StrokeOrderPainter extends CustomPainter {
       ),
       textDirection: TextDirection.ltr,
     )..layout();
-    tp.paint(
-      canvas,
-      center - Offset(tp.width / 2, tp.height / 2),
-    );
+    tp.paint(canvas, center - Offset(tp.width / 2, tp.height / 2));
   }
 
   @override

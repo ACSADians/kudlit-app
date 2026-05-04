@@ -47,15 +47,15 @@ class ReferenceModeBody extends StatelessWidget {
             onPressed: step.strokeOrder.isEmpty
                 ? null
                 : () => showModalBottomSheet<void>(
-                      context: context,
-                      isScrollControlled: true,
-                      backgroundColor: Colors.transparent,
-                      builder: (_) => StrokeOrderSheet(
-                        glyph: step.glyph,
-                        label: step.label,
-                        strokes: step.strokeOrder,
-                      ),
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (_) => StrokeOrderSheet(
+                      glyph: step.glyph,
+                      label: step.label,
+                      strokes: step.strokeOrder,
                     ),
+                  ),
             icon: const Icon(Icons.play_arrow_rounded),
             label: Text(
               step.strokeOrder.isEmpty

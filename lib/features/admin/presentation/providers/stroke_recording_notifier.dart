@@ -59,10 +59,7 @@ class StrokeRecordingNotifier extends _$StrokeRecordingNotifier {
     _overlayBytes = bytes;
     if (state is! StrokeRecordingIdle) return;
     final StrokeRecordingIdle s = state as StrokeRecordingIdle;
-    state = s.copyWith(
-      overlayImageBytes: bytes,
-      clearOverlay: bytes == null,
-    );
+    state = s.copyWith(overlayImageBytes: bytes, clearOverlay: bytes == null);
   }
 
   // ─── Stroke width ─────────────────────────────────────────────────────────
@@ -97,8 +94,9 @@ class StrokeRecordingNotifier extends _$StrokeRecordingNotifier {
     final StrokeRecordingIdle s = state as StrokeRecordingIdle;
     if (s.strokeStartTime == null) return;
 
-    final int elapsed =
-        DateTime.now().difference(s.strokeStartTime!).inMilliseconds;
+    final int elapsed = DateTime.now()
+        .difference(s.strokeStartTime!)
+        .inMilliseconds;
 
     final TimedPoint point = TimedPoint(
       x: position.dx / canvasSize.width,
@@ -106,9 +104,7 @@ class StrokeRecordingNotifier extends _$StrokeRecordingNotifier {
       t: elapsed,
     );
 
-    state = s.copyWith(
-      currentStroke: <TimedPoint>[...s.currentStroke, point],
-    );
+    state = s.copyWith(currentStroke: <TimedPoint>[...s.currentStroke, point]);
   }
 
   void onPanEnd(Size canvasSize) {
@@ -173,8 +169,9 @@ class StrokeRecordingNotifier extends _$StrokeRecordingNotifier {
       createdAt: DateTime.now(),
     );
 
-    final result =
-        await ref.read(strokePatternRepositoryProvider).save(pattern);
+    final result = await ref
+        .read(strokePatternRepositoryProvider)
+        .save(pattern);
 
     result.fold(
       (failure) => state = StrokeRecordingError(
@@ -187,8 +184,7 @@ class StrokeRecordingNotifier extends _$StrokeRecordingNotifier {
         _sessionPatterns.add(saved);
         state = StrokeRecordingSaved(
           pattern: saved,
-          sessionPatterns:
-              List<StrokePattern>.unmodifiable(_sessionPatterns),
+          sessionPatterns: List<StrokePattern>.unmodifiable(_sessionPatterns),
         );
       },
     );
@@ -205,10 +201,6 @@ class StrokeRecordingNotifier extends _$StrokeRecordingNotifier {
   void dismissError() {
     if (state is! StrokeRecordingError) return;
     final StrokeRecordingError s = state as StrokeRecordingError;
-    state = _makeIdle(
-      s.selectedGlyph,
-      s.selectedLabel,
-      strokes: s.strokes,
-    );
+    state = _makeIdle(s.selectedGlyph, s.selectedLabel, strokes: s.strokes);
   }
 }
