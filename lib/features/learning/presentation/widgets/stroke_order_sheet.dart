@@ -135,17 +135,18 @@ class _StrokeOrderSheetState extends State<StrokeOrderSheet>
             ],
           ),
           const SizedBox(height: 16),
-          // Canvas — preserves the recorded aspect ratio, max 320px tall.
+          // Canvas — square (1:1), capped at 320px.
+          // Points are normalized 0–1 so any square canvas renders correctly.
           ConstrainedBox(
-            constraints: const BoxConstraints(maxHeight: 320),
-            child: AnimatedBuilder(
-              animation: _ctrl,
-              builder: (BuildContext context, Widget? _) {
-                final double progress =
-                    _ctrl.value * widget.data.strokes.length;
-                return AspectRatio(
-                  aspectRatio: widget.data.aspectRatio,
-                  child: Container(
+            constraints: const BoxConstraints(maxWidth: 320, maxHeight: 320),
+            child: AspectRatio(
+              aspectRatio: 1,
+              child: AnimatedBuilder(
+                animation: _ctrl,
+                builder: (BuildContext context, Widget? _) {
+                  final double progress =
+                      _ctrl.value * widget.data.strokes.length;
+                  return Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
@@ -162,9 +163,9 @@ class _StrokeOrderSheetState extends State<StrokeOrderSheet>
                         ),
                       ),
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
           ),
           const SizedBox(height: 12),
