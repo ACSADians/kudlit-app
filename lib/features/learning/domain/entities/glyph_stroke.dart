@@ -36,3 +36,23 @@ class GlyphStroke {
     );
   }
 }
+
+/// The full stroke-order recording for a single glyph, including the
+/// aspect ratio of the canvas it was recorded on.
+///
+/// [aspectRatio] = canvasWidth / canvasHeight from [stroke_patterns].
+/// Used by [StrokeOrderSheet] to preserve the proportions of the recording.
+@immutable
+class StrokeOrderData {
+  const StrokeOrderData({
+    required this.strokes,
+    required this.aspectRatio,
+  });
+
+  final List<GlyphStroke> strokes;
+
+  /// width ÷ height of the recording canvas (always > 0).
+  final double aspectRatio;
+
+  bool get isEmpty => strokes.isEmpty;
+}

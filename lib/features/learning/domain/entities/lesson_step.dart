@@ -19,7 +19,7 @@ class LessonStep {
     this.buttyTip,
     this.expected = const <String>[],
     this.hideGlyph = false,
-    this.strokeOrder = const <GlyphStroke>[],
+    this.strokeOrder,
   });
 
   final String id;
@@ -46,6 +46,6 @@ class LessonStep {
   final bool hideGlyph;
 
   /// Recorded stroke order for this glyph, fetched from [stroke_patterns]
-  /// by [glyph]. Empty when no recording exists yet.
-  final List<GlyphStroke> strokeOrder;
+  /// by [glyph]. Null when no recording exists yet.
+  final StrokeOrderData? strokeOrder;
 }

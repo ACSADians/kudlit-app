@@ -20,13 +20,9 @@ class LessonStepModel extends LessonStep {
     super.strokeOrder,
   });
 
-  factory LessonStepModel.fromJson(
-    Map<String, dynamic> json, {
-    List<GlyphStroke> strokeOrder = const <GlyphStroke>[],
-  }) {
+  factory LessonStepModel.fromJson(Map<String, dynamic> json) {
     final List<dynamic> rawExpected =
         (json['expected'] as List<dynamic>?) ?? const <dynamic>[];
-    final List<dynamic>? rawStrokes = json['strokeOrder'] as List<dynamic>?;
     return LessonStepModel(
       id: json['id'] as String,
       mode: LessonMode.fromJson(json['mode'] as String),
@@ -43,17 +39,11 @@ class LessonStepModel extends LessonStep {
           .map((dynamic e) => (e as String).trim().toLowerCase())
           .toList(growable: false),
       hideGlyph: (json['hideGlyph'] as bool?) ?? false,
-      strokeOrder: rawStrokes != null
-          ? rawStrokes
-                .cast<Map<String, dynamic>>()
-                .map(GlyphStroke.fromJson)
-                .toList(growable: false)
-          : strokeOrder,
     );
   }
 
-  /// Creates a copy with [strokeOrder] replaced.
-  LessonStepModel withStrokeOrder(List<GlyphStroke> strokes) => LessonStepModel(
+  /// Creates a copy with [strokeOrder] attached.
+  LessonStepModel withStrokeOrder(StrokeOrderData data) => LessonStepModel(
     id: id,
     mode: mode,
     label: label,
@@ -67,6 +57,6 @@ class LessonStepModel extends LessonStep {
     buttyTip: buttyTip,
     expected: expected,
     hideGlyph: hideGlyph,
-    strokeOrder: strokes,
+    strokeOrder: data,
   );
 }

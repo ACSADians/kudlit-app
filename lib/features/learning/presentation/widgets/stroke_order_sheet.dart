@@ -11,12 +11,12 @@ class StrokeOrderSheet extends StatefulWidget {
     super.key,
     required this.glyph,
     required this.label,
-    required this.strokes,
+    required this.data,
   });
 
   final String glyph;
   final String label;
-  final List<GlyphStroke> strokes;
+  final StrokeOrderData data;
 
   @override
   State<StrokeOrderSheet> createState() => _StrokeOrderSheetState();
@@ -33,7 +33,7 @@ class _StrokeOrderSheetState extends State<StrokeOrderSheet>
   @override
   void initState() {
     super.initState();
-    final int totalMs = widget.strokes.length * _msPerStroke;
+    final int totalMs = widget.data.strokes.length * _msPerStroke;
     _ctrl = AnimationController(
       vsync: this,
       duration: Duration(milliseconds: totalMs.clamp(400, 8000)),
@@ -127,7 +127,7 @@ class _StrokeOrderSheetState extends State<StrokeOrderSheet>
               ),
               const Spacer(),
               Text(
-                '${widget.strokes.length} stroke${widget.strokes.length == 1 ? '' : 's'}',
+                '${widget.data.strokes.length} stroke${widget.data.strokes.length == 1 ? '' : 's'}',
                 style: text.labelSmall?.copyWith(
                   color: cs.onSurface.withValues(alpha: 0.5),
                 ),
@@ -135,32 +135,37 @@ class _StrokeOrderSheetState extends State<StrokeOrderSheet>
             ],
           ),
           const SizedBox(height: 16),
-          // Canvas
-          AnimatedBuilder(
-            animation: _ctrl,
-            builder: (BuildContext context, Widget? _) {
-              final double progress = _ctrl.value * widget.strokes.length;
-              return Container(
-                height: 260,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: cs.outlineVariant),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: CustomPaint(
-                    painter: _StrokeOrderPainter(
-                      strokes: widget.strokes,
-                      progress: progress,
-                      completedColor: cs.primary,
-                      activeColor: cs.tertiary,
+          // Canvas — preserves the recorded aspect ratio, max 320px tall.
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 320),
+            child: AnimatedBuilder(
+              animation: _ctrl,
+              builder: (BuildContext context, Widget? _) {
+                final double progress =
+                    _ctrl.value * widget.data.strokes.length;
+                return AspectRatio(
+                  aspectRatio: widget.data.aspectRatio,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: cs.outlineVariant),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: CustomPaint(
+                        painter: _StrokeOrderPainter(
+                          strokes: widget.data.strokes,
+                          progress: progress,
+                          completedColor: cs.primary,
+                          activeColor: cs.tertiary,
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
           const SizedBox(height: 12),
           // Controls

@@ -33,12 +33,10 @@ class SupabaseLessonDatasource implements LessonDataSource {
 
     // Batch-fetch stroke patterns for all unique glyphs in one query.
     // We pick the most recently recorded pattern per glyph.
-    final List<String> uniqueGlyphs = rawSteps
-        .map((LessonStepModel s) => s.glyph)
-        .toSet()
-        .toList();
+    final List<String> uniqueGlyphs =
+        rawSteps.map((LessonStepModel s) => s.glyph).toSet().toList();
 
-    final Map<String, List<GlyphStroke>> strokeOrderByGlyph =
+    final Map<String, StrokeOrderData> strokeOrderByGlyph =
         await _fetchStrokeOrderByGlyph(uniqueGlyphs);
 
     final List<LessonStepModel> steps = rawSteps
@@ -58,35 +56,38 @@ class SupabaseLessonDatasource implements LessonDataSource {
   }
 
   /// Queries [stroke_patterns] for all [glyphs] in a single request.
-  /// Returns the most recently recorded stroke set per glyph.
-  Future<Map<String, List<GlyphStroke>>> _fetchStrokeOrderByGlyph(
+  /// Returns the most recently recorded [StrokeOrderData] per glyph.
+  Future<Map<String, StrokeOrderData>> _fetchStrokeOrderByGlyph(
     List<String> glyphs,
   ) async {
-    if (glyphs.isEmpty) return const <String, List<GlyphStroke>>{};
+    if (glyphs.isEmpty) return const <String, StrokeOrderData>{};
     try {
       final List<Map<String, dynamic>> rows = await _client
           .from('stroke_patterns')
-          .select('glyph, strokes')
+          .select('glyph, strokes, canvas_width, canvas_height')
           .inFilter('glyph', glyphs)
           .order('created_at', ascending: false);
 
       // Keep only the first (most recent) pattern per glyph.
-      final Map<String, List<GlyphStroke>> result =
-          <String, List<GlyphStroke>>{};
+      final Map<String, StrokeOrderData> result = <String, StrokeOrderData>{};
       for (final Map<String, dynamic> row in rows) {
         final String glyph = row['glyph'] as String;
         if (result.containsKey(glyph)) continue;
+        final double w = (row['canvas_width'] as num?)?.toDouble() ?? 1.0;
+        final double h = (row['canvas_height'] as num?)?.toDouble() ?? 1.0;
+        final double aspect = (w > 0 && h > 0) ? w / h : 1.0;
         final List<dynamic> rawStrokes =
             (row['strokes'] as List<dynamic>?) ?? const <dynamic>[];
-        result[glyph] = rawStrokes
+        final List<GlyphStroke> strokes = rawStrokes
             .cast<Map<String, dynamic>>()
             .map(GlyphStroke.fromJson)
             .toList(growable: false);
+        result[glyph] = StrokeOrderData(strokes: strokes, aspectRatio: aspect);
       }
       return result;
     } catch (_) {
       // Non-fatal — lesson still loads, just without stroke order.
-      return const <String, List<GlyphStroke>>{};
+      return const <String, StrokeOrderData>{};
     }
   }
 

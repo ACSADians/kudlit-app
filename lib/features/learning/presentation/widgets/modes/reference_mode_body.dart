@@ -44,7 +44,7 @@ class ReferenceModeBody extends StatelessWidget {
             ),
           const Spacer(),
           OutlinedButton.icon(
-            onPressed: step.strokeOrder.isEmpty
+            onPressed: (step.strokeOrder == null || step.strokeOrder!.isEmpty)
                 ? null
                 : () => showModalBottomSheet<void>(
                     context: context,
@@ -53,12 +53,12 @@ class ReferenceModeBody extends StatelessWidget {
                     builder: (_) => StrokeOrderSheet(
                       glyph: step.glyph,
                       label: step.label,
-                      strokes: step.strokeOrder,
+                      data: step.strokeOrder!,
                     ),
                   ),
             icon: const Icon(Icons.play_arrow_rounded),
             label: Text(
-              step.strokeOrder.isEmpty
+              (step.strokeOrder == null || step.strokeOrder!.isEmpty)
                   ? 'Stroke order (no recording yet)'
                   : 'Show stroke order',
             ),
