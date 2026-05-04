@@ -4,6 +4,7 @@ import 'package:kudlit_ph/features/auth/domain/entities/auth_user.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/settings/about_section.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/settings/account_section.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/settings/activity_section.dart';
+import 'package:kudlit_ph/features/home/presentation/widgets/settings/admin_section.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/settings/ai_models_section.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/settings/danger_section.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/settings/personalization_section.dart';
@@ -34,10 +35,7 @@ class SettingsList extends StatelessWidget {
     return ListView(
       padding: EdgeInsets.fromLTRB(0, 8, 0, bottomPadding + 32),
       children: <Widget>[
-        if (u != null)
-          ProfileHeroCard(user: u)
-        else
-          AccountSection(user: null),
+        if (u != null) ProfileHeroCard(user: u) else AccountSection(user: null),
         const SizedBox(height: 28),
         if (u != null) ...<Widget>[
           ActivitySection(onActionTap: onActionTap),
@@ -47,6 +45,10 @@ class SettingsList extends StatelessWidget {
         const SizedBox(height: 24),
         const AiModelsSection(),
         const SizedBox(height: 24),
+        if (u != null) ...<Widget>[
+          const AdminSection(),
+          const SizedBox(height: 24),
+        ],
         if (u != null) ...<Widget>[
           const PersonalizationSection(),
           const SizedBox(height: 24),

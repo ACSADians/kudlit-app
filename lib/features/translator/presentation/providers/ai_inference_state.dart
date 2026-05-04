@@ -17,17 +17,23 @@ class AiInferenceIdle extends AiInferenceState {
 /// User selected local mode but the model file is not on disk.
 /// UI should prompt them to start the download.
 class AiLocalModelMissing extends AiInferenceState {
-  const AiLocalModelMissing(this.model);
+  const AiLocalModelMissing(this.model, {this.note});
 
   final GemmaModelInfo model;
+  final String? note;
 }
 
 /// Download in flight. [progress] is 0..100.
 class AiDownloading extends AiInferenceState {
-  const AiDownloading({required this.model, required this.progress});
+  const AiDownloading({
+    required this.model,
+    required this.progress,
+    this.statusMessage,
+  });
 
   final GemmaModelInfo model;
   final int progress;
+  final String? statusMessage;
 }
 
 /// Inference is ready. Either the local model is loaded or

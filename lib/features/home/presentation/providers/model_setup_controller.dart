@@ -13,10 +13,7 @@ import 'package:kudlit_ph/features/translator/presentation/providers/ai_inferenc
 
 @immutable
 class ModelSetupState {
-  const ModelSetupState({
-    required this.busy,
-    this.errorMessage,
-  });
+  const ModelSetupState({required this.busy, this.errorMessage});
 
   const ModelSetupState.initial() : this(busy: false);
 
@@ -60,10 +57,7 @@ class ModelSetupController extends Notifier<ModelSetupState> {
         .read(aiInferenceNotifierProvider)
         .value;
     if (inferenceState is AiInferenceError) {
-      state = state.copyWith(
-        busy: false,
-        errorMessage: inferenceState.message,
-      );
+      state = state.copyWith(busy: false, errorMessage: inferenceState.message);
       return;
     }
 

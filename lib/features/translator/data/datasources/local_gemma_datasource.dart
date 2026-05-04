@@ -1,5 +1,4 @@
-import 'dart:typed_data';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_gemma/flutter_gemma.dart';
 
@@ -25,6 +24,45 @@ class LocalGemmaDatasource implements AiDatasource {
   InferenceModel? _activeModel;
   InferenceChat? _chat;
 
+  Future<LocalGemmaReadiness> probeReadiness(GemmaModelInfo model) async {
+    try {
+      final bool installed = await FlutterGemma.isModelInstalled(
+        model.fileName,
+      );
+      if (!installed) {
+        return LocalGemmaReadiness(
+          installed: false,
+          usable: false,
+          detail: '${model.name} is not installed on this device.',
+        );
+      }
+
+      if (!FlutterGemma.hasActiveModel()) {
+        debugPrint(
+          '[Gemma][local] installed file found but no active model set; reactivating ${model.fileName}',
+        );
+        await _reactivateInstalledModel(model);
+      }
+
+      final InferenceModel probeModel = await FlutterGemma.getActiveModel();
+      debugPrint('[Gemma][local] readiness probe acquired active model');
+      await probeModel.close();
+      return LocalGemmaReadiness(
+        installed: true,
+        usable: true,
+        detail: 'Offline ready: ${model.name}',
+      );
+    } catch (e, s) {
+      debugPrint('[Gemma][local] readiness probe failed: $e');
+      debugPrintStack(stackTrace: s, label: '[Gemma][local] readiness stack');
+      return LocalGemmaReadiness(
+        installed: true,
+        usable: false,
+        detail: 'Model files exist, but offline Gemma is not usable yet: $e',
+      );
+    }
+  }
+
   Future<bool> isInstalled(GemmaModelInfo model) async {
     try {
       return await FlutterGemma.isModelInstalled(model.fileName);
@@ -44,7 +82,10 @@ class LocalGemmaDatasource implements AiDatasource {
     try {
       final String? hfToken = dotenv.env['HUGGINGFACE_TOKEN'];
       final InferenceInstallationBuilder builder =
-          FlutterGemma.installModel(modelType: ModelType.gemma4)
+          FlutterGemma.installModel(
+                modelType: ModelType.gemma4,
+                fileType: _modelFileTypeFor(model),
+              )
               .fromNetwork(model.modelLink, token: hfToken)
               .withCancelToken(_cancelToken!);
 
@@ -53,6 +94,9 @@ class LocalGemmaDatasource implements AiDatasource {
       }
 
       await builder.install();
+      debugPrint(
+        '[Gemma][local] download/install completed for ${model.fileName}',
+      );
     } on Exception catch (e) {
       if (CancelToken.isCancel(e)) {
         throw const ServerException(message: 'Download cancelled');
@@ -73,24 +117,40 @@ class LocalGemmaDatasource implements AiDatasource {
     List<ChatMessage> history, {
     String? systemInstruction,
   }) async* {
-    _activeModel ??= await FlutterGemma.getActiveModel();
-    _chat ??= await _activeModel!.createChat(
-      systemInstruction: systemInstruction,
-    );
+    try {
+      debugPrint(
+        '[Gemma][local] generate called | history=${history.length} | hasSystemInstruction=${systemInstruction != null}',
+      );
+      _activeModel ??= await FlutterGemma.getActiveModel();
+      debugPrint('[Gemma][local] active model ready');
+      _chat ??= await _activeModel!.createChat(
+        systemInstruction: systemInstruction,
+      );
+      debugPrint('[Gemma][local] chat session ready');
 
-    if (history.isEmpty) {
-      return;
-    }
-    final ChatMessage last = history.last;
-    await _chat!.addQueryChunk(
-      Message.text(text: last.text, isUser: last.isUser),
-    );
-
-    await for (final ModelResponse response
-        in _chat!.generateChatResponseAsync()) {
-      if (response is TextResponse) {
-        yield response.token;
+      if (history.isEmpty) {
+        debugPrint('[Gemma][local] history empty -> no output');
+        return;
       }
+      final ChatMessage last = history.last;
+      await _chat!.addQueryChunk(
+        Message.text(text: last.text, isUser: last.isUser),
+      );
+      debugPrint(
+        '[Gemma][local] last message enqueued | isUser=${last.isUser} | chars=${last.text.length}',
+      );
+
+      await for (final ModelResponse response
+          in _chat!.generateChatResponseAsync()) {
+        if (response is TextResponse) {
+          yield response.token;
+        }
+      }
+      debugPrint('[Gemma][local] token stream finished');
+    } catch (e, s) {
+      debugPrint('[Gemma][local] generate error: $e');
+      debugPrintStack(stackTrace: s, label: '[Gemma][local] stack');
+      rethrow;
     }
   }
 
@@ -110,10 +170,39 @@ class LocalGemmaDatasource implements AiDatasource {
     // This guard exists for future AiModelInfo migration.
   }
 
+  Future<void> _reactivateInstalledModel(GemmaModelInfo model) async {
+    final String? hfToken = dotenv.env['HUGGINGFACE_TOKEN'];
+    await FlutterGemma.installModel(
+      modelType: ModelType.gemma4,
+      fileType: _modelFileTypeFor(model),
+    ).fromNetwork(model.modelLink, token: hfToken).install();
+    debugPrint('[Gemma][local] active model restored for ${model.fileName}');
+  }
+
+  ModelFileType _modelFileTypeFor(GemmaModelInfo model) {
+    final String lower = model.fileName.toLowerCase();
+    if (lower.endsWith('.litertlm')) {
+      return ModelFileType.litertlm;
+    }
+    return ModelFileType.task;
+  }
+
   @override
   Future<void> dispose() async {
     await _activeModel?.close();
     _activeModel = null;
     _chat = null;
   }
+}
+
+class LocalGemmaReadiness {
+  const LocalGemmaReadiness({
+    required this.installed,
+    required this.usable,
+    required this.detail,
+  });
+
+  final bool installed;
+  final bool usable;
+  final String detail;
 }

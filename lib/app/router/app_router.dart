@@ -19,6 +19,7 @@ import 'package:kudlit_ph/features/home/presentation/screens/model_setup_screen.
 import 'package:kudlit_ph/features/home/presentation/screens/settings_screen.dart';
 import 'package:kudlit_ph/features/home/presentation/screens/splash_screen.dart';
 import 'package:kudlit_ph/features/learning/presentation/screens/lesson_stage_screen.dart';
+import 'package:kudlit_ph/features/admin/presentation/screens/stroke_recording_screen.dart';
 
 part 'app_router.g.dart';
 
@@ -145,6 +146,11 @@ GoRouter appRouter(Ref ref) {
         path: AppConstants.routePrivacyPolicy,
         builder: (BuildContext context, GoRouterState state) =>
             const PrivacyPolicyScreen(),
+      ),
+      GoRoute(
+        path: AppConstants.routeAdminStrokeRecorder,
+        builder: (BuildContext context, GoRouterState state) =>
+            const StrokeRecordingScreen(),
       ),
     ],
   );
