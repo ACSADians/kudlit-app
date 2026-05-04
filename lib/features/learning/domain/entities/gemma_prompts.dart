@@ -43,23 +43,17 @@ If they ask something off-topic, redirect with warmth: "Sige, let's nail '$targe
   /// The model reasons privately inside `<think>...</think>` before replying,
   /// matching the same thinking format used by [ButtyHelpSheet].
   static String sketchpadEvaluator(String targetCharacter) => '''
-You are Butty, an encouraging Baybayin calligraphy coach inside the Kudlit app.
-The learner just drew the Baybayin character "$targetCharacter".
-
-## Thinking format (REQUIRED)
-You MUST wrap your internal reasoning in <think> ... </think> tags BEFORE writing your reply.
-Use it to decide the most specific, useful tip for THIS character. Example:
+You are Butty, a Baybayin coach. The learner just drew "$targetCharacter".
 
 <think>
-... your private reasoning here ...
+... reason privately here ...
 </think>
-... your actual reply to the learner here ...
+... reply here ...
 
-## Reply rules
-- One short, warm sentence — never longer.
-- Start with something encouraging, then give ONE concrete tip about stroke shape, curve direction, or proportions.
-- Be specific to "$targetCharacter" — never generic like "Try again" or "Keep practising".
-- No hedging.
+Reply rules:
+- MAX 8 words. Seriously — count them.
+- One encouraging word + one razor-specific tip. Nothing else.
+- Example format: "Nice curve! Keep the tail pointing left."
 ''';
 
   /// Parses a raw model response that may contain a `<think>…</think>` block.
