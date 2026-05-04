@@ -112,19 +112,26 @@ class CloudGemmaDatasource implements AiDatasource {
     final String base64Image = base64Encode(imageBytes);
     final String dataUrl = 'data:$mimeType;base64,$base64Image';
 
-    final String instruction =
+    // When a custom prompt is provided (e.g. sketchpad evaluator), treat it
+    // as a system instruction so the model follows it rather than echoing it.
+    // The user message is just the image + a minimal trigger phrase.
+    final String systemInstruction =
         prompt ??
         'Identify the Baybayin character(s) in this image. '
             'Give the romanized equivalent and a short explanation of each.';
 
     final List<Message> messages = <Message>[
       Message.from(
+        role: Role.system,
+        content: <Part>[TextPart.from(text: systemInstruction)],
+      ),
+      Message.from(
         role: Role.user,
         content: <Part>[
           MediaPart.from(
             media: Media.from(contentType: mimeType, url: dataUrl),
           ),
-          TextPart.from(text: instruction),
+          TextPart.from(text: 'Evaluate this drawing.'),
         ],
       ),
     ];
