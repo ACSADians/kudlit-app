@@ -89,7 +89,11 @@ class _BarStack extends StatelessWidget {
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: barBorder),
           ),
-          child: _CoachText(message: message, onAskHelp: onAskHelp),
+          child: _CoachText(
+            message: message,
+            attemptStatus: attemptStatus,
+            onAskHelp: onAskHelp,
+          ),
         ),
         // Butty sits at the bottom-left, overflowing above the card top
         Positioned(
@@ -163,15 +167,22 @@ class _ButtySticker extends StatelessWidget {
 }
 
 class _CoachText extends StatelessWidget {
-  const _CoachText({required this.message, required this.onAskHelp});
+  const _CoachText({
+    required this.message,
+    required this.attemptStatus,
+    required this.onAskHelp,
+  });
 
   final String message;
+  final AttemptStatus attemptStatus;
   final VoidCallback onAskHelp;
 
   @override
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
     final TextTheme text = Theme.of(context).textTheme;
+    final bool isThinking =
+        attemptStatus == AttemptStatus.checking && message.isEmpty;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -185,12 +196,14 @@ class _CoachText extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 2),
-        Text(
-          message,
-          maxLines: 3,
-          overflow: TextOverflow.ellipsis,
-          style: text.bodyMedium?.copyWith(color: cs.onSurface),
-        ),
+        isThinking
+            ? const _ThinkingDots()
+            : Text(
+                message,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: text.bodyMedium?.copyWith(color: cs.onSurface),
+              ),
         const SizedBox(height: 4),
         InkWell(
           onTap: onAskHelp,
@@ -214,6 +227,53 @@ class _CoachText extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Three animated dots that pulse to indicate Butty is thinking.
+class _ThinkingDots extends StatefulWidget {
+  const _ThinkingDots();
+
+  @override
+  State<_ThinkingDots> createState() => _ThinkingDotsState();
+}
+
+class _ThinkingDotsState extends State<_ThinkingDots>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    final TextTheme text = Theme.of(context).textTheme;
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (BuildContext context, Widget? _) {
+        final int dotCount = (_ctrl.value * 3).floor() + 1;
+        return Text(
+          'Butty is thinking${'.' * dotCount}',
+          style: text.bodyMedium?.copyWith(
+            color: cs.onSurface.withValues(alpha: 0.5),
+            fontStyle: FontStyle.italic,
+          ),
+        );
+      },
     );
   }
 }

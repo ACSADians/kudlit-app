@@ -1,3 +1,4 @@
+import 'package:kudlit_ph/features/learning/domain/entities/glyph_stroke.dart';
 import 'package:kudlit_ph/features/learning/domain/entities/lesson_mode.dart';
 import 'package:kudlit_ph/features/learning/domain/entities/lesson_step.dart';
 
@@ -7,6 +8,7 @@ class LessonStepModel extends LessonStep {
     required super.mode,
     required super.label,
     required super.glyph,
+    super.glyphImage,
     super.intro,
     super.prompt,
     super.narration,
@@ -15,6 +17,7 @@ class LessonStepModel extends LessonStep {
     super.buttyTip,
     super.expected,
     super.hideGlyph,
+    super.strokeOrder,
   });
 
   factory LessonStepModel.fromJson(Map<String, dynamic> json) {
@@ -25,6 +28,7 @@ class LessonStepModel extends LessonStep {
       mode: LessonMode.fromJson(json['mode'] as String),
       label: json['label'] as String,
       glyph: json['glyph'] as String,
+      glyphImage: json['glyphImage'] as String?,
       intro: json['intro'] as String?,
       prompt: json['prompt'] as String?,
       narration: json['narration'] as String?,
@@ -37,4 +41,22 @@ class LessonStepModel extends LessonStep {
       hideGlyph: (json['hideGlyph'] as bool?) ?? false,
     );
   }
+
+  /// Creates a copy with [strokeOrder] attached.
+  LessonStepModel withStrokeOrder(StrokeOrderData data) => LessonStepModel(
+    id: id,
+    mode: mode,
+    label: label,
+    glyph: glyph,
+    glyphImage: glyphImage,
+    intro: intro,
+    prompt: prompt,
+    narration: narration,
+    hint: hint,
+    successFeedback: successFeedback,
+    buttyTip: buttyTip,
+    expected: expected,
+    hideGlyph: hideGlyph,
+    strokeOrder: data,
+  );
 }

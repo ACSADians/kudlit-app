@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:kudlit_ph/features/learning/domain/entities/gemma_prompts.dart';
 import 'package:kudlit_ph/features/learning/domain/entities/lesson_step.dart';
 import 'package:kudlit_ph/features/translator/domain/entities/chat_message.dart';
 import 'package:kudlit_ph/features/translator/domain/repositories/ai_inference_repository.dart';
@@ -53,23 +54,6 @@ String _buildSystemPrompt(LessonStep step) {
     'Use your <think> block to decide the best nudge, then give it briefly.',
   );
   return sb.toString();
-}
-
-/// Splits a raw model response into its think-block content and the final
-/// answer. Returns empty strings for absent sections.
-({String think, String answer}) _parseResponse(String raw) {
-  const String openTag = '<think>';
-  const String closeTag = '</think>';
-  final int openIdx = raw.indexOf(openTag);
-  if (openIdx == -1) return (think: '', answer: raw.trim());
-  final int closeIdx = raw.indexOf(closeTag, openIdx);
-  if (closeIdx == -1) {
-    // Think block still open — still in reasoning phase.
-    return (think: raw.substring(openIdx + openTag.length), answer: '');
-  }
-  final String think = raw.substring(openIdx + openTag.length, closeIdx).trim();
-  final String answer = raw.substring(closeIdx + closeTag.length).trim();
-  return (think: think, answer: answer);
 }
 
 class ButtyHelpSheet extends ConsumerStatefulWidget {
@@ -147,9 +131,8 @@ class _ButtyHelpSheetState extends ConsumerState<ButtyHelpSheet> {
         .listen(
           (String token) {
             buffer.write(token);
-            final ({String think, String answer}) parsed = _parseResponse(
-              buffer.toString(),
-            );
+            final ({String think, String answer}) parsed =
+                GemmaPrompts.parseThinkBlock(buffer.toString());
             if (!mounted) return;
             setState(() {
               _streamingText = buffer.toString();
@@ -158,9 +141,8 @@ class _ButtyHelpSheetState extends ConsumerState<ButtyHelpSheet> {
             _scrollToBottom();
           },
           onDone: () {
-            final ({String think, String answer}) parsed = _parseResponse(
-              buffer.toString(),
-            );
+            final ({String think, String answer}) parsed =
+                GemmaPrompts.parseThinkBlock(buffer.toString());
             final String reply = parsed.answer.isEmpty
                 ? buffer.toString()
                 : parsed.answer;

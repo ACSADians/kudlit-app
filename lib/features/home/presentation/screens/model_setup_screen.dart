@@ -44,7 +44,8 @@ class _ModelSetupScreenState extends ConsumerState<ModelSetupScreen> {
                 : () => ref
                       .read(modelSetupControllerProvider.notifier)
                       .download(model),
-            onSkip: () => ref.read(modelSetupControllerProvider.notifier).skip(),
+            onSkip: () =>
+                ref.read(modelSetupControllerProvider.notifier).skip(),
           ),
         ],
       ),

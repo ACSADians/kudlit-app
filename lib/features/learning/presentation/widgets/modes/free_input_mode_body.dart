@@ -78,6 +78,7 @@ class FreeInputModeBodyState extends ConsumerState<FreeInputModeBody> {
                   Center(
                     child: ReferenceGlyphCard(
                       glyph: widget.step.glyph,
+                      glyphImage: widget.step.glyphImage,
                       label: widget.step.label,
                       hideGlyph: widget.step.hideGlyph,
                     ),
