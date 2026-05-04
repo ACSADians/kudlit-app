@@ -63,7 +63,7 @@ class ReferenceGlyphCard extends StatelessWidget {
                 fit: BoxFit.contain,
                 color: cs.onPrimaryContainer,
                 colorBlendMode: BlendMode.srcIn,
-                errorBuilder: (_, __, ___) => Text(
+                errorBuilder: (_, _, _) => Text(
                   glyph,
                   style: TextStyle(
                     fontFamily: 'Baybayin Simple TAWBID',
