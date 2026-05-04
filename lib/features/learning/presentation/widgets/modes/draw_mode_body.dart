@@ -148,6 +148,9 @@ class DrawModeBodyState extends ConsumerState<DrawModeBody> {
       }
     }
 
+    // Capture the canvas as PNG for Gemma image analysis (works on web too).
+    final Uint8List? imageBytes = await _captureCanvas();
+
     // Only fall back to stub on web or if capture/model fails (not on 0 detections).
     debugPrint(
       '[DrawMode] falling back to submitDraw stub (capture or model error)',
@@ -155,7 +158,7 @@ class DrawModeBodyState extends ConsumerState<DrawModeBody> {
     final List<List<Offset>> snapshot = _strokes
         .map(List<Offset>.from)
         .toList(growable: false);
-    await ctrl.submitDraw(snapshot);
+    await ctrl.submitDraw(snapshot, imageBytes: imageBytes);
   }
 
   /// Renders the strokes onto a white canvas with black ink and returns the

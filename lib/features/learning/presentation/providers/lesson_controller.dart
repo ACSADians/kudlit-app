@@ -1,5 +1,6 @@
 // ignore: unnecessary_import — flutter_riverpod is needed for Ref resolution
 import 'package:flutter/painting.dart' show Offset;
+import 'package:flutter/foundation.dart' show Uint8List;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -13,7 +14,9 @@ import 'package:kudlit_ph/features/learning/domain/usecases/load_lesson.dart';
 import 'package:kudlit_ph/features/learning/presentation/providers/lesson_repository_provider.dart';
 import 'package:kudlit_ph/features/learning/presentation/providers/lesson_state.dart';
 import 'package:kudlit_ph/features/translator/domain/entities/chat_message.dart';
+import 'package:kudlit_ph/features/translator/domain/repositories/ai_inference_repository.dart';
 import 'package:kudlit_ph/features/translator/presentation/providers/ai_inference_provider.dart';
+import 'package:kudlit_ph/features/translator/presentation/providers/translator_providers.dart';
 
 part 'lesson_controller.g.dart';
 
@@ -89,9 +92,16 @@ class LessonController extends _$LessonController {
     );
   }
 
-  /// Submits a drawing attempt. Stub: always treats as correct so the
-  /// stage flow is fully wired. Replace with real similarity check later.
-  Future<void> submitDraw(List<List<Offset>> strokes) async {
+  /// Submits a drawing attempt. Always marks correct so the lesson flow
+  /// continues; streams Gemma image feedback into [buttyMessage].
+  ///
+  /// [imageBytes] is a PNG snapshot of the canvas. When provided the image
+  /// is sent to the model for visual evaluation. Falls back to a text-only
+  /// prompt when null (e.g. canvas capture failed).
+  Future<void> submitDraw(
+    List<List<Offset>> strokes, {
+    Uint8List? imageBytes,
+  }) async {
     final LessonState? current = state.value;
     if (current == null || current.completed) return;
     // Note: do NOT guard on AttemptStatus.checking here — the draw path
@@ -99,20 +109,30 @@ class LessonController extends _$LessonController {
     await Future<void>.delayed(const Duration(milliseconds: 600));
 
     final LessonStep step = current.currentStep;
-    
+
     try {
-      final Stream<String> responseStream = ref
-          .read(aiInferenceNotifierProvider.notifier)
-          .generateResponse(
-            <ChatMessage>[
-              ChatMessage(
-                text: 'Evaluate my drawing for ${step.label}',
-                isUser: true,
-                timestamp: DateTime.now(),
-              )
-            ],
-            systemInstruction: GemmaPrompts.sketchpadEvaluator(step.label),
-          );
+      final Stream<String> responseStream;
+      if (imageBytes != null) {
+        final AiInferenceRepository repo =
+            ref.read(aiInferenceRepositoryProvider);
+        responseStream = repo.analyzeImage(
+          imageBytes,
+          prompt: GemmaPrompts.sketchpadEvaluator(step.label),
+        );
+      } else {
+        responseStream = ref
+            .read(aiInferenceNotifierProvider.notifier)
+            .generateResponse(
+              <ChatMessage>[
+                ChatMessage(
+                  text: 'Evaluate my drawing for ${step.label}',
+                  isUser: true,
+                  timestamp: DateTime.now(),
+                ),
+              ],
+              systemInstruction: GemmaPrompts.sketchpadEvaluator(step.label),
+            );
+      }
 
       final StringBuffer buffer = StringBuffer();
       
