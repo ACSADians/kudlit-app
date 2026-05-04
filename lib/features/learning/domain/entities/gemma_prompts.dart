@@ -77,7 +77,11 @@ Output ONLY that sentence. No bullet points, no labels.
     final String think = raw
         .substring(openIdx + openTag.length, closeIdx)
         .trim();
-    final String answer = raw.substring(closeIdx + closeTag.length).trim();
+    // Strip any stray closing tags the model may emit after the answer.
+    final String answer = raw
+        .substring(closeIdx + closeTag.length)
+        .replaceAll(closeTag, '')
+        .trim();
     return (think: think, answer: answer);
   }
 

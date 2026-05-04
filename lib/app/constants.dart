@@ -15,6 +15,8 @@ class AppConstants {
   static const String routeTerms = '/terms';
   static const String routePrivacyPolicy = '/privacy-policy';
   static const String routeAdminStrokeRecorder = '/admin/stroke-recorder';
+  static const String routeCharacterGallery = '/learn/gallery';
+  static const String routeQuiz = '/learn/quiz';
 
   static const String loginTitle = appName;
   static const String loginSubtitle =

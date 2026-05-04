@@ -10,12 +10,12 @@ import 'package:kudlit_ph/features/translator/presentation/providers/translator_
 @immutable
 class ButtyOfflineStatus {
   const ButtyOfflineStatus({
-    required this.installed,
+    required this.usable,
     this.modelName,
     this.detail,
   });
 
-  final bool installed;
+  final bool usable;
   final String? modelName;
   final String? detail;
 }
@@ -26,7 +26,7 @@ final FutureProvider<ButtyOfflineStatus> buttyOfflineStatusProvider =
         localModelReadinessProvider.future,
       );
       return ButtyOfflineStatus(
-        installed: r.usable,
+        usable: r.usable,
         modelName: r.modelName,
         detail: r.detail,
       );
@@ -53,7 +53,7 @@ class ButtyModelModeSelector extends ConsumerWidget {
     final AiPreference currentMode =
         prefsAsync.value?.aiPreference ?? AiPreference.cloud;
     final ButtyOfflineStatus? offlineStatus = offlineStatusAsync.value;
-    final bool offlineReady = offlineStatus?.installed ?? false;
+    final bool offlineReady = offlineStatus?.usable ?? false;
     final bool offlineChecking =
         offlineStatusAsync.isLoading || inferenceAsync.isLoading;
     final String helperText = switch (offlineStatusAsync) {

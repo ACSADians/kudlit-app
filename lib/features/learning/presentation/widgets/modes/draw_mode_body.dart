@@ -135,13 +135,11 @@ class DrawModeBodyState extends ConsumerState<DrawModeBody> {
               ctrl.submitDetection(top.className.trim().toLowerCase());
               return;
             }
-          } else {
-            debugPrint(
-              '[DrawMode] no detections above threshold — marking retry',
-            );
-            ctrl.submitDetection('');
-            return;
           }
+          // 0 detections or no valid top — fall through to Gemma visual
+          // analysis so the user gets useful stroke feedback instead of a
+          // silent retry.
+          debugPrint('[DrawMode] no detections — handing off to Gemma');
         } catch (e) {
           debugPrint('[DrawMode] YOLO sketch inference failed: $e');
         }

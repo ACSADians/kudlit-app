@@ -204,6 +204,14 @@ class _LearnTabState extends State<LearnTab> {
     GoRouter.of(context).push('${AppConstants.routeLesson}/$lessonId');
   }
 
+  void _openGallery() {
+    GoRouter.of(context).push(AppConstants.routeCharacterGallery);
+  }
+
+  void _openQuiz() {
+    GoRouter.of(context).push(AppConstants.routeQuiz);
+  }
+
   void _backToHome() {
     setState(() {
       _inLesson = false;
@@ -248,6 +256,8 @@ class _LearnTabState extends State<LearnTab> {
               child: LearnHomeBody(
                 onStartLesson: _startLesson,
                 onChatWithButty: widget.onSwitchToButty,
+                onOpenGallery: _openGallery,
+                onStartQuiz: _openQuiz,
                 bottomPad: bottomPad,
               ),
             ),

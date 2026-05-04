@@ -121,7 +121,6 @@ class LocalGemmaDatasource implements AiDatasource {
     GemmaModelInfo model, {
     void Function(int progress)? onProgress,
   }) async {
-    _assertLlmModel(model);
     _cancelToken = CancelToken();
     try {
       final String? hfToken = dotenv.env['HUGGINGFACE_TOKEN'];
@@ -257,11 +256,6 @@ class LocalGemmaDatasource implements AiDatasource {
   @override
   Future<BaybayinChallenge> generateChallenge({List<String>? characters}) =>
       throw UnsupportedError('generateChallenge is not supported on-device');
-
-  void _assertLlmModel(GemmaModelInfo model) {
-    // GemmaModelInfo is always an LLM model by definition.
-    // This guard exists for future AiModelInfo migration.
-  }
 
   Future<void> _reactivateInstalledModel(GemmaModelInfo model) async {
     final String? hfToken = dotenv.env['HUGGINGFACE_TOKEN'];

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -94,7 +95,7 @@ class ScannerEvaluationNotifier extends Notifier<ScanEvalState> {
           );
     }
 
-    _listenToTranslation(stream);
+    unawaited(_listenToTranslation(stream));
   }
 
   void requestFollowUp() {
@@ -125,7 +126,7 @@ class ScannerEvaluationNotifier extends Notifier<ScanEvalState> {
           systemInstruction: GemmaPrompts.assistantMode,
         );
 
-    _listenToFollowUp(stream);
+    unawaited(_listenToFollowUp(stream));
   }
 
   Future<void> _listenToTranslation(Stream<String> stream) async {

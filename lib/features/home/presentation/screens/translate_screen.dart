@@ -9,8 +9,7 @@ import 'package:kudlit_ph/features/home/presentation/providers/translate_page_co
 import 'package:kudlit_ph/features/home/presentation/providers/translate_sketchpad_controller.dart';
 import 'package:kudlit_ph/features/home/presentation/providers/translate_text_controller.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/floating_tab_nav.dart';
-import 'package:kudlit_ph/features/home/presentation/widgets/translate/translate_gemma_status_banner.dart';
-import 'package:kudlit_ph/features/home/presentation/widgets/translate/translate_mode_switch.dart';
+import 'package:kudlit_ph/features/home/presentation/widgets/translate/translate_header.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/translate/translate_sketchpad_mode_panel.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/translate/translate_text_mode_panel.dart';
 
@@ -57,52 +56,20 @@ class TranslateScreen extends ConsumerWidget {
       child: SafeArea(
         child: Column(
           children: <Widget>[
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    'Translate',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Switch between text transliteration and sketchpad feedback.',
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withAlpha(170),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  TranslateGemmaStatusBanner(
-                    mode: mode,
-                    offlineStatus: offlineStatus,
-                    onModeChanged: (AiPreference nextMode) {
-                      unawaited(
-                        ref
-                            .read(appPreferencesNotifierProvider.notifier)
-                            .setAiPreference(nextMode),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 10),
-                  Center(
-                    child: TranslateModeSwitch(
-                      mode: pageState.mode,
-                      onChanged: ref
-                          .read(translatePageControllerProvider.notifier)
-                          .setMode,
-                    ),
-                  ),
-                ],
-              ),
+            TranslateHeader(
+              aiMode: mode,
+              workspaceMode: pageState.mode,
+              offlineStatus: offlineStatus,
+              onAiModeChanged: (AiPreference nextMode) {
+                unawaited(
+                  ref
+                      .read(appPreferencesNotifierProvider.notifier)
+                      .setAiPreference(nextMode),
+                );
+              },
+              onWorkspaceModeChanged: ref
+                  .read(translatePageControllerProvider.notifier)
+                  .setMode,
             ),
             Expanded(
               child: switch (pageState.mode) {
