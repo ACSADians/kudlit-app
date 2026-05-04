@@ -80,8 +80,7 @@ class LessonController extends _$LessonController {
         .map((String p) => p.trim())
         .where((String p) => p.isNotEmpty)
         .toList();
-    final bool isCorrect =
-        parts.any((String p) => step.expected.contains(p));
+    final bool isCorrect = parts.any((String p) => step.expected.contains(p));
     state = AsyncData<LessonState?>(
       current.copyWith(
         attemptStatus: isCorrect ? AttemptStatus.correct : AttemptStatus.retry,
@@ -113,8 +112,9 @@ class LessonController extends _$LessonController {
     try {
       final Stream<String> responseStream;
       if (imageBytes != null) {
-        final AiInferenceRepository repo =
-            ref.read(aiInferenceRepositoryProvider);
+        final AiInferenceRepository repo = ref.read(
+          aiInferenceRepositoryProvider,
+        );
         responseStream = repo.analyzeImage(
           imageBytes,
           prompt: GemmaPrompts.sketchpadEvaluator(step.label),
@@ -122,20 +122,17 @@ class LessonController extends _$LessonController {
       } else {
         responseStream = ref
             .read(aiInferenceNotifierProvider.notifier)
-            .generateResponse(
-              <ChatMessage>[
-                ChatMessage(
-                  text: 'Evaluate my drawing for ${step.label}',
-                  isUser: true,
-                  timestamp: DateTime.now(),
-                ),
-              ],
-              systemInstruction: GemmaPrompts.sketchpadEvaluator(step.label),
-            );
+            .generateResponse(<ChatMessage>[
+              ChatMessage(
+                text: 'Evaluate my drawing for ${step.label}',
+                isUser: true,
+                timestamp: DateTime.now(),
+              ),
+            ], systemInstruction: GemmaPrompts.sketchpadEvaluator(step.label));
       }
 
       final StringBuffer buffer = StringBuffer();
-      
+
       // Update state to correct immediately so they can proceed,
       // but stream the feedback from Gemma into buttyMessage.
       state = AsyncData<LessonState?>(

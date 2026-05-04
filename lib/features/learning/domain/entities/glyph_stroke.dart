@@ -44,10 +44,7 @@ class GlyphStroke {
 /// Used by [StrokeOrderSheet] to preserve the proportions of the recording.
 @immutable
 class StrokeOrderData {
-  const StrokeOrderData({
-    required this.strokes,
-    required this.aspectRatio,
-  });
+  const StrokeOrderData({required this.strokes, required this.aspectRatio});
 
   final List<GlyphStroke> strokes;
 
