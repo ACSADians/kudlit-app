@@ -9,6 +9,7 @@ import 'package:kudlit_ph/features/learning/presentation/providers/lesson_contro
 import 'package:kudlit_ph/features/learning/presentation/providers/lesson_state.dart';
 import 'package:kudlit_ph/features/learning/presentation/widgets/butty_coach_panel.dart';
 import 'package:kudlit_ph/features/learning/presentation/widgets/butty_help_sheet.dart';
+import 'package:kudlit_ph/features/learning/presentation/widgets/learning_route_back.dart';
 import 'package:kudlit_ph/features/learning/presentation/widgets/lesson_progress_bar.dart';
 import 'package:kudlit_ph/features/learning/presentation/widgets/lesson_top_bar.dart';
 import 'package:kudlit_ph/features/learning/presentation/widgets/modes/draw_mode_body.dart';
@@ -50,7 +51,7 @@ class _LessonStageScreenState extends ConsumerState<LessonStageScreen> {
   void _handleContinue(LessonState state) {
     final LessonController ctrl = ref.read(lessonControllerProvider.notifier);
     if (state.completed) {
-      Navigator.of(context).pop();
+      returnToLearn(context);
       return;
     }
     if (state.attemptStatus == AttemptStatus.correct) {
@@ -136,7 +137,7 @@ class _LessonScaffold extends StatelessWidget {
         LessonTopBar(
           title: state.lesson.title,
           subtitle: state.lesson.subtitle,
-          onClose: () => Navigator.of(context).pop(),
+          onClose: () => returnToLearn(context),
         ),
         LessonProgressBar(
           progress: state.progress,
@@ -228,7 +229,7 @@ class _ErrorView extends StatelessWidget {
             Text(message, textAlign: TextAlign.center),
             const SizedBox(height: 16),
             FilledButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => returnToLearn(context),
               child: const Text('Back'),
             ),
           ],

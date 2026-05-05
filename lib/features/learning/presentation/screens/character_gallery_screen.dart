@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kudlit_ph/features/learning/domain/entities/glyph_entry.dart';
 import 'package:kudlit_ph/features/learning/presentation/providers/character_gallery_provider.dart';
 import 'package:kudlit_ph/features/learning/presentation/widgets/glyph_detail_sheet.dart';
+import 'package:kudlit_ph/features/learning/presentation/widgets/learning_route_back.dart';
 
 const List<_GalleryFilter> _kFilters = <_GalleryFilter>[
   _GalleryFilter('All', null),
@@ -39,7 +40,10 @@ class _CharacterGalleryScreenState
       characterGalleryProvider,
     );
     return Scaffold(
-      appBar: AppBar(title: const Text('All Glyphs')),
+      appBar: AppBar(
+        leading: const LearnRouteBackButton(),
+        title: const Text('All Glyphs'),
+      ),
       body: state.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (Object e, _) => const _GalleryErrorBody(),
