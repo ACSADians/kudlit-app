@@ -16,12 +16,17 @@ class BeginButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 10, 18, 18),
+      padding: const EdgeInsets.fromLTRB(18, 6, 18, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           FilledButton.icon(
             onPressed: isLocked ? null : onStart,
+            style: FilledButton.styleFrom(
+              minimumSize: const Size.fromHeight(44),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              visualDensity: VisualDensity.compact,
+            ),
             icon: Icon(
               isLocked ? Icons.lock_rounded : Icons.play_arrow_rounded,
             ),
