@@ -81,9 +81,9 @@ class TranslateTextController extends Notifier<TranslateTextState> {
   static final RegExp _numberPattern = RegExp(r'[0-9]');
   static final RegExp _punctuationPattern = RegExp(r'[!-/:-@[-`{-~]');
   static final RegExp _unsupportedPattern = RegExp(
-    r'[^A-Za-z0-9\s\u00F1\u00D1\u1700-\u171F]',
+    r'[^A-Za-z0-9\sñÑᜀ-ᜟ]',
   );
-  static final RegExp _baybayinPattern = RegExp(r'[\u1700-\u171F]');
+  static final RegExp _baybayinPattern = RegExp(r'[ᜀ-ᜟ]');
 
   Timer? _saveDebounce;
 
