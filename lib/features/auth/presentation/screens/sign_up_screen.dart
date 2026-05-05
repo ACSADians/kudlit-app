@@ -16,6 +16,8 @@ import 'package:kudlit_ph/features/auth/presentation/widgets/login_hero.dart';
 import 'package:kudlit_ph/features/auth/presentation/widgets/sign_in_prompt.dart';
 import 'package:kudlit_ph/features/auth/presentation/widgets/sign_up_form.dart';
 
+import 'sign_in_screen.dart';
+
 class SignUpScreen extends ConsumerStatefulWidget {
   const SignUpScreen({super.key});
 
@@ -61,6 +63,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   }
 
   String? _validateConfirm(String? value) {
+    if (value == null || value.isEmpty) {
+      return AppConstants.confirmPasswordRequiredMessage;
+    }
     if (value != _passwordController.text) {
       return AppConstants.passwordsDoNotMatchMessage;
     }
@@ -142,7 +147,11 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
               onSubmit: _onSignUp,
             ),
             const SizedBox(height: 20),
-            SignInPrompt(onSignIn: () => Navigator.of(context).pop()),
+            SignInPrompt(
+              onSignIn: () => Navigator.of(context).pushReplacement(
+                MaterialPageRoute<void>(builder: (_) => const SignInScreen()),
+              ),
+            ),
           ],
         ),
       ),

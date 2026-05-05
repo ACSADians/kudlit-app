@@ -16,6 +16,7 @@ import 'package:kudlit_ph/features/auth/presentation/widgets/login_hero.dart';
 import 'package:kudlit_ph/features/auth/presentation/widgets/phone_field.dart';
 
 import 'phone_otp_screen.dart';
+import 'sign_in_screen.dart';
 
 /// Phone number entry screen.
 /// Defaults to Philippines (+63); user can tap the prefix to pick another
@@ -182,15 +183,18 @@ class _EmailSignInPrompt extends StatelessWidget {
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+    return Wrap(
+      alignment: WrapAlignment.center,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: <Widget>[
         Text(
           'Prefer email?  ',
           style: TextStyle(fontSize: 12.5, color: cs.onSurface.withAlpha(153)),
         ),
         GestureDetector(
-          onTap: () => Navigator.of(context).pop(),
+          onTap: () => Navigator.of(context).pushReplacement(
+            MaterialPageRoute<void>(builder: (_) => const SignInScreen()),
+          ),
           child: Text(
             'Sign in with email',
             style: TextStyle(

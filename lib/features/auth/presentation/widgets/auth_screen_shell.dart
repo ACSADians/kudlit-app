@@ -18,7 +18,23 @@ class AuthScreenShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final double heroHeight = MediaQuery.sizeOf(context).height * heroFraction;
+    final Size screenSize = MediaQuery.sizeOf(context);
+    final bool landscape = screenSize.width > screenSize.height;
+
+    if (landscape) {
+      return Scaffold(
+        resizeToAvoidBottomInset: true,
+        body: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Expanded(flex: 5, child: hero),
+            Expanded(flex: 6, child: sheet),
+          ],
+        ),
+      );
+    }
+
+    final double heroHeight = screenSize.height * heroFraction;
 
     return Scaffold(
       resizeToAvoidBottomInset: true,

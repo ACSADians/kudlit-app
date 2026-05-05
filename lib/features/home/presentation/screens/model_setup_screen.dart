@@ -123,23 +123,170 @@ class _ModelSetupBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            const Spacer(flex: 2),
-            const _SetupHero(),
-            const SizedBox(height: 20),
-            const _SetupHeadline(),
-            const SizedBox(height: 18),
-            ModelSetupModelCard(modelName: model?.name),
-            const SizedBox(height: 10),
-            const _DownloadNotice(),
-            const Spacer(flex: 3),
-            _SetupActions(busy: busy, onDownload: onDownload, onSkip: onSkip),
-            const SizedBox(height: 12),
-          ],
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          final bool landscape = constraints.maxWidth > constraints.maxHeight;
+          final bool shortPortrait = constraints.maxHeight < 680;
+          return landscape
+              ? _LandscapeSetupLayout(
+                  model: model,
+                  busy: busy,
+                  onDownload: onDownload,
+                  onSkip: onSkip,
+                )
+              : shortPortrait
+              ? _ShortPortraitSetupLayout(
+                  model: model,
+                  busy: busy,
+                  onDownload: onDownload,
+                  onSkip: onSkip,
+                )
+              : _PortraitSetupLayout(
+                  model: model,
+                  busy: busy,
+                  onDownload: onDownload,
+                  onSkip: onSkip,
+                );
+        },
+      ),
+    );
+  }
+}
+
+class _PortraitSetupLayout extends StatelessWidget {
+  const _PortraitSetupLayout({
+    required this.model,
+    required this.busy,
+    required this.onDownload,
+    required this.onSkip,
+  });
+
+  final GemmaModelInfo? model;
+  final bool busy;
+  final VoidCallback? onDownload;
+  final VoidCallback onSkip;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          const Spacer(flex: 2),
+          const _SetupHero(),
+          const SizedBox(height: 20),
+          const _SetupHeadline(),
+          const SizedBox(height: 18),
+          ModelSetupModelCard(modelName: model?.name),
+          const SizedBox(height: 10),
+          const _DownloadNotice(),
+          const Spacer(flex: 3),
+          _SetupActions(busy: busy, onDownload: onDownload, onSkip: onSkip),
+          const SizedBox(height: 12),
+        ],
+      ),
+    );
+  }
+}
+
+class _ShortPortraitSetupLayout extends StatelessWidget {
+  const _ShortPortraitSetupLayout({
+    required this.model,
+    required this.busy,
+    required this.onDownload,
+    required this.onSkip,
+  });
+
+  final GemmaModelInfo? model;
+  final bool busy;
+  final VoidCallback? onDownload;
+  final VoidCallback onSkip;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(24, 18, 24, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          const _SetupHero(height: 86),
+          const SizedBox(height: 14),
+          const _SetupHeadline(compact: true),
+          const SizedBox(height: 16),
+          ModelSetupModelCard(modelName: model?.name),
+          const SizedBox(height: 10),
+          const _DownloadNotice(),
+          const SizedBox(height: 18),
+          _SetupActions(
+            busy: busy,
+            onDownload: onDownload,
+            onSkip: onSkip,
+            compact: true,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LandscapeSetupLayout extends StatelessWidget {
+  const _LandscapeSetupLayout({
+    required this.model,
+    required this.busy,
+    required this.onDownload,
+    required this.onSkip,
+  });
+
+  final GemmaModelInfo? model;
+  final bool busy;
+  final VoidCallback? onDownload;
+  final VoidCallback onSkip;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 980),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: <Widget>[
+              const Expanded(
+                flex: 5,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    _SetupHero(height: 86),
+                    SizedBox(height: 14),
+                    _SetupHeadline(compact: true),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 22),
+              Expanded(
+                flex: 4,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    ModelSetupModelCard(modelName: model?.name),
+                    const SizedBox(height: 10),
+                    const _DownloadNotice(),
+                    const SizedBox(height: 14),
+                    _SetupActions(
+                      busy: busy,
+                      onDownload: onDownload,
+                      onSkip: onSkip,
+                      compact: true,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -147,7 +294,9 @@ class _ModelSetupBody extends StatelessWidget {
 }
 
 class _SetupHero extends StatelessWidget {
-  const _SetupHero();
+  const _SetupHero({this.height = 110});
+
+  final double height;
 
   @override
   Widget build(BuildContext context) {
@@ -156,9 +305,9 @@ class _SetupHero extends StatelessWidget {
       child: Center(
         child: Image.asset(
           'assets/brand/ButtyRead.webp',
-          height: 110,
+          height: height,
           errorBuilder: (context, error, stackTrace) =>
-              const SizedBox(height: 110),
+              SizedBox(height: height),
         ),
       ),
     );
@@ -166,30 +315,31 @@ class _SetupHero extends StatelessWidget {
 }
 
 class _SetupHeadline extends StatelessWidget {
-  const _SetupHeadline();
+  const _SetupHeadline({this.compact = false});
+
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
-    return const Column(
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text(
           'Power up Kudlit',
           style: TextStyle(
             color: KudlitColors.blue900,
-            fontSize: 28,
+            fontSize: compact ? 24 : 28,
             fontWeight: FontWeight.w700,
-            letterSpacing: -0.4,
           ),
         ),
-        SizedBox(height: 10),
+        SizedBox(height: compact ? 8 : 10),
         Text(
           'Kudlit uses on-device AI models for Baybayin recognition '
           'and translation — no internet needed once downloaded.',
           style: TextStyle(
             color: KudlitColors.grey300,
-            fontSize: 15,
-            height: 1.55,
+            fontSize: compact ? 13 : 15,
+            height: compact ? 1.35 : 1.55,
           ),
         ),
       ],
@@ -236,11 +386,13 @@ class _SetupActions extends StatelessWidget {
     required this.busy,
     required this.onDownload,
     required this.onSkip,
+    this.compact = false,
   });
 
   final bool busy;
   final VoidCallback? onDownload;
   final VoidCallback onSkip;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -263,7 +415,7 @@ class _SetupActions extends StatelessWidget {
           style: FilledButton.styleFrom(
             backgroundColor: KudlitColors.blue400,
             foregroundColor: KudlitColors.blue900,
-            padding: const EdgeInsets.symmetric(vertical: 16),
+            padding: EdgeInsets.symmetric(vertical: compact ? 12 : 16),
             textStyle: const TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w600,

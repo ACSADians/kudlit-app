@@ -13,22 +13,40 @@ class CountryPickerSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        const SizedBox(height: 12),
-        const _CountryPickerHandle(),
-        const SizedBox(height: 16),
-        const _CountryPickerHeader(),
-        const SizedBox(height: 8),
-        for (final CountryCode code in CountryCode.values)
-          _CountryPickerTile(
-            code: code,
-            selected: code == selected,
-            onTap: () => onSelect(code),
-          ),
-        const SizedBox(height: 16),
-      ],
+    final double maxHeight = MediaQuery.sizeOf(context).height * 0.72;
+
+    return SafeArea(
+      top: false,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: maxHeight.clamp(320, 560).toDouble(),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            const SizedBox(height: 12),
+            const _CountryPickerHandle(),
+            const SizedBox(height: 16),
+            const _CountryPickerHeader(),
+            const SizedBox(height: 8),
+            Flexible(
+              child: ListView.builder(
+                shrinkWrap: true,
+                padding: const EdgeInsets.only(bottom: 16),
+                itemCount: CountryCode.values.length,
+                itemBuilder: (BuildContext context, int index) {
+                  final CountryCode code = CountryCode.values[index];
+                  return _CountryPickerTile(
+                    code: code,
+                    selected: code == selected,
+                    onTap: () => onSelect(code),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

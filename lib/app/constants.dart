@@ -78,6 +78,8 @@ class AppConstants {
   static const String emailRequiredMessage = 'Email is required.';
   static const String invalidEmailMessage = 'Enter a valid email address.';
   static const String passwordRequiredMessage = 'Password is required.';
+  static const String confirmPasswordRequiredMessage =
+      'Confirm password is required.';
   static const String passwordTooShortMessage =
       'Password must be at least 6 characters.';
   static const String passwordsDoNotMatchMessage = 'Passwords do not match.';

@@ -25,6 +25,7 @@ class ForgotPasswordScreen extends ConsumerStatefulWidget {
 }
 
 class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   bool _isLoading = false;
   String? _message;
@@ -36,7 +37,16 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     super.dispose();
   }
 
+  String? _validateEmail(String? value) {
+    final String email = value?.trim() ?? '';
+    if (email.isEmpty) return AppConstants.emailRequiredMessage;
+    final bool valid = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email);
+    if (!valid) return AppConstants.invalidEmailMessage;
+    return null;
+  }
+
   Future<void> _onReset() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
     setState(() {
       _isLoading = true;
       _message = null;
@@ -96,7 +106,15 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
             ),
             const SizedBox(height: 20),
             if (!_isSuccess) ...<Widget>[
-              EmailField(controller: _emailController),
+              Form(
+                key: _formKey,
+                child: EmailField(
+                  controller: _emailController,
+                  validator: _validateEmail,
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: (_) => _onReset(),
+                ),
+              ),
               if (_message != null) ...<Widget>[
                 const SizedBox(height: 12),
                 Text(

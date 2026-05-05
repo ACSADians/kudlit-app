@@ -13,28 +13,30 @@ class ButtySpeechBubble extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        Container(
-          constraints: const BoxConstraints(maxWidth: 220),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            boxShadow: const <BoxShadow>[
-              BoxShadow(
-                color: Color(0x2E000000),
-                blurRadius: 10,
-                offset: Offset(0, 4),
+        Flexible(
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 220),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: const <BoxShadow>[
+                BoxShadow(
+                  color: Color(0x2E000000),
+                  blurRadius: 10,
+                  offset: Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Text(
+              text,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: KudlitColors.blue300,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                height: 1.3,
               ),
-            ],
-          ),
-          child: Text(
-            text,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: KudlitColors.blue300,
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              height: 1.3,
             ),
           ),
         ),
