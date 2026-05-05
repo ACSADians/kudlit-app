@@ -7,16 +7,35 @@ final RegExp _finalAnswerLabelPattern = RegExp(
 );
 
 final RegExp _internalLabelPattern = RegExp(
-  r'^\s*(?:'
-  r'user\s+(?:question|prompt|input|message)|'
-  r'character\s+persona|persona|'
+  r'^\s*(?:[-*•]|\d+[.)])?\s*(?:[*_]{1,2})?\s*(?:'
+  r'question|subject|character|'
+  r'user\s+(?:asks|question|prompt|input|message)|'
+  r'(?:character|target)\s+persona|persona|'
   r'system\s+(?:instruction|prompt|message)|'
   r'developer\s+(?:instruction|prompt|message)|'
+  r'goal|topic|role|tone|style|voice|'
+  r'persona\s*\/\s*tone|spirited\s*\/\s*passionate|'
   r'prompt|instruction|instructions|'
-  r'draft|refining|revision|reasoning|thinking|analysis|'
+  r'draft(?:\s+\d+)?|idea(?:\s+\d+)?|'
+  r'option(?:\s+\d+)?(?:\s*\([^)]*\))?|'
+  r'refining|revision|reasoning|thinking|analysis|'
   r'output\s+(?:requirements|format|constraints)|'
   r'constraint|constraints|context|task'
-  r')\s*[:\-]\s*',
+  r')\s*(?:[*_]{1,2})?\s*[:\-]\s*',
+  caseSensitive: false,
+);
+
+final RegExp _draftLikeLabelPattern = RegExp(
+  r'^\s*(?:[-*•]|\d+[.)])?\s*(?:[*_]{1,2})?\s*(?:'
+  r'draft(?:\s+\d+)?|idea(?:\s+\d+)?|'
+  r'option(?:\s+\d+)?(?:\s*\([^)]*\))?|'
+  r'refining|revision|reasoning|thinking|analysis'
+  r')\s*(?:[*_]{1,2})?\s*[:\-]\s*',
+  caseSensitive: false,
+);
+
+final RegExp _leadingPromptEchoPattern = RegExp(
+  r'^(?:["“].{1,160}\?["”]?|butty\s*\(.{1,240}\)\.?)$',
   caseSensitive: false,
 );
 
@@ -51,6 +70,14 @@ String cleanAssistantOutput(String raw) {
         cleanedLines.add('');
       }
       continue;
+    }
+
+    if (cleanedLines.isEmpty && _leadingPromptEchoPattern.hasMatch(trimmed)) {
+      continue;
+    }
+
+    if (_draftLikeLabelPattern.hasMatch(trimmed) && cleanedLines.isNotEmpty) {
+      break;
     }
 
     if (_internalLabelPattern.hasMatch(trimmed)) {
