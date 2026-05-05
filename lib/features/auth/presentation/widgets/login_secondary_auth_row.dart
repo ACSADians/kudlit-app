@@ -7,11 +7,13 @@ class LoginSecondaryAuthRow extends StatelessWidget {
   const LoginSecondaryAuthRow({
     required this.onContinueWithEmail,
     required this.onContinueWithGoogle,
+    this.isGoogleLoading = false,
     super.key,
   });
 
   final VoidCallback onContinueWithEmail;
   final VoidCallback onContinueWithGoogle;
+  final bool isGoogleLoading;
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +31,8 @@ class LoginSecondaryAuthRow extends StatelessWidget {
           child: SecondaryAuthOptionButton(
             imagePath: 'assets/brand/google.icon.webp',
             label: 'Google',
-            onTap: onContinueWithGoogle,
+            onTap: isGoogleLoading ? null : onContinueWithGoogle,
+            isLoading: isGoogleLoading,
           ),
         ),
       ],

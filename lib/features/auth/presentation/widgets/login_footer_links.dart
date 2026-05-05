@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'auth_text_link.dart';
+
 /// Footer section of the login bottom sheet: remember-me toggle,
 /// forgot password, create account prompt, and guest access link.
 class LoginFooterLinks extends StatefulWidget {
@@ -30,73 +32,80 @@ class _LoginFooterLinksState extends State<LoginFooterLinks> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 12,
+          runSpacing: 2,
           children: <Widget>[
-            GestureDetector(
-              onTap: () => setState(() => _rememberMe = !_rememberMe),
-              child: Row(
-                children: <Widget>[
-                  _CheckBox(checked: _rememberMe),
-                  const SizedBox(width: 7),
-                  Text(
-                    'Remember me',
-                    style: TextStyle(fontSize: 12, color: muted),
-                  ),
-                ],
-              ),
-            ),
-            GestureDetector(
-              onTap: widget.onForgotPassword,
-              child: Text(
-                'Forgot password?',
-                style: TextStyle(
-                  fontSize: 11.5,
-                  color: cs.primary,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        Text.rich(
-          TextSpan(
-            text: 'New here?  ',
-            style: TextStyle(fontSize: 12.5, color: muted),
-            children: <InlineSpan>[
-              WidgetSpan(
-                child: GestureDetector(
-                  onTap: widget.onCreateAccount,
-                  child: Text(
-                    'Create an account',
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      color: cs.primary,
-                      fontWeight: FontWeight.w600,
-                      decoration: TextDecoration.underline,
-                      decorationColor: cs.primary,
+            Semantics(
+              button: true,
+              checked: _rememberMe,
+              label: 'Remember me',
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => setState(() => _rememberMe = !_rememberMe),
+                  borderRadius: BorderRadius.circular(10),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(0, 8, 8, 8),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(minHeight: 44),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          _CheckBox(checked: _rememberMe),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Remember me',
+                            style: TextStyle(fontSize: 12.5, color: muted),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
-            ],
-          ),
-          textAlign: TextAlign.center,
+            ),
+            AuthTextLink(
+              label: 'Forgot password?',
+              semanticLabel: 'Reset forgotten password',
+              onTap: widget.onForgotPassword,
+            ),
+          ],
         ),
-        const SizedBox(height: 10),
-        GestureDetector(
-          onTap: widget.onContinueAsGuest,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              Text(
-                'Continue as guest',
-                style: TextStyle(fontSize: 11.5, color: subtle),
+        const SizedBox(height: 1),
+        Wrap(
+          alignment: WrapAlignment.center,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: <Widget>[
+            Text('New here?', style: TextStyle(fontSize: 12.5, color: muted)),
+            AuthTextLink(
+              label: 'Create an account',
+              onTap: widget.onCreateAccount,
+            ),
+          ],
+        ),
+        const SizedBox(height: 0),
+        Center(
+          child: Semantics(
+            button: true,
+            label: 'Continue as guest',
+            child: TextButton.icon(
+              onPressed: widget.onContinueAsGuest,
+              style: TextButton.styleFrom(
+                foregroundColor: subtle,
+                minimumSize: const Size(44, 44),
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                tapTargetSize: MaterialTapTargetSize.padded,
+                textStyle: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
-              const SizedBox(width: 4),
-              Icon(Icons.arrow_forward, size: 11, color: subtle),
-            ],
+              icon: Icon(Icons.arrow_forward, size: 14, color: subtle),
+              label: const Text('Continue as guest'),
+            ),
           ),
         ),
       ],

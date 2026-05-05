@@ -11,6 +11,7 @@ import 'package:kudlit_ph/features/auth/presentation/widgets/auth_screen_shell.d
 import 'package:kudlit_ph/features/auth/presentation/widgets/auth_sheet.dart';
 import 'package:kudlit_ph/features/auth/presentation/widgets/auth_sheet_headline.dart';
 import 'package:kudlit_ph/features/auth/presentation/widgets/auth_submit_button.dart';
+import 'package:kudlit_ph/features/auth/presentation/widgets/auth_text_link.dart';
 import 'package:kudlit_ph/features/auth/presentation/widgets/country_picker_sheet.dart';
 import 'package:kudlit_ph/features/auth/presentation/widgets/login_hero.dart';
 import 'package:kudlit_ph/features/auth/presentation/widgets/phone_field.dart';
@@ -188,22 +189,13 @@ class _EmailSignInPrompt extends StatelessWidget {
       crossAxisAlignment: WrapCrossAlignment.center,
       children: <Widget>[
         Text(
-          'Prefer email?  ',
+          'Prefer email?',
           style: TextStyle(fontSize: 12.5, color: cs.onSurface.withAlpha(153)),
         ),
-        GestureDetector(
+        AuthTextLink(
+          label: 'Sign in with email',
           onTap: () => Navigator.of(context).pushReplacement(
             MaterialPageRoute<void>(builder: (_) => const SignInScreen()),
-          ),
-          child: Text(
-            'Sign in with email',
-            style: TextStyle(
-              fontSize: 12.5,
-              color: cs.primary,
-              fontWeight: FontWeight.w600,
-              decoration: TextDecoration.underline,
-              decorationColor: cs.primary,
-            ),
           ),
         ),
       ],

@@ -90,6 +90,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       onCreateAccount: () => _onCreateAccount(context),
       onForgotPassword: () => _onForgotPassword(context),
       onContinueAsGuest: () => _onContinueAsGuest(context),
+      isGoogleLoading: _isGoogleLoading,
     );
 
     if (landscape) {
@@ -103,7 +104,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       );
     }
 
-    final double heroHeight = screenSize.height * 0.52;
+    final double heroFraction = screenSize.height < 700 ? 0.42 : 0.52;
+    final double heroHeight = screenSize.height * heroFraction;
 
     return Scaffold(
       body: Stack(

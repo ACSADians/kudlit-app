@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'auth_text_link.dart';
+
 class SignInPrompt extends StatelessWidget {
   const SignInPrompt({required this.onSignIn, super.key});
 
@@ -14,22 +16,10 @@ class SignInPrompt extends StatelessWidget {
       crossAxisAlignment: WrapCrossAlignment.center,
       children: <Widget>[
         Text(
-          'Already have an account?  ',
+          'Already have an account?',
           style: TextStyle(fontSize: 12.5, color: cs.onSurface.withAlpha(153)),
         ),
-        GestureDetector(
-          onTap: onSignIn,
-          child: Text(
-            'Sign in',
-            style: TextStyle(
-              fontSize: 12.5,
-              color: cs.primary,
-              fontWeight: FontWeight.w600,
-              decoration: TextDecoration.underline,
-              decorationColor: cs.primary,
-            ),
-          ),
-        ),
+        AuthTextLink(label: 'Sign in', onTap: onSignIn),
       ],
     );
   }

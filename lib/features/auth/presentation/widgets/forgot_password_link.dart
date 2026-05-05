@@ -12,7 +12,9 @@ class ForgotPasswordLink extends StatelessWidget {
       child: TextButton(
         onPressed: onTap,
         style: TextButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+          minimumSize: const Size(44, 44),
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+          tapTargetSize: MaterialTapTargetSize.padded,
         ),
         child: Text(
           'Forgot password?',
