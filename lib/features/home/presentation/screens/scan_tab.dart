@@ -92,8 +92,78 @@ class ScanTab extends ConsumerWidget {
               detections: scanState.snapshot,
               onDismiss: controller.dismissResult,
             ),
+          )
+        else if (scanState.aggregatedWinner != null)
+          Positioned(
+            left: 14,
+            right: 14,
+            bottom: controlsBottom + 96,
+            child: _AggregatedWinnerBanner(
+              winner: scanState.aggregatedWinner!,
+            ),
           ),
       ],
+    );
+  }
+}
+
+// ── Aggregated winner banner ─────────────────────────────────────────────────
+
+class _AggregatedWinnerBanner extends StatelessWidget {
+  const _AggregatedWinnerBanner({required this.winner});
+
+  final String winner;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: cs.outline),
+        boxShadow: const <BoxShadow>[
+          BoxShadow(
+            color: Color(0x40000000),
+            blurRadius: 18,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: <Widget>[
+          Icon(Icons.auto_awesome_rounded, size: 16, color: cs.primary),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Text(
+                  'Settled reading',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: cs.onSurface.withAlpha(140),
+                    letterSpacing: 0.4,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  winner,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: cs.onSurface,
+                    letterSpacing: -0.15,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
