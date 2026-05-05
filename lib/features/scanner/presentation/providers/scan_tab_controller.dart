@@ -1,12 +1,12 @@
-import 'dart:typed_data';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:meta/meta.dart';
+import 'package:ultralytics_yolo/ultralytics_yolo.dart';
 
 import 'package:kudlit_ph/features/scanner/domain/entities/baybayin_detection.dart';
 import 'package:kudlit_ph/features/scanner/presentation/providers/scanner_evaluation_provider.dart';
 import 'package:kudlit_ph/features/scanner/presentation/providers/scanner_provider.dart';
+import 'package:kudlit_ph/features/scanner/presentation/providers/yolo_model_selection_provider.dart';
 
 @immutable
 class ScanTabState {
@@ -89,9 +89,9 @@ class ScanTabController extends Notifier<ScanTabState> {
       resultVisible: true,
     );
 
-    final List<BaybayinDetection> results = await ref
-        .read(baybayinDetectorProvider)
-        .detectImage(bytes);
+    final List<BaybayinDetection> results = kIsWeb
+        ? <BaybayinDetection>[]
+        : await _detectImageWithYolo(bytes);
 
     ref.read(scannerNotifierProvider.notifier).update(results);
     ref.read(scannerEvaluationProvider.notifier).evaluate(results, bytes);
@@ -147,5 +147,31 @@ class ScanTabController extends Notifier<ScanTabState> {
 
   void setDetectionsFrozen(bool value) {
     state = state.copyWith(detectionsFrozen: value);
+  }
+
+  Future<List<BaybayinDetection>> _detectImageWithYolo(
+    Uint8List bytes,
+  ) async {
+    try {
+      final YOLO yolo = await ref.read(yoloCameraModelProvider.future);
+      final Map<String, dynamic> raw = await yolo.predict(bytes);
+      final List<dynamic> detectionMaps =
+          raw['detections'] as List<dynamic>? ?? <dynamic>[];
+      return detectionMaps.map((dynamic d) {
+        final YOLOResult r =
+            YOLOResult.fromMap(d as Map<dynamic, dynamic>);
+        return BaybayinDetection(
+          label: r.className,
+          confidence: r.confidence,
+          left: r.normalizedBox.left,
+          top: r.normalizedBox.top,
+          width: r.normalizedBox.width,
+          height: r.normalizedBox.height,
+        );
+      }).toList(growable: false);
+    } catch (e) {
+      debugPrint('[ScanTab] gallery detection failed: $e');
+      return <BaybayinDetection>[];
+    }
   }
 }

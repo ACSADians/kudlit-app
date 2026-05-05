@@ -17,6 +17,8 @@ class AppConstants {
   static const String routeAdminStrokeRecorder = '/admin/stroke-recorder';
   static const String routeCharacterGallery = '/learn/gallery';
   static const String routeQuiz = '/learn/quiz';
+  static const String routeScanHistory = '/scan-history';
+  static const String routeTranslationHistory = '/translation-history';
 
   static const String loginTitle = appName;
   static const String loginSubtitle =

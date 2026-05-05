@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -6,6 +8,7 @@ import 'package:kudlit_ph/features/home/presentation/widgets/butty_chat/chat_msg
 import 'package:kudlit_ph/features/learning/domain/entities/gemma_prompts.dart';
 import 'package:kudlit_ph/features/translator/domain/entities/chat_message.dart';
 import 'package:kudlit_ph/features/translator/presentation/providers/ai_inference_provider.dart';
+import 'package:kudlit_ph/features/translator/presentation/providers/chat_history_provider.dart';
 
 @immutable
 class ButtyChatState {
@@ -46,7 +49,27 @@ buttyChatControllerProvider =
 
 class ButtyChatController extends Notifier<ButtyChatState> {
   @override
-  ButtyChatState build() => ButtyChatState.initial();
+  ButtyChatState build() {
+    Future.microtask(_loadHistory);
+    return ButtyChatState.initial();
+  }
+
+  Future<void> _loadHistory() async {
+    try {
+      final List<ChatMessage> history =
+          await ref.read(chatHistoryNotifierProvider.future);
+      if (history.isEmpty) return;
+      final List<ChatMsg> loaded = history
+          .map((ChatMessage m) => (isButty: !m.isUser, text: m.text))
+          .toList();
+      state = ButtyChatState(
+        messages: <ChatMsg>[state.messages.first, ...loaded],
+        responding: false,
+      );
+    } catch (_) {
+      // History load failure is non-fatal
+    }
+  }
 
   Future<void> send(String text) async {
     final String trimmed = text.trim();
@@ -66,6 +89,12 @@ class ButtyChatController extends Notifier<ButtyChatState> {
       (isButty: false, text: trimmed),
     ];
     state = state.copyWith(messages: nextMessages, responding: true);
+
+    unawaited(
+      ref.read(chatHistoryNotifierProvider.notifier).addMessage(
+        ChatMessage(text: trimmed, isUser: true, timestamp: DateTime.now()),
+      ),
+    );
 
     final List<ChatMessage> history = nextMessages
         .map((ChatMsg msg) {
@@ -102,6 +131,15 @@ class ButtyChatController extends Notifier<ButtyChatState> {
       }
       debugPrint(
         '[Butty] response completed | chars=${buffer.toString().length}',
+      );
+      unawaited(
+        ref.read(chatHistoryNotifierProvider.notifier).addMessage(
+          ChatMessage(
+            text: buffer.toString(),
+            isUser: false,
+            timestamp: DateTime.now(),
+          ),
+        ),
       );
     } catch (_) {
       debugPrint('[Butty] response failed');

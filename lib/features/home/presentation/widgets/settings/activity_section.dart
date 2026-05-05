@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import 'package:kudlit_ph/app/constants.dart';
 import 'package:kudlit_ph/features/home/presentation/providers/profile_management_provider.dart';
 
 import 'profile_nav_row.dart';
@@ -46,9 +48,7 @@ class ActivitySection extends ConsumerWidget {
               title: 'Scanner history',
               subtitle: 'Prior scans and retry results.',
               trailingLabel: scans > 0 ? '$scans scans' : null,
-              isSoon: true,
-              onTap: () =>
-                  onActionTap('Scanner history will be available soon.'),
+              onTap: () => context.push(AppConstants.routeScanHistory),
             ),
             const SettingsDivider(),
             ProfileNavRow(
@@ -58,9 +58,8 @@ class ActivitySection extends ConsumerWidget {
               trailingLabel: (translations > 0 || bookmarks > 0)
                   ? '$translations · $bookmarks saved'
                   : null,
-              isSoon: true,
               onTap: () =>
-                  onActionTap('Saved translations will be available soon.'),
+                  context.push(AppConstants.routeTranslationHistory),
             ),
           ],
         ),
