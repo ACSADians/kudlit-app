@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
+import 'package:kudlit_ph/app/constants.dart';
 import 'login_butty_area.dart';
 import 'login_hero_wordmark.dart';
 import 'login_language_toggle.dart';
@@ -56,19 +58,79 @@ class LoginHeroContent extends StatelessWidget {
 class _HeroBackButton extends StatelessWidget {
   const _HeroBackButton();
 
+  static const Set<String> _routerBackToLoginRoutes = <String>{
+    AppConstants.routeSignUp,
+    AppConstants.routeForgotPassword,
+    AppConstants.routeAuthReset,
+  };
+
+  void _handleBack(BuildContext context) {
+    final String? matchedLocation = _safeMatchedLocation(context);
+    if (_routerBackToLoginRoutes.contains(matchedLocation)) {
+      context.go(AppConstants.routeLogin);
+      return;
+    }
+
+    final NavigatorState navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+      return;
+    }
+
+    _goToLoginIfAvailable(context);
+  }
+
+  String? _safeMatchedLocation(BuildContext context) {
+    try {
+      return GoRouterState.of(context).matchedLocation;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  void _goToLoginIfAvailable(BuildContext context) {
+    try {
+      context.go(AppConstants.routeLogin);
+    } catch (_) {
+      // Some widget tests mount the auth subpages outside GoRouter. In that
+      // case there is no route fallback available, so the button safely no-ops.
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => Navigator.of(context).pop(),
-      child: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: const Color(0x26FFFFFF),
-          borderRadius: BorderRadius.circular(9999),
-          border: Border.all(color: const Color(0x40FFFFFF)),
+    return Tooltip(
+      message: AppConstants.backToLoginAction,
+      child: Semantics(
+        button: true,
+        label: AppConstants.backToLoginAction,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => _handleBack(context),
+            borderRadius: BorderRadius.circular(9999),
+            child: SizedBox(
+              width: 44,
+              height: 44,
+              child: Center(
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: const Color(0x26FFFFFF),
+                    borderRadius: BorderRadius.circular(9999),
+                    border: Border.all(color: const Color(0x40FFFFFF)),
+                  ),
+                  child: const Icon(
+                    Icons.arrow_back,
+                    color: Colors.white,
+                    size: 18,
+                  ),
+                ),
+              ),
+            ),
+          ),
         ),
-        child: const Icon(Icons.arrow_back, color: Colors.white, size: 18),
       ),
     );
   }
