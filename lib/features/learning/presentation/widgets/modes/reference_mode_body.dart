@@ -18,56 +18,62 @@ class ReferenceModeBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          const Spacer(),
-          Center(
-            child: ReferenceGlyphCard(
-              glyph: step.glyph,
-              glyphImage: step.glyphImage,
-              label: step.label,
-              hideGlyph: step.hideGlyph,
-            ),
-          ),
-          const SizedBox(height: 24),
-          if (step.narration != null)
-            Text(
-              step.narration!,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: cs.onSurface.withValues(alpha: 0.8),
-                height: 1.45,
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 560),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              const Spacer(),
+              Center(
+                child: ReferenceGlyphCard(
+                  glyph: step.glyph,
+                  glyphImage: step.glyphImage,
+                  label: step.label,
+                  hideGlyph: step.hideGlyph,
+                ),
               ),
-            ),
-          const Spacer(),
-          OutlinedButton.icon(
-            onPressed: (step.strokeOrder == null || step.strokeOrder!.isEmpty)
-                ? null
-                : () => showModalBottomSheet<void>(
-                    context: context,
-                    isScrollControlled: true,
-                    backgroundColor: Colors.transparent,
-                    builder: (_) => StrokeOrderSheet(
-                      glyph: step.glyph,
-                      label: step.label,
-                      data: step.strokeOrder!,
-                    ),
+              const SizedBox(height: 18),
+              if (step.narration != null)
+                Text(
+                  step.narration!,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: cs.onSurface.withValues(alpha: 0.8),
+                    height: 1.45,
                   ),
-            icon: const Icon(Icons.play_arrow_rounded),
-            label: Text(
-              (step.strokeOrder == null || step.strokeOrder!.isEmpty)
-                  ? 'Stroke order (no recording yet)'
-                  : 'Show stroke order',
-            ),
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size.fromHeight(48),
-              side: BorderSide(color: cs.outlineVariant),
-            ),
+                ),
+              const Spacer(),
+              OutlinedButton.icon(
+                onPressed:
+                    (step.strokeOrder == null || step.strokeOrder!.isEmpty)
+                    ? null
+                    : () => showModalBottomSheet<void>(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (_) => StrokeOrderSheet(
+                          glyph: step.glyph,
+                          label: step.label,
+                          data: step.strokeOrder!,
+                        ),
+                      ),
+                icon: const Icon(Icons.play_arrow_rounded),
+                label: Text(
+                  (step.strokeOrder == null || step.strokeOrder!.isEmpty)
+                      ? 'Stroke order not recorded'
+                      : 'Show stroke order',
+                ),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(48),
+                  side: BorderSide(color: cs.outlineVariant),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

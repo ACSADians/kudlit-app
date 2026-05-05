@@ -54,6 +54,28 @@ class ScanTab extends ConsumerWidget {
             controller.setDetectionsFrozen(false);
           },
         ),
+        Positioned(
+          top: 0,
+          left: 12,
+          child: SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: _ScanStatusChip(
+                label: scanState.selectedImageBytes != null
+                    ? 'Image preview'
+                    : kIsWeb
+                    ? 'Upload image'
+                    : 'Camera ready',
+                icon: scanState.selectedImageBytes != null
+                    ? Icons.image_outlined
+                    : kIsWeb
+                    ? Icons.photo_library_outlined
+                    : Icons.camera_alt_outlined,
+              ),
+            ),
+          ),
+        ),
         if (scanState.isLoadingImage)
           const Positioned.fill(
             child: Center(child: CircularProgressIndicator()),
@@ -167,7 +189,10 @@ class _ScanControls extends StatelessWidget {
                 children: <Widget>[
                   GestureDetector(
                     onTap: onGalleryTap,
-                    child: const _ControlIcon(icon: Icons.image_outlined),
+                    child: const _ControlIcon(
+                      icon: Icons.image_outlined,
+                      label: 'Open Gallery',
+                    ),
                   ),
                   if (onFlashToggle != null) ...<Widget>[
                     const SizedBox(width: 18),
@@ -177,6 +202,7 @@ class _ScanControls extends StatelessWidget {
                         icon: flashOn
                             ? Icons.flash_on_rounded
                             : Icons.flash_off_rounded,
+                        label: flashOn ? 'Turn Flash Off' : 'Turn Flash On',
                       ),
                     ),
                   ],
@@ -192,20 +218,28 @@ class _ScanControls extends StatelessWidget {
 }
 
 class _ControlIcon extends StatelessWidget {
-  const _ControlIcon({required this.icon});
+  const _ControlIcon({required this.icon, required this.label});
 
   final IconData icon;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 40,
-      height: 40,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: const Color(0xFF0E1425).withAlpha(160),
+    return Tooltip(
+      message: label,
+      child: Semantics(
+        label: label,
+        button: true,
+        child: Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: const Color(0xFF0E1425).withAlpha(160),
+          ),
+          child: Icon(icon, size: 22, color: Colors.white.withAlpha(220)),
+        ),
       ),
-      child: Icon(icon, size: 22, color: Colors.white.withAlpha(220)),
     );
   }
 }
@@ -217,28 +251,75 @@ class _ShutterButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 72,
-        height: 72,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: const Color(0xFF0E1425).withAlpha(100),
-          border: Border.all(color: Colors.white.withAlpha(180), width: 2.5),
-        ),
-        child: Center(
+    return Tooltip(
+      message: 'Capture Scan',
+      child: Semantics(
+        label: 'Capture Scan',
+        button: true,
+        child: GestureDetector(
+          onTap: onTap,
           child: Container(
-            width: 56,
-            height: 56,
-            decoration: const BoxDecoration(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.white,
-              boxShadow: <BoxShadow>[
-                BoxShadow(color: Color(0x4D7AAAFF), blurRadius: 18),
-              ],
+              color: const Color(0xFF0E1425).withAlpha(100),
+              border: Border.all(
+                color: Colors.white.withAlpha(180),
+                width: 2.5,
+              ),
+            ),
+            child: Center(
+              child: Container(
+                width: 56,
+                height: 56,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white,
+                  boxShadow: <BoxShadow>[
+                    BoxShadow(color: Color(0x4D7AAAFF), blurRadius: 18),
+                  ],
+                ),
+              ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ScanStatusChip extends StatelessWidget {
+  const _ScanStatusChip({required this.label, required this.icon});
+
+  final String label;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: 'Scanner state: $label',
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 36),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0E1425).withAlpha(160),
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Icon(icon, size: 15, color: Colors.white.withAlpha(220)),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: Colors.white.withAlpha(225),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -526,36 +607,60 @@ class _ResultActions extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        _ActionChip(icon: Icons.copy_rounded, onTap: onCopy ?? () {}),
+        _ActionChip(
+          icon: Icons.copy_rounded,
+          label: 'Copy reading',
+          onTap: onCopy ?? () {},
+        ),
         const SizedBox(width: 6),
-        _ActionChip(icon: Icons.share_rounded, onTap: () {}),
+        _ActionChip(
+          icon: Icons.share_rounded,
+          label: 'Share reading',
+          onTap: onCopy ?? () {},
+        ),
         const SizedBox(width: 6),
-        _ActionChip(icon: Icons.close_rounded, onTap: onDismiss),
+        _ActionChip(
+          icon: Icons.close_rounded,
+          label: 'Close result',
+          onTap: onDismiss,
+        ),
       ],
     );
   }
 }
 
 class _ActionChip extends StatelessWidget {
-  const _ActionChip({required this.icon, required this.onTap});
+  const _ActionChip({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
 
   final IconData icon;
+  final String label;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 34,
-        height: 34,
-        decoration: BoxDecoration(
-          color: cs.surfaceContainer,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: cs.outline),
+    return Tooltip(
+      message: label,
+      child: Semantics(
+        label: label,
+        button: true,
+        child: GestureDetector(
+          onTap: onTap,
+          child: Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: cs.surfaceContainer,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: cs.outline),
+            ),
+            child: Icon(icon, size: 15, color: cs.onSurface.withAlpha(150)),
+          ),
         ),
-        child: Icon(icon, size: 15, color: cs.onSurface.withAlpha(150)),
       ),
     );
   }
@@ -575,9 +680,8 @@ class _ButtyTranslationArea extends ConsumerWidget {
         const SizedBox(height: 8),
         evalState.translation.when(
           loading: () => const TypingBubble(),
-          data: (String text) => text.isEmpty
-              ? const SizedBox.shrink()
-              : ButtyBubble(text: text),
+          data: (String text) =>
+              text.isEmpty ? const SizedBox.shrink() : ButtyBubble(text: text),
           error: (Object e, StackTrace s) => ButtyBubble(
             text: 'Ay nako, I had trouble reading that. Try again?',
           ),

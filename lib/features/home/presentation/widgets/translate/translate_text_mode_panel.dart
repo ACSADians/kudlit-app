@@ -18,6 +18,7 @@ class TranslateTextModePanel extends StatelessWidget {
     required this.onExplain,
     required this.onCheckInput,
     required this.onCopy,
+    required this.onShare,
   });
 
   final TranslateTextState state;
@@ -29,6 +30,7 @@ class TranslateTextModePanel extends StatelessWidget {
   final VoidCallback onExplain;
   final VoidCallback onCheckInput;
   final VoidCallback onCopy;
+  final VoidCallback onShare;
 
   @override
   Widget build(BuildContext context) {
@@ -43,15 +45,18 @@ class TranslateTextModePanel extends StatelessWidget {
               baybayinText: state.baybayinText,
               latinText: state.latinText,
               hasInput: state.hasInput,
+              copyLabel: 'Copy',
+              shareLabel: 'Share',
+              onCopy: onCopy,
+              onShare: onShare,
             ),
           ),
+          const SizedBox(height: 8),
           _TextActionsRow(
             busy: state.aiBusy,
             enabled: inputEnabled && state.hasInput,
-            copyEnabled: state.hasInput,
             onExplain: onExplain,
             onCheckInput: onCheckInput,
-            onCopy: onCopy,
           ),
           if (disabledReason != null) ...<Widget>[
             const SizedBox(height: 8),
@@ -68,6 +73,8 @@ class TranslateTextModePanel extends StatelessWidget {
             latinToBaybayin: state.latinToBaybayin,
             onToggle: onDirectionChanged,
           ),
+          _DirectionHelper(latinToBaybayin: state.latinToBaybayin),
+          const SizedBox(height: 8),
           _TextInputField(
             text: state.inputText,
             enabled: inputEnabled && !state.aiBusy,
@@ -77,21 +84,20 @@ class TranslateTextModePanel extends StatelessWidget {
                 ? 'Type in Filipino...'
                 : 'Type Baybayin Unicode...',
           ),
-          if (state.feedbackMessages.isNotEmpty) ...<Widget>[
+          if (state.hasInput) ...<Widget>[
             const SizedBox(height: 10),
-            for (final String note in state.feedbackMessages)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: Text(
-                  '• $note',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withAlpha(175),
-                  ),
-                ),
-              ),
+            TranslateFeedbackCard(
+              title: 'Result',
+              body: state.latinToBaybayin
+                  ? 'Baybayin output is shown above.'
+                  : 'Filipino reading is shown above.',
+              warning: state.feedbackMessages.isEmpty
+                  ? null
+                  : state.feedbackMessages.join(' '),
+              tryThis: state.latinToBaybayin
+                  ? 'Use simple Filipino syllables for cleaner Baybayin output.'
+                  : 'Paste Baybayin Unicode characters, not a screenshot or image.',
+            ),
           ],
           if (state.aiResponse.trim().isNotEmpty) ...<Widget>[
             const SizedBox(height: 10),
@@ -102,6 +108,28 @@ class TranslateTextModePanel extends StatelessWidget {
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+class _DirectionHelper extends StatelessWidget {
+  const _DirectionHelper({required this.latinToBaybayin});
+
+  final bool latinToBaybayin;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    return Text(
+      latinToBaybayin
+          ? 'Type Filipino text and Kudlit will transliterate it into Baybayin.'
+          : 'Reverse mode expects Baybayin Unicode text. Upload images from Scan instead.',
+      textAlign: TextAlign.center,
+      style: TextStyle(
+        fontSize: 12,
+        height: 1.35,
+        color: cs.onSurface.withAlpha(155),
       ),
     );
   }
@@ -205,18 +233,14 @@ class _TextActionsRow extends StatelessWidget {
   const _TextActionsRow({
     required this.busy,
     required this.enabled,
-    required this.copyEnabled,
     required this.onExplain,
     required this.onCheckInput,
-    required this.onCopy,
   });
 
   final bool busy;
   final bool enabled;
-  final bool copyEnabled;
   final VoidCallback onExplain;
   final VoidCallback onCheckInput;
-  final VoidCallback onCopy;
 
   @override
   Widget build(BuildContext context) {
@@ -234,7 +258,6 @@ class _TextActionsRow extends StatelessWidget {
           enabled: enabled && !busy,
           onTap: onCheckInput,
         ),
-        _ActionButton(label: 'Copy', enabled: copyEnabled, onTap: onCopy),
       ],
     );
   }

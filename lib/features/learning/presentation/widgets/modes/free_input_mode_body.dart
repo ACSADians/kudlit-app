@@ -26,6 +26,12 @@ class FreeInputModeBodyState extends ConsumerState<FreeInputModeBody> {
   final TextEditingController _controller = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    _controller.addListener(_resetRetryIfNeeded);
+  }
+
+  @override
   void didUpdateWidget(covariant FreeInputModeBody oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.step.id != widget.step.id) _controller.clear();
@@ -33,8 +39,15 @@ class FreeInputModeBodyState extends ConsumerState<FreeInputModeBody> {
 
   @override
   void dispose() {
+    _controller.removeListener(_resetRetryIfNeeded);
     _controller.dispose();
     super.dispose();
+  }
+
+  void _resetRetryIfNeeded() {
+    if (widget.attemptStatus == AttemptStatus.retry) {
+      ref.read(lessonControllerProvider.notifier).resetAttempt();
+    }
   }
 
   /// Called by parent (coach OK button). Returns false if empty.
@@ -130,7 +143,23 @@ class FreeInputModeBodyState extends ConsumerState<FreeInputModeBody> {
               context,
             ).textTheme.headlineSmall?.copyWith(color: cs.onSurface),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
+          FilledButton.icon(
+            onPressed: locked || widget.attemptStatus == AttemptStatus.checking
+                ? null
+                : submitToController,
+            icon: widget.attemptStatus == AttemptStatus.checking
+                ? const SizedBox.square(
+                    dimension: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.check_rounded),
+            label: Text(
+              widget.attemptStatus == AttemptStatus.checking
+                  ? 'Checking answer'
+                  : 'Check answer',
+            ),
+          ),
         ],
       ),
     );

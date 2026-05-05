@@ -2,35 +2,31 @@ import 'package:flutter/material.dart';
 
 import 'package:kudlit_ph/features/learning/presentation/providers/lesson_state.dart';
 
-/// Bottom Butty coach bar.
-///
-/// Layout (matches the design sketch):
-/// - Butty illustration sits on the left as a chunky character.
-/// - Speech text ("Butty" name + message + Ask Butty link) flows to his right.
-/// - A small circular "OK / Continue" button floats at the top-right corner
-///   of the bar — only enabled when the current step is satisfied.
 class ButtyCoachPanel extends StatelessWidget {
   const ButtyCoachPanel({
     super.key,
     required this.message,
     required this.attemptStatus,
     required this.completed,
+    required this.actionLabel,
     required this.onAvatarTap,
     required this.onContinue,
     required this.onAskHelp,
+    required this.onRetry,
   });
 
   final String message;
   final AttemptStatus attemptStatus;
   final bool completed;
+  final String actionLabel;
   final VoidCallback onAvatarTap;
   final VoidCallback onContinue;
   final VoidCallback onAskHelp;
+  final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
-
     return Container(
       decoration: BoxDecoration(
         color: cs.surface,
@@ -39,13 +35,15 @@ class ButtyCoachPanel extends StatelessWidget {
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 40, 12, 14),
-          child: _BarStack(
+          padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+          child: _CoachCard(
+            message: message,
             attemptStatus: attemptStatus,
             completed: completed,
-            message: message,
+            actionLabel: actionLabel,
             onAvatarTap: onAvatarTap,
             onAskHelp: onAskHelp,
+            onRetry: onRetry,
             onContinue: onContinue,
           ),
         ),
@@ -54,68 +52,69 @@ class ButtyCoachPanel extends StatelessWidget {
   }
 }
 
-class _BarStack extends StatelessWidget {
-  const _BarStack({
+class _CoachCard extends StatelessWidget {
+  const _CoachCard({
+    required this.message,
     required this.attemptStatus,
     required this.completed,
-    required this.message,
+    required this.actionLabel,
     required this.onAvatarTap,
     required this.onAskHelp,
+    required this.onRetry,
     required this.onContinue,
   });
 
+  final String message;
   final AttemptStatus attemptStatus;
   final bool completed;
-  final String message;
+  final String actionLabel;
   final VoidCallback onAvatarTap;
   final VoidCallback onAskHelp;
+  final VoidCallback onRetry;
   final VoidCallback onContinue;
 
   @override
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
-    final Color barColor = _statusSurface(cs, attemptStatus);
-    final Color barBorder = _statusBorder(cs, attemptStatus);
-
-    return Stack(
-      clipBehavior: Clip.none,
-      children: <Widget>[
-        Container(
-          width: double.infinity,
-          // left padding reserves space for the Butty illustration
-          padding: const EdgeInsets.fromLTRB(96, 14, 56, 14),
-          decoration: BoxDecoration(
-            color: barColor,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: barBorder),
+    return Container(
+      padding: const EdgeInsets.fromLTRB(10, 10, 10, 12),
+      decoration: BoxDecoration(
+        color: _statusSurface(cs),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _statusBorder(cs)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              _ButtyButton(onTap: onAvatarTap),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _CoachText(
+                  message: message,
+                  attemptStatus: attemptStatus,
+                ),
+              ),
+            ],
           ),
-          child: _CoachText(
-            message: message,
+          const SizedBox(height: 8),
+          _CoachActions(
             attemptStatus: attemptStatus,
-            onAskHelp: onAskHelp,
-          ),
-        ),
-        // Butty sits at the bottom-left, overflowing above the card top
-        Positioned(
-          left: 4,
-          bottom: 0,
-          child: _ButtySticker(onTap: onAvatarTap),
-        ),
-        Positioned(
-          top: -14,
-          right: -2,
-          child: _OkButton(
             completed: completed,
-            attemptStatus: attemptStatus,
-            onTap: onContinue,
+            actionLabel: actionLabel,
+            onAskHelp: onAskHelp,
+            onRetry: onRetry,
+            onContinue: onContinue,
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
-  Color _statusSurface(ColorScheme cs, AttemptStatus status) {
-    switch (status) {
+  Color _statusSurface(ColorScheme cs) {
+    switch (attemptStatus) {
       case AttemptStatus.correct:
         return cs.primaryContainer;
       case AttemptStatus.retry:
@@ -126,8 +125,8 @@ class _BarStack extends StatelessWidget {
     }
   }
 
-  Color _statusBorder(ColorScheme cs, AttemptStatus status) {
-    switch (status) {
+  Color _statusBorder(ColorScheme cs) {
+    switch (attemptStatus) {
       case AttemptStatus.correct:
         return cs.primary.withValues(alpha: 0.4);
       case AttemptStatus.retry:
@@ -139,8 +138,8 @@ class _BarStack extends StatelessWidget {
   }
 }
 
-class _ButtySticker extends StatelessWidget {
-  const _ButtySticker({required this.onTap});
+class _ButtyButton extends StatelessWidget {
+  const _ButtyButton({required this.onTap});
 
   final VoidCallback onTap;
 
@@ -148,13 +147,13 @@ class _ButtySticker extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      label: 'Tap Butty for help',
+      label: 'Ask Butty for help',
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(48),
+        borderRadius: BorderRadius.circular(14),
         child: SizedBox(
-          width: 88,
-          height: 112,
+          width: 66,
+          height: 78,
           child: Image.asset(
             'assets/brand/ButtyWave.webp',
             fit: BoxFit.contain,
@@ -167,15 +166,10 @@ class _ButtySticker extends StatelessWidget {
 }
 
 class _CoachText extends StatelessWidget {
-  const _CoachText({
-    required this.message,
-    required this.attemptStatus,
-    required this.onAskHelp,
-  });
+  const _CoachText({required this.message, required this.attemptStatus});
 
   final String message;
   final AttemptStatus attemptStatus;
-  final VoidCallback onAskHelp;
 
   @override
   Widget build(BuildContext context) {
@@ -191,47 +185,79 @@ class _CoachText extends StatelessWidget {
           'Butty',
           style: text.labelSmall?.copyWith(
             color: cs.primary,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w800,
             letterSpacing: 0.6,
           ),
         ),
-        const SizedBox(height: 2),
+        const SizedBox(height: 3),
         isThinking
             ? const _ThinkingDots()
             : Text(
                 message,
-                maxLines: 3,
+                maxLines: 4,
                 overflow: TextOverflow.ellipsis,
                 style: text.bodyMedium?.copyWith(color: cs.onSurface),
               ),
-        const SizedBox(height: 4),
-        InkWell(
-          onTap: onAskHelp,
-          borderRadius: BorderRadius.circular(8),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 2),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Icon(Icons.help_outline_rounded, size: 14, color: cs.primary),
-                const SizedBox(width: 4),
-                Text(
-                  'Ask Butty',
-                  style: text.labelSmall?.copyWith(
-                    color: cs.primary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
+      ],
+    );
+  }
+}
+
+class _CoachActions extends StatelessWidget {
+  const _CoachActions({
+    required this.attemptStatus,
+    required this.completed,
+    required this.actionLabel,
+    required this.onAskHelp,
+    required this.onRetry,
+    required this.onContinue,
+  });
+
+  final AttemptStatus attemptStatus;
+  final bool completed;
+  final String actionLabel;
+  final VoidCallback onAskHelp;
+  final VoidCallback onRetry;
+  final VoidCallback onContinue;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isChecking = attemptStatus == AttemptStatus.checking;
+    final bool canRetry = attemptStatus == AttemptStatus.retry;
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      alignment: WrapAlignment.spaceBetween,
+      children: <Widget>[
+        TextButton.icon(
+          onPressed: onAskHelp,
+          icon: const Icon(Icons.help_outline_rounded, size: 18),
+          label: const Text('Help'),
+        ),
+        if (canRetry)
+          OutlinedButton.icon(
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh_rounded, size: 18),
+            label: const Text('Retry'),
           ),
+        FilledButton.icon(
+          onPressed: isChecking ? null : onContinue,
+          icon: isChecking
+              ? const SizedBox.square(
+                  dimension: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Icon(
+                  completed ? Icons.flag_rounded : Icons.arrow_forward_rounded,
+                ),
+          label: Text(isChecking ? 'Checking' : actionLabel),
         ),
       ],
     );
   }
 }
 
-/// Three animated dots that pulse to indicate Butty is thinking.
 class _ThinkingDots extends StatefulWidget {
   const _ThinkingDots();
 
@@ -269,54 +295,11 @@ class _ThinkingDotsState extends State<_ThinkingDots>
         return Text(
           'Butty is thinking${'.' * dotCount}',
           style: text.bodyMedium?.copyWith(
-            color: cs.onSurface.withValues(alpha: 0.5),
+            color: cs.onSurface.withValues(alpha: 0.55),
             fontStyle: FontStyle.italic,
           ),
         );
       },
-    );
-  }
-}
-
-class _OkButton extends StatelessWidget {
-  const _OkButton({
-    required this.completed,
-    required this.attemptStatus,
-    required this.onTap,
-  });
-
-  final bool completed;
-  final AttemptStatus attemptStatus;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final ColorScheme cs = Theme.of(context).colorScheme;
-    final bool isChecking = attemptStatus == AttemptStatus.checking;
-    return Material(
-      color: isChecking ? cs.primary.withValues(alpha: 0.6) : cs.primary,
-      shape: CircleBorder(side: BorderSide(color: cs.surface, width: 3)),
-      elevation: 4,
-      child: InkWell(
-        onTap: isChecking ? null : onTap,
-        customBorder: const CircleBorder(),
-        child: SizedBox(
-          width: 44,
-          height: 44,
-          child: isChecking
-              ? Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.5,
-                    color: cs.onPrimary,
-                  ),
-                )
-              : Icon(
-                  completed ? Icons.flag_rounded : Icons.play_arrow_rounded,
-                  color: cs.onPrimary,
-                ),
-        ),
-      ),
     );
   }
 }

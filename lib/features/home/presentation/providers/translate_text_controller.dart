@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kudlit_ph/core/utils/baybayify.dart';
 import 'package:kudlit_ph/features/home/presentation/providers/app_preferences_provider.dart';
 import 'package:kudlit_ph/features/home/presentation/providers/translate_page_controller.dart';
+import 'package:kudlit_ph/features/home/presentation/utils/safe_ai_output.dart';
 import 'package:kudlit_ph/features/learning/domain/entities/gemma_prompts.dart';
 import 'package:kudlit_ph/features/translator/domain/entities/chat_message.dart';
 import 'package:kudlit_ph/features/translator/presentation/providers/translator_providers.dart';
@@ -239,15 +240,17 @@ class TranslateTextController extends Notifier<TranslateTextState> {
     try {
       await for (final String chunk in stream) {
         buffer.write(chunk);
+        final String displayResponse = cleanAssistantOutput(buffer.toString());
         state = state.copyWith(
           aiBusy: true,
-          aiResponse: buffer.toString(),
+          aiResponse: displayResponse,
           aiSource: source,
         );
       }
+      final String displayResponse = cleanAssistantOutput(buffer.toString());
       state = state.copyWith(
         aiBusy: false,
-        aiResponse: buffer.toString(),
+        aiResponse: displayResponse,
         aiSource: source,
       );
     } catch (error) {

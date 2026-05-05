@@ -69,18 +69,18 @@ class _LessonStageScreenState extends ConsumerState<LessonStageScreen> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<AsyncValue<LessonState?>>(
-      lessonControllerProvider,
-      (AsyncValue<LessonState?>? prev, AsyncValue<LessonState?> next) {
-        final bool wasCompleted = prev?.value?.completed ?? false;
-        final bool isCompleted = next.value?.completed ?? false;
-        if (!wasCompleted && isCompleted) {
-          ref
-              .read(appPreferencesNotifierProvider.notifier)
-              .completeLesson(widget.lessonId);
-        }
-      },
-    );
+    ref.listen<AsyncValue<LessonState?>>(lessonControllerProvider, (
+      AsyncValue<LessonState?>? prev,
+      AsyncValue<LessonState?> next,
+    ) {
+      final bool wasCompleted = prev?.value?.completed ?? false;
+      final bool isCompleted = next.value?.completed ?? false;
+      if (!wasCompleted && isCompleted) {
+        ref
+            .read(appPreferencesNotifierProvider.notifier)
+            .completeLesson(widget.lessonId);
+      }
+    });
 
     final AsyncValue<LessonState?> async = ref.watch(lessonControllerProvider);
     // Watch the drawing-pad YOLO model so it starts loading immediately and
@@ -101,6 +101,8 @@ class _LessonStageScreenState extends ConsumerState<LessonStageScreen> {
               freeKey: _freeKey,
               onOpenHelp: _openHelp,
               onContinue: () => _handleContinue(data),
+              onRetry: () =>
+                  ref.read(lessonControllerProvider.notifier).resetAttempt(),
             );
           },
         ),
@@ -116,6 +118,7 @@ class _LessonScaffold extends StatelessWidget {
     required this.freeKey,
     required this.onOpenHelp,
     required this.onContinue,
+    required this.onRetry,
   });
 
   final LessonState state;
@@ -123,6 +126,7 @@ class _LessonScaffold extends StatelessWidget {
   final GlobalKey<FreeInputModeBodyState> freeKey;
   final void Function(LessonStep step) onOpenHelp;
   final VoidCallback onContinue;
+  final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
@@ -153,11 +157,26 @@ class _LessonScaffold extends StatelessWidget {
           attemptStatus: state.attemptStatus,
           completed: state.completed,
           onContinue: onContinue,
+          actionLabel: _actionLabel(state),
+          onRetry: onRetry,
           onAvatarTap: () => onOpenHelp(step),
           onAskHelp: () => onOpenHelp(step),
         ),
       ],
     );
+  }
+
+  String _actionLabel(LessonState state) {
+    if (state.completed) return 'Finish';
+    if (state.attemptStatus == AttemptStatus.correct) return 'Continue';
+    switch (state.currentStep.mode) {
+      case LessonMode.reference:
+        return 'Got it';
+      case LessonMode.draw:
+        return 'Check drawing';
+      case LessonMode.freeInput:
+        return 'Check answer';
+    }
   }
 }
 

@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:kudlit_ph/features/home/presentation/providers/app_preferences_provider.dart';
+import 'package:kudlit_ph/features/home/presentation/utils/safe_ai_output.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/butty_chat/chat_msg.dart';
 import 'package:kudlit_ph/features/learning/domain/entities/gemma_prompts.dart';
 import 'package:kudlit_ph/features/translator/domain/entities/chat_message.dart';
@@ -93,10 +94,11 @@ class ButtyChatController extends Notifier<ButtyChatState> {
       final StringBuffer buffer = StringBuffer();
       await for (final String chunk in responseStream) {
         buffer.write(chunk);
+        final String displayText = cleanAssistantOutput(buffer.toString());
         state = state.copyWith(
           messages: <ChatMsg>[
             ...state.messages.take(state.messages.length - 1),
-            (isButty: true, text: buffer.toString()),
+            (isButty: true, text: displayText),
           ],
         );
       }

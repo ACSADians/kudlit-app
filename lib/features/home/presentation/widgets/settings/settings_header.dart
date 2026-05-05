@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
+import 'package:kudlit_ph/app/constants.dart';
 
 class SettingsHeader extends StatelessWidget {
   const SettingsHeader({super.key});
@@ -21,7 +24,7 @@ class SettingsHeader extends StatelessWidget {
         child: Row(
           children: <Widget>[
             IconButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => _handleBack(context),
               icon: Icon(
                 Icons.arrow_back_ios_new_rounded,
                 size: 18,
@@ -41,5 +44,15 @@ class SettingsHeader extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  void _handleBack(BuildContext context) {
+    final NavigatorState navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+      return;
+    }
+
+    context.go(AppConstants.routeHome);
   }
 }

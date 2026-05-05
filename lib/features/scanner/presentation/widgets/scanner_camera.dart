@@ -47,7 +47,7 @@ const int _kRequiredConsecutiveHits = 2;
 /// Detection output is throttled to once every [_kDetectionInterval] so the
 /// overlay updates are visible without thrashing the widget tree.
 ///
-/// On web shows a design-preview gradient; [onDetections] is never called.
+/// On web shows an explicit no-camera fallback; [onDetections] is never called.
 class ScannerCamera extends ConsumerStatefulWidget {
   const ScannerCamera({
     required this.onDetections,
@@ -79,8 +79,12 @@ class _ScannerCameraState extends ConsumerState<ScannerCamera> {
 
   String _modelErrorMessage(Object error) {
     final String raw = error.toString();
-    if (raw.contains('No enabled')) return 'No scanner model is configured yet.';
-    if (raw.contains('no download URL')) return 'Model download URL is missing.';
+    if (raw.contains('No enabled')) {
+      return 'No scanner model is configured yet.';
+    }
+    if (raw.contains('no download URL')) {
+      return 'Model download URL is missing.';
+    }
     if (raw.contains('no file is on disk')) {
       return 'Download may have been interrupted. Check your connection and retry.';
     }
@@ -168,9 +172,8 @@ class _ScannerCameraState extends ConsumerState<ScannerCamera> {
       loading: () => const ModelNotReadyScreen(),
       error: (Object error, StackTrace _) => ModelNotReadyScreen.error(
         errorMessage: _modelErrorMessage(error),
-        onRetry: () => ref.invalidate(
-          yoloModelPathProvider(YoloModelScope.camera),
-        ),
+        onRetry: () =>
+            ref.invalidate(yoloModelPathProvider(YoloModelScope.camera)),
       ),
       data: (String modelPath) {
         final YoloBaybayinDetector detector =
@@ -200,17 +203,69 @@ class _WebCameraFallback extends StatelessWidget {
     return Stack(
       fit: StackFit.expand,
       children: <Widget>[
-        DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: <Color>[cs.surfaceContainer, cs.surface],
-            ),
+        ColoredBox(color: cs.surfaceContainerLow),
+        const YoloSimOverlay(),
+        Align(
+          alignment: Alignment.center,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 28),
+            child: _WebFallbackMessage(cs: cs),
           ),
         ),
-        const YoloSimOverlay(),
       ],
+    );
+  }
+}
+
+class _WebFallbackMessage extends StatelessWidget {
+  const _WebFallbackMessage({required this.cs});
+
+  final ColorScheme cs;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label:
+          'Camera preview is unavailable on web. Use Gallery to test an image.',
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 360),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: cs.surface.withAlpha(235),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: cs.outline),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Icon(
+              Icons.photo_library_outlined,
+              size: 32,
+              color: cs.onSurface.withAlpha(190),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'Web Camera Preview Unavailable',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: cs.onSurface,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Use Gallery to upload a Baybayin image while testing in the browser.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 13,
+                height: 1.4,
+                color: cs.onSurface.withAlpha(165),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

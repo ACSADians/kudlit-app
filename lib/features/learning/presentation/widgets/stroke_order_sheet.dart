@@ -2,10 +2,6 @@ import 'package:flutter/material.dart';
 
 import 'package:kudlit_ph/features/learning/domain/entities/glyph_stroke.dart';
 
-/// Bottom sheet that animates the stroke order for a Baybayin glyph.
-///
-/// Each stroke is drawn sequentially at a fixed pace. The animation loops
-/// after a short pause so the learner can study it repeatedly.
 class StrokeOrderSheet extends StatefulWidget {
   const StrokeOrderSheet({
     super.key,
@@ -73,133 +69,202 @@ class _StrokeOrderSheetState extends State<StrokeOrderSheet>
   @override
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
-    final TextTheme text = Theme.of(context).textTheme;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: cs.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          // Drag handle
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: cs.outlineVariant,
-              borderRadius: BorderRadius.circular(2),
+    return Semantics(
+      namesRoute: true,
+      label: '${widget.label} stroke order',
+      child: Container(
+        decoration: BoxDecoration(
+          color: cs.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: EdgeInsets.fromLTRB(
+          20,
+          12,
+          20,
+          MediaQuery.paddingOf(context).bottom + 24,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            const _SheetHandle(),
+            const SizedBox(height: 16),
+            _StrokeSheetTitle(
+              glyph: widget.glyph,
+              label: widget.label,
+              strokeCount: widget.data.strokes.length,
             ),
-          ),
-          const SizedBox(height: 16),
-          // Title
-          Row(
-            children: <Widget>[
-              Text(
-                widget.glyph,
-                style: const TextStyle(
-                  fontFamily: 'Baybayin Simple TAWBID',
-                  fontSize: 36,
-                  height: 1,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  Text(
-                    'Stroke order',
-                    style: text.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  Text(
-                    widget.label,
-                    style: text.bodySmall?.copyWith(
-                      color: cs.onSurface.withValues(alpha: 0.6),
-                      letterSpacing: 1,
-                    ),
-                  ),
-                ],
-              ),
-              const Spacer(),
-              Text(
-                '${widget.data.strokes.length} stroke${widget.data.strokes.length == 1 ? '' : 's'}',
-                style: text.labelSmall?.copyWith(
-                  color: cs.onSurface.withValues(alpha: 0.5),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          // Canvas — square (1:1), capped at 320px.
-          // Points are normalized 0–1 so any square canvas renders correctly.
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 320, maxHeight: 320),
-            child: AspectRatio(
-              aspectRatio: 1,
-              child: AnimatedBuilder(
-                animation: _ctrl,
-                builder: (BuildContext context, Widget? _) {
-                  final double progress =
-                      _ctrl.value * widget.data.strokes.length;
-                  return Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: cs.outlineVariant),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: CustomPaint(
-                        painter: _StrokeOrderPainter(
-                          strokes: widget.data.strokes,
-                          progress: progress,
-                          completedColor: cs.primary,
-                          activeColor: cs.tertiary,
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
+            const SizedBox(height: 16),
+            _StrokeCanvas(controller: _ctrl, data: widget.data),
+            const SizedBox(height: 12),
+            _StrokeControls(
+              playing: _playing,
+              onRestart: () {
+                _ctrl.forward(from: 0);
+                if (!_playing) setState(() => _playing = true);
+              },
+              onTogglePlayback: _togglePlayback,
             ),
-          ),
-          const SizedBox(height: 12),
-          // Controls
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              // Restart
-              IconButton(
-                onPressed: () {
-                  _ctrl.forward(from: 0);
-                  if (!_playing) setState(() => _playing = true);
-                },
-                icon: const Icon(Icons.replay_rounded),
-                tooltip: 'Restart',
-              ),
-              const SizedBox(width: 8),
-              FilledButton.icon(
-                style: FilledButton.styleFrom(minimumSize: const Size(120, 44)),
-                onPressed: _togglePlayback,
-                icon: Icon(
-                  _playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                ),
-                label: Text(_playing ? 'Pause' : 'Play'),
-              ),
-            ],
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
-// ─── Painter ─────────────────────────────────────────────────────────────────
+class _SheetHandle extends StatelessWidget {
+  const _SheetHandle();
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    return Container(
+      width: 40,
+      height: 4,
+      decoration: BoxDecoration(
+        color: cs.outlineVariant,
+        borderRadius: BorderRadius.circular(2),
+      ),
+    );
+  }
+}
+
+class _StrokeSheetTitle extends StatelessWidget {
+  const _StrokeSheetTitle({
+    required this.glyph,
+    required this.label,
+    required this.strokeCount,
+  });
+
+  final String glyph;
+  final String label;
+  final int strokeCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    final TextTheme text = Theme.of(context).textTheme;
+    return Row(
+      children: <Widget>[
+        Text(
+          glyph,
+          style: const TextStyle(
+            fontFamily: 'Baybayin Simple TAWBID',
+            fontSize: 36,
+            height: 1,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Text(
+                'Stroke order',
+                style: text.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+              ),
+              Text(
+                label,
+                style: text.bodySmall?.copyWith(
+                  color: cs.onSurface.withValues(alpha: 0.6),
+                  letterSpacing: 1,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Text(
+          '$strokeCount stroke${strokeCount == 1 ? '' : 's'}',
+          style: text.labelSmall?.copyWith(
+            color: cs.onSurface.withValues(alpha: 0.55),
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        IconButton(
+          onPressed: () => Navigator.of(context).pop(),
+          icon: const Icon(Icons.close_rounded),
+          tooltip: 'Close stroke order',
+        ),
+      ],
+    );
+  }
+}
+
+class _StrokeCanvas extends StatelessWidget {
+  const _StrokeCanvas({required this.controller, required this.data});
+
+  final AnimationController controller;
+  final StrokeOrderData data;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 320, maxHeight: 320),
+      child: AspectRatio(
+        aspectRatio: 1,
+        child: AnimatedBuilder(
+          animation: controller,
+          builder: (BuildContext context, Widget? _) {
+            final double progress = controller.value * data.strokes.length;
+            return Container(
+              decoration: BoxDecoration(
+                color: cs.surfaceContainerLowest,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: cs.outlineVariant),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: CustomPaint(
+                  painter: _StrokeOrderPainter(
+                    strokes: data.strokes,
+                    progress: progress,
+                    completedColor: cs.primary,
+                    activeColor: cs.tertiary,
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _StrokeControls extends StatelessWidget {
+  const _StrokeControls({
+    required this.playing,
+    required this.onRestart,
+    required this.onTogglePlayback,
+  });
+
+  final bool playing;
+  final VoidCallback onRestart;
+  final VoidCallback onTogglePlayback;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: <Widget>[
+        IconButton(
+          onPressed: onRestart,
+          icon: const Icon(Icons.replay_rounded),
+          tooltip: 'Restart stroke order',
+        ),
+        const SizedBox(width: 8),
+        FilledButton.icon(
+          style: FilledButton.styleFrom(minimumSize: const Size(120, 44)),
+          onPressed: onTogglePlayback,
+          icon: Icon(playing ? Icons.pause_rounded : Icons.play_arrow_rounded),
+          label: Text(playing ? 'Pause' : 'Play'),
+        ),
+      ],
+    );
+  }
+}
 
 class _StrokeOrderPainter extends CustomPainter {
   const _StrokeOrderPainter({
@@ -210,10 +275,7 @@ class _StrokeOrderPainter extends CustomPainter {
   });
 
   final List<GlyphStroke> strokes;
-
-  /// Ranges from 0.0 (nothing drawn) to strokes.length (all drawn).
   final double progress;
-
   final Color completedColor;
   final Color activeColor;
 
@@ -224,13 +286,11 @@ class _StrokeOrderPainter extends CustomPainter {
     final int fullyDone = progress.floor().clamp(0, strokes.length);
     final double activeFrac = progress - fullyDone;
 
-    // Draw completed strokes in primary color with stroke number badge.
     for (int i = 0; i < fullyDone; i++) {
       _drawStroke(canvas, size, strokes[i], 1.0, completedColor);
       _drawStartBadge(canvas, size, strokes[i], i + 1, completedColor);
     }
 
-    // Draw the currently animating stroke.
     if (fullyDone < strokes.length && activeFrac > 0) {
       _drawStroke(canvas, size, strokes[fullyDone], activeFrac, activeColor);
       _drawStartBadge(
@@ -271,7 +331,6 @@ class _StrokeOrderPainter extends CustomPainter {
     canvas.drawPath(path, paint);
   }
 
-  /// Draws a small numbered circle at the start point of [stroke].
   void _drawStartBadge(
     Canvas canvas,
     Size size,
@@ -299,7 +358,7 @@ class _StrokeOrderPainter extends CustomPainter {
     final TextPainter tp = TextPainter(
       text: TextSpan(
         text: '$number',
-        style: TextStyle(
+        style: const TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.w700,
           color: Colors.white,

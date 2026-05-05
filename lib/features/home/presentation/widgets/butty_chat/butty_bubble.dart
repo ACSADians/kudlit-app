@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:kudlit_ph/features/home/presentation/utils/safe_ai_output.dart';
+
 class ButtyBubble extends StatelessWidget {
   const ButtyBubble({super.key, required this.text});
 
@@ -8,6 +10,7 @@ class ButtyBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
+    final String displayText = cleanAssistantOutput(text);
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(
@@ -41,7 +44,7 @@ class ButtyBubble extends StatelessWidget {
                 border: Border.all(color: cs.outline),
               ),
               child: Text(
-                text,
+                displayText,
                 style: TextStyle(
                   fontSize: 13.5,
                   color: cs.onSurface.withAlpha(220),

@@ -44,6 +44,9 @@ class YoloModelDropdown extends ConsumerWidget {
         ),
       ),
       data: (List<AiModelInfo> models) {
+        if (models.length == 1) {
+          return const SizedBox.shrink();
+        }
         if (models.isEmpty) {
           return const _DropdownShell(
             child: Text('No models', style: TextStyle(color: Colors.white70)),
@@ -87,14 +90,21 @@ class _DropdownShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      constraints: const BoxConstraints(minHeight: 40, maxWidth: 220),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      decoration: BoxDecoration(
-        color: const Color(0xFF0E1425).withAlpha(160),
-        borderRadius: BorderRadius.circular(20),
+    return Tooltip(
+      message: 'Scanner model',
+      child: Semantics(
+        label: 'Scanner model picker',
+        button: true,
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 40, maxWidth: 220),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          decoration: BoxDecoration(
+            color: const Color(0xFF0E1425).withAlpha(160),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: child,
+        ),
       ),
-      child: child,
     );
   }
 }
