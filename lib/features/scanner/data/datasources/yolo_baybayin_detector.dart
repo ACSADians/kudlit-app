@@ -61,6 +61,9 @@ class YoloBaybayinDetector implements BaybayinDetector {
       _controller.setTorchMode(enabled);
 
   @override
+  Future<void> switchCamera() => _controller.switchCamera();
+
+  @override
   void dispose() {
     debugPrint('[YOLO] YoloBaybayinDetector disposed');
     _streamController.close();

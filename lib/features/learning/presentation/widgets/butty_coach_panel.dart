@@ -9,6 +9,7 @@ class ButtyCoachPanel extends StatelessWidget {
     required this.attemptStatus,
     required this.completed,
     required this.actionLabel,
+    required this.showPrimaryAction,
     required this.onAvatarTap,
     required this.onContinue,
     required this.onAskHelp,
@@ -19,6 +20,7 @@ class ButtyCoachPanel extends StatelessWidget {
   final AttemptStatus attemptStatus;
   final bool completed;
   final String actionLabel;
+  final bool showPrimaryAction;
   final VoidCallback onAvatarTap;
   final VoidCallback onContinue;
   final VoidCallback onAskHelp;
@@ -41,6 +43,7 @@ class ButtyCoachPanel extends StatelessWidget {
             attemptStatus: attemptStatus,
             completed: completed,
             actionLabel: actionLabel,
+            showPrimaryAction: showPrimaryAction,
             onAvatarTap: onAvatarTap,
             onAskHelp: onAskHelp,
             onRetry: onRetry,
@@ -58,6 +61,7 @@ class _CoachCard extends StatelessWidget {
     required this.attemptStatus,
     required this.completed,
     required this.actionLabel,
+    required this.showPrimaryAction,
     required this.onAvatarTap,
     required this.onAskHelp,
     required this.onRetry,
@@ -68,6 +72,7 @@ class _CoachCard extends StatelessWidget {
   final AttemptStatus attemptStatus;
   final bool completed;
   final String actionLabel;
+  final bool showPrimaryAction;
   final VoidCallback onAvatarTap;
   final VoidCallback onAskHelp;
   final VoidCallback onRetry;
@@ -104,6 +109,7 @@ class _CoachCard extends StatelessWidget {
             attemptStatus: attemptStatus,
             completed: completed,
             actionLabel: actionLabel,
+            showPrimaryAction: showPrimaryAction,
             onAskHelp: onAskHelp,
             onRetry: onRetry,
             onContinue: onContinue,
@@ -208,6 +214,7 @@ class _CoachActions extends StatelessWidget {
     required this.attemptStatus,
     required this.completed,
     required this.actionLabel,
+    required this.showPrimaryAction,
     required this.onAskHelp,
     required this.onRetry,
     required this.onContinue,
@@ -216,6 +223,7 @@ class _CoachActions extends StatelessWidget {
   final AttemptStatus attemptStatus;
   final bool completed;
   final String actionLabel;
+  final bool showPrimaryAction;
   final VoidCallback onAskHelp;
   final VoidCallback onRetry;
   final VoidCallback onContinue;
@@ -241,18 +249,21 @@ class _CoachActions extends StatelessWidget {
             icon: const Icon(Icons.refresh_rounded, size: 18),
             label: const Text('Retry'),
           ),
-        FilledButton.icon(
-          onPressed: isChecking ? null : onContinue,
-          icon: isChecking
-              ? const SizedBox.square(
-                  dimension: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : Icon(
-                  completed ? Icons.flag_rounded : Icons.arrow_forward_rounded,
-                ),
-          label: Text(isChecking ? 'Checking' : actionLabel),
-        ),
+        if (showPrimaryAction)
+          FilledButton.icon(
+            onPressed: isChecking ? null : onContinue,
+            icon: isChecking
+                ? const SizedBox.square(
+                    dimension: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Icon(
+                    completed
+                        ? Icons.flag_rounded
+                        : Icons.arrow_forward_rounded,
+                  ),
+            label: Text(isChecking ? 'Checking' : actionLabel),
+          ),
       ],
     );
   }

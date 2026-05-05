@@ -20,6 +20,22 @@ void main() {
     expect(state.scanNotice!.title, 'No glyphs detected');
   });
 
+  test('clearNotice returns no-glyph notice to camera state', () async {
+    final ProviderContainer container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    await container
+        .read(scanTabControllerProvider.notifier)
+        .captureWebFrame(() async => const <BaybayinDetection>[]);
+
+    container.read(scanTabControllerProvider.notifier).clearNotice();
+
+    final ScanTabState state = container.read(scanTabControllerProvider);
+    expect(state.resultVisible, isFalse);
+    expect(state.snapshot, isEmpty);
+    expect(state.scanNotice, isNull);
+  });
+
   test('captureWebFrame shows result panel when detections exist', () async {
     final ProviderContainer container = ProviderContainer();
     addTearDown(container.dispose);

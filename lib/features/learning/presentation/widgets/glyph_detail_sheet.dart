@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:kudlit_ph/features/learning/domain/entities/glyph_entry.dart';
+import 'package:kudlit_ph/features/learning/presentation/widgets/baybayin_glyph_mark.dart';
 import 'package:kudlit_ph/features/learning/presentation/widgets/stroke_order_sheet.dart';
 
 class GlyphDetailSheet extends StatelessWidget {
@@ -83,14 +84,12 @@ class _GlyphInfoSheet extends StatelessWidget {
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: cs.outlineVariant),
               ),
-              child: Text(
-                entry.glyph,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontFamily: 'Baybayin Simple TAWBID',
-                  fontSize: 96,
-                  height: 1,
+              child: Center(
+                child: BaybayinGlyphMark(
+                  glyph: entry.glyph,
+                  size: 96,
                   color: cs.onSurface,
+                  boxSize: 132,
                 ),
               ),
             ),

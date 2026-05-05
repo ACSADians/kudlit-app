@@ -103,6 +103,10 @@ class ScanTabController extends Notifier<ScanTabState> {
     await ref.read(baybayinDetectorProvider).toggleTorch(enabled: next);
   }
 
+  Future<void> switchCamera() async {
+    await ref.read(baybayinDetectorProvider).switchCamera();
+  }
+
   Future<void> pickImageFromGallery() async {
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);

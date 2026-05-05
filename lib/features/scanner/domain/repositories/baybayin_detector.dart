@@ -18,6 +18,9 @@ abstract class BaybayinDetector {
   /// Toggle the device torch / flash. No-op on web.
   Future<void> toggleTorch({required bool enabled});
 
+  /// Switch between available camera lenses when the platform supports it.
+  Future<void> switchCamera();
+
   /// Release all resources (camera, model).
   void dispose();
 }

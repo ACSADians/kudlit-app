@@ -113,7 +113,7 @@ class FreeInputModeBodyState extends ConsumerState<FreeInputModeBody> {
           TextField(
             controller: _controller,
             enabled: !locked,
-            autofocus: true,
+            autofocus: false,
             textAlign: TextAlign.center,
             textCapitalization: TextCapitalization.none,
             onSubmitted: (_) => submitToController(),

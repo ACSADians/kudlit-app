@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -28,16 +30,163 @@ class ScanTab extends ConsumerStatefulWidget {
 
 class _ScanTabState extends ConsumerState<ScanTab> {
   WebScannerCapture? _webCapture;
+  WebScannerSwitchCamera? _webSwitchCamera;
   WebScannerStatus _webStatus = WebScannerStatus.initializing;
+  bool _showStatusChip = true;
+  Timer? _statusFadeTimer;
+  String? _statusKey;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _revealStatusChip();
+    });
+  }
+
+  @override
+  void dispose() {
+    _statusFadeTimer?.cancel();
+    super.dispose();
+  }
 
   void _setWebCapture(WebScannerCapture? capture) {
     if (_webCapture == capture) return;
     setState(() => _webCapture = capture);
   }
 
+  void _setWebSwitchCamera(WebScannerSwitchCamera? switchCamera) {
+    if (_webSwitchCamera == switchCamera) return;
+    setState(() => _webSwitchCamera = switchCamera);
+  }
+
   void _setWebStatus(WebScannerStatus status) {
     if (_webStatus == status) return;
     setState(() => _webStatus = status);
+    _revealStatusChip();
+  }
+
+  void _revealStatusChip() {
+    _statusFadeTimer?.cancel();
+    if (mounted) {
+      setState(() => _showStatusChip = true);
+    }
+    _statusFadeTimer = Timer(const Duration(seconds: 6), () {
+      if (!mounted) return;
+      setState(() => _showStatusChip = false);
+    });
+  }
+
+  void _syncStatusCue(String key) {
+    if (_statusKey == key) return;
+    _statusKey = key;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _revealStatusChip();
+    });
+  }
+
+  void _showRetryReadyCue() {
+    HapticFeedback.selectionClick();
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme cs = theme.colorScheme;
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          elevation: 10,
+          backgroundColor: cs.surfaceContainerHigh,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+            side: BorderSide(color: cs.primary.withAlpha(90)),
+          ),
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+          duration: const Duration(milliseconds: 2600),
+          margin: EdgeInsets.fromLTRB(
+            28,
+            0,
+            28,
+            MediaQuery.paddingOf(context).bottom + 96,
+          ),
+          content: Row(
+            children: <Widget>[
+              Container(
+                width: 38,
+                height: 38,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: cs.primaryContainer.withAlpha(170),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.4,
+                    color: cs.primary,
+                    backgroundColor: cs.primary.withAlpha(40),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      'Trying again',
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: cs.onSurface,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Frame the glyph, then tap capture.',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: cs.onSurface.withAlpha(180),
+                        height: 1.2,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+  }
+
+  void _retryNativeScanNotice(ScanTabController controller) {
+    controller.clearNotice();
+    _showRetryReadyCue();
+  }
+
+  Future<void> _switchCamera(ScanTabController controller) async {
+    HapticFeedback.selectionClick();
+    if (kIsWeb) {
+      final WebScannerSwitchCamera? switchCamera = _webSwitchCamera;
+      if (switchCamera == null) return;
+      await switchCamera();
+      return;
+    }
+    await controller.switchCamera();
+  }
+
+  VoidCallback? _noticeTryAgainAction(
+    ScanTabController controller,
+    ScanTabState scanState,
+  ) {
+    if (scanState.isLoadingImage) return null;
+    if (!kIsWeb) return () => _retryNativeScanNotice(controller);
+
+    final WebScannerCapture? capture = _webCapture;
+    if (capture == null) return null;
+    return () => controller.captureWebFrame(capture);
   }
 
   @override
@@ -51,6 +200,19 @@ class _ScanTabState extends ConsumerState<ScanTab> {
     final List<BaybayinDetection> detections = ref.watch(
       scannerNotifierProvider,
     );
+    final String statusLabel = scanState.selectedImageBytes != null
+        ? 'Image preview'
+        : kIsWeb
+        ? _webStatus.label
+        : 'Camera ready';
+    final IconData statusIcon = scanState.selectedImageBytes != null
+        ? Icons.image_outlined
+        : kIsWeb
+        ? _webStatus.icon
+        : Icons.camera_alt_outlined;
+    _syncStatusCue(
+      '$statusLabel:$_webStatus:${scanState.selectedImageBytes != null}',
+    );
 
     return Stack(
       fit: StackFit.expand,
@@ -62,6 +224,7 @@ class _ScanTabState extends ConsumerState<ScanTab> {
           onFlashToggle: kIsWeb ? null : () => controller.toggleFlash(),
           selectedImageBytes: scanState.selectedImageBytes,
           onWebCaptureChanged: _setWebCapture,
+          onWebSwitchCameraChanged: _setWebSwitchCamera,
           onWebStatusChanged: _setWebStatus,
           onPermutationsTap: (List<String> permutations) async {
             controller.setDetectionsFrozen(true);
@@ -81,17 +244,10 @@ class _ScanTabState extends ConsumerState<ScanTab> {
             bottom: false,
             child: Padding(
               padding: const EdgeInsets.only(top: 10),
-              child: _ScanStatusChip(
-                label: scanState.selectedImageBytes != null
-                    ? 'Image preview'
-                    : kIsWeb
-                    ? _webStatus.label
-                    : 'Camera ready',
-                icon: scanState.selectedImageBytes != null
-                    ? Icons.image_outlined
-                    : kIsWeb
-                    ? _webStatus.icon
-                    : Icons.camera_alt_outlined,
+              child: _ScanUtilityBar(
+                flashOn: scanState.flashOn,
+                onGalleryTap: () => controller.pickImageFromGallery(),
+                onFlashToggle: kIsWeb ? null : () => controller.toggleFlash(),
               ),
             ),
           ),
@@ -100,8 +256,27 @@ class _ScanTabState extends ConsumerState<ScanTab> {
           const Positioned.fill(
             child: Center(child: CircularProgressIndicator()),
           ),
-        const Positioned(
+        Positioned(
           top: 0,
+          right: 12,
+          child: SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: IgnorePointer(
+                ignoring: !_showStatusChip,
+                child: AnimatedOpacity(
+                  opacity: _showStatusChip ? 1 : 0,
+                  duration: const Duration(milliseconds: 450),
+                  curve: Curves.easeOutCubic,
+                  child: _ScanStatusChip(label: statusLabel, icon: statusIcon),
+                ),
+              ),
+            ),
+          ),
+        ),
+        const Positioned(
+          top: 44,
           right: 12,
           child: SafeArea(
             bottom: false,
@@ -116,15 +291,19 @@ class _ScanTabState extends ConsumerState<ScanTab> {
           right: 0,
           bottom: controlsBottom,
           child: _ScanControls(
-            flashOn: scanState.flashOn,
             onShutter: kIsWeb
                 ? (_webCapture == null || scanState.isLoadingImage
                       ? null
                       : () => controller.captureWebFrame(_webCapture!))
                 : controller.onShutterTapped,
             shutterLabel: kIsWeb ? 'Capture Webcam Frame' : 'Capture Scan',
-            onFlashToggle: kIsWeb ? null : () => controller.toggleFlash(),
-            onGalleryTap: () => controller.pickImageFromGallery(),
+            onRotateCamera:
+                scanState.selectedImageBytes != null || scanState.isLoadingImage
+                ? null
+                : () => _switchCamera(controller),
+            rotateLabel: kIsWeb && _webSwitchCamera == null
+                ? 'Camera switch unavailable'
+                : 'Switch camera',
           ),
         ),
         if (scanState.scanNotice != null)
@@ -134,9 +313,7 @@ class _ScanTabState extends ConsumerState<ScanTab> {
             bottom: controlsBottom + 96,
             child: _ScanNoticePanel(
               notice: scanState.scanNotice!,
-              onTryAgain: _webCapture == null || scanState.isLoadingImage
-                  ? null
-                  : () => controller.captureWebFrame(_webCapture!),
+              onTryAgain: _noticeTryAgainAction(controller, scanState),
               onGalleryTap: () => controller.pickImageFromGallery(),
               onDismiss: controller.clearNotice,
             ),
@@ -166,6 +343,7 @@ class _ScanCameraStack extends StatelessWidget {
     required this.onFlashToggle,
     required this.onPermutationsTap,
     this.onWebCaptureChanged,
+    this.onWebSwitchCameraChanged,
     this.onWebStatusChanged,
     this.selectedImageBytes,
   });
@@ -175,6 +353,7 @@ class _ScanCameraStack extends StatelessWidget {
   final void Function(List<BaybayinDetection>) onDetections;
   final VoidCallback? onFlashToggle;
   final ValueChanged<WebScannerCapture?>? onWebCaptureChanged;
+  final ValueChanged<WebScannerSwitchCamera?>? onWebSwitchCameraChanged;
   final ValueChanged<WebScannerStatus>? onWebStatusChanged;
   final Uint8List? selectedImageBytes;
   final void Function(List<String> permutations) onPermutationsTap;
@@ -192,6 +371,7 @@ class _ScanCameraStack extends StatelessWidget {
             onDetections: onDetections,
             onFlashToggle: onFlashToggle,
             onWebCaptureChanged: onWebCaptureChanged,
+            onWebSwitchCameraChanged: onWebSwitchCameraChanged,
             onWebStatusChanged: onWebStatusChanged,
           ),
         AggregatedBoundingBox(
@@ -207,53 +387,34 @@ class _ScanCameraStack extends StatelessWidget {
 
 class _ScanControls extends StatelessWidget {
   const _ScanControls({
-    required this.flashOn,
     required this.onShutter,
     required this.shutterLabel,
-    required this.onFlashToggle,
-    required this.onGalleryTap,
+    required this.rotateLabel,
+    this.onRotateCamera,
   });
 
-  final bool flashOn;
   final VoidCallback? onShutter;
   final String shutterLabel;
-  final VoidCallback? onFlashToggle;
-  final VoidCallback onGalleryTap;
+  final VoidCallback? onRotateCamera;
+  final String rotateLabel;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 88,
+      height: 96,
       child: Stack(
         alignment: Alignment.center,
         children: <Widget>[
           Align(
             alignment: Alignment.centerLeft,
             child: Padding(
-              padding: const EdgeInsets.only(left: 32),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  GestureDetector(
-                    onTap: onGalleryTap,
-                    child: const _ControlIcon(
-                      icon: Icons.image_outlined,
-                      label: 'Open Gallery',
-                    ),
-                  ),
-                  if (onFlashToggle != null) ...<Widget>[
-                    const SizedBox(width: 18),
-                    GestureDetector(
-                      onTap: onFlashToggle,
-                      child: _ControlIcon(
-                        icon: flashOn
-                            ? Icons.flash_on_rounded
-                            : Icons.flash_off_rounded,
-                        label: flashOn ? 'Turn Flash Off' : 'Turn Flash On',
-                      ),
-                    ),
-                  ],
-                ],
+              padding: const EdgeInsetsDirectional.only(start: 28),
+              child: _ControlIcon(
+                icon: Icons.cameraswitch_rounded,
+                label: rotateLabel,
+                onTap: onRotateCamera,
+                size: 54,
+                prominent: true,
               ),
             ),
           ),
@@ -264,27 +425,112 @@ class _ScanControls extends StatelessWidget {
   }
 }
 
-class _ControlIcon extends StatelessWidget {
-  const _ControlIcon({required this.icon, required this.label});
+class _ScanUtilityBar extends StatelessWidget {
+  const _ScanUtilityBar({
+    required this.flashOn,
+    required this.onGalleryTap,
+    this.onFlashToggle,
+  });
 
-  final IconData icon;
-  final String label;
+  final bool flashOn;
+  final VoidCallback onGalleryTap;
+  final VoidCallback? onFlashToggle;
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest.withAlpha(185),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: cs.outlineVariant.withAlpha(120)),
+        boxShadow: const <BoxShadow>[
+          BoxShadow(color: Color(0x33000000), blurRadius: 14),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            _ControlIcon(
+              icon: Icons.photo_library_outlined,
+              label: 'Open Gallery',
+              onTap: onGalleryTap,
+              size: 44,
+            ),
+            if (onFlashToggle != null) ...<Widget>[
+              const SizedBox(width: 4),
+              _ControlIcon(
+                icon: flashOn
+                    ? Icons.flash_on_rounded
+                    : Icons.flash_off_rounded,
+                label: flashOn ? 'Turn Flash Off' : 'Turn Flash On',
+                onTap: onFlashToggle,
+                selected: flashOn,
+                size: 44,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ControlIcon extends StatelessWidget {
+  const _ControlIcon({
+    required this.icon,
+    required this.label,
+    this.onTap,
+    this.selected = false,
+    this.size = 44,
+    this.prominent = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback? onTap;
+  final bool selected;
+  final double size;
+  final bool prominent;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    final bool enabled = onTap != null;
+    final Color background = selected
+        ? cs.primary
+        : prominent
+        ? cs.surfaceContainerHigh.withAlpha(220)
+        : Colors.transparent;
+    final Color foreground = selected ? cs.onPrimary : cs.onSurface;
     return Tooltip(
       message: label,
       child: Semantics(
         label: label,
         button: true,
-        child: Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: const Color(0xFF0E1425).withAlpha(160),
+        enabled: enabled,
+        child: Opacity(
+          opacity: enabled ? 1 : 0.45,
+          child: Material(
+            color: background,
+            shape: const CircleBorder(),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: onTap,
+              customBorder: const CircleBorder(),
+              child: SizedBox(
+                width: size,
+                height: size,
+                child: Icon(
+                  icon,
+                  size: prominent ? 26 : 21,
+                  color: foreground.withAlpha(enabled ? 230 : 170),
+                ),
+              ),
+            ),
           ),
-          child: Icon(icon, size: 22, color: Colors.white.withAlpha(220)),
         ),
       ),
     );
@@ -346,26 +592,31 @@ class _ScanStatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
     return Semantics(
       label: 'Scanner state: $label',
       child: Container(
         constraints: const BoxConstraints(minHeight: 36),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(
-          color: const Color(0xFF0E1425).withAlpha(160),
+          color: cs.surfaceContainerHigh.withAlpha(220),
           borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: cs.outlineVariant.withAlpha(130)),
+          boxShadow: const <BoxShadow>[
+            BoxShadow(color: Color(0x33000000), blurRadius: 14),
+          ],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            Icon(icon, size: 15, color: Colors.white.withAlpha(220)),
+            Icon(icon, size: 15, color: cs.primary),
             const SizedBox(width: 6),
             Text(
               label,
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
-                color: Colors.white.withAlpha(225),
+                color: cs.onSurface.withAlpha(230),
               ),
             ),
           ],

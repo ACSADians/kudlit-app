@@ -200,6 +200,9 @@ class WebTfliteBaybayinDetector implements BaybayinDetector {
   Future<void> toggleTorch({required bool enabled}) async {}
 
   @override
+  Future<void> switchCamera() async {}
+
+  @override
   void dispose() {
     _detections.close();
   }

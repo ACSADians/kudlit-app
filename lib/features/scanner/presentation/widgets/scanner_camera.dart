@@ -50,6 +50,7 @@ const int _kRequiredConsecutiveHits = 2;
 /// overlay updates are visible without thrashing the widget tree.
 ///
 typedef WebScannerCapture = Future<List<BaybayinDetection>> Function();
+typedef WebScannerSwitchCamera = Future<void> Function();
 
 enum WebScannerStatus {
   initializing,
@@ -87,6 +88,7 @@ class ScannerCamera extends ConsumerStatefulWidget {
     this.flashOn = false,
     this.onFlashToggle,
     this.onWebCaptureChanged,
+    this.onWebSwitchCameraChanged,
     this.onWebStatusChanged,
     super.key,
   });
@@ -103,6 +105,9 @@ class ScannerCamera extends ConsumerStatefulWidget {
 
   /// Provides the web-only capture function once the browser camera is ready.
   final ValueChanged<WebScannerCapture?>? onWebCaptureChanged;
+
+  /// Provides a web-only switch-camera action when more than one camera exists.
+  final ValueChanged<WebScannerSwitchCamera?>? onWebSwitchCameraChanged;
 
   /// Reports web-only camera/model state for the scan status chip.
   final ValueChanged<WebScannerStatus>? onWebStatusChanged;
@@ -199,6 +204,7 @@ class _ScannerCameraState extends ConsumerState<ScannerCamera> {
       return _WebCameraPreview(
         onDetections: widget.onDetections,
         onCaptureChanged: widget.onWebCaptureChanged,
+        onSwitchCameraChanged: widget.onWebSwitchCameraChanged,
         onStatusChanged: widget.onWebStatusChanged,
       );
     }
@@ -243,11 +249,13 @@ class _WebCameraPreview extends ConsumerStatefulWidget {
   const _WebCameraPreview({
     required this.onDetections,
     this.onCaptureChanged,
+    this.onSwitchCameraChanged,
     this.onStatusChanged,
   });
 
   final void Function(List<BaybayinDetection>) onDetections;
   final ValueChanged<WebScannerCapture?>? onCaptureChanged;
+  final ValueChanged<WebScannerSwitchCamera?>? onSwitchCameraChanged;
   final ValueChanged<WebScannerStatus>? onStatusChanged;
 
   @override
@@ -256,6 +264,9 @@ class _WebCameraPreview extends ConsumerStatefulWidget {
 
 class _WebCameraPreviewState extends ConsumerState<_WebCameraPreview> {
   CameraController? _controller;
+  List<CameraDescription> _cameras = const <CameraDescription>[];
+  int _activeCameraIndex = 0;
+  bool _switchingCamera = false;
   WebScannerStatus _status = WebScannerStatus.initializing;
   String? _message;
 
@@ -268,6 +279,7 @@ class _WebCameraPreviewState extends ConsumerState<_WebCameraPreview> {
   @override
   void dispose() {
     widget.onCaptureChanged?.call(null);
+    widget.onSwitchCameraChanged?.call(null);
     _controller?.dispose();
     super.dispose();
   }
@@ -288,26 +300,9 @@ class _WebCameraPreviewState extends ConsumerState<_WebCameraPreview> {
         return;
       }
 
-      final CameraDescription camera = cameras.firstWhere(
-        (CameraDescription c) =>
-            c.lensDirection == CameraLensDirection.back ||
-            c.lensDirection == CameraLensDirection.external,
-        orElse: () => cameras.first,
-      );
-      final CameraController controller = CameraController(
-        camera,
-        ResolutionPreset.medium,
-        enableAudio: false,
-        imageFormatGroup: ImageFormatGroup.jpeg,
-      );
-      await controller.initialize();
-      if (!mounted) {
-        await controller.dispose();
-        return;
-      }
-      _controller = controller;
-      widget.onCaptureChanged?.call(_captureAndDetect);
-      _setStatus(WebScannerStatus.ready);
+      _cameras = cameras;
+      _activeCameraIndex = _preferredCameraIndex(cameras);
+      await _initializeCamera(cameras[_activeCameraIndex]);
     } on CameraException catch (e) {
       final bool denied =
           e.code == 'CameraAccessDenied' ||
@@ -325,6 +320,74 @@ class _WebCameraPreviewState extends ConsumerState<_WebCameraPreview> {
         message:
             'Camera preview could not start. Use Gallery to test an image.',
       );
+    }
+  }
+
+  int _preferredCameraIndex(List<CameraDescription> cameras) {
+    final int preferred = cameras.indexWhere(
+      (CameraDescription c) =>
+          c.lensDirection == CameraLensDirection.back ||
+          c.lensDirection == CameraLensDirection.external,
+    );
+    return preferred == -1 ? 0 : preferred;
+  }
+
+  Future<void> _initializeCamera(CameraDescription camera) async {
+    final CameraController controller = CameraController(
+      camera,
+      ResolutionPreset.medium,
+      enableAudio: false,
+      imageFormatGroup: ImageFormatGroup.jpeg,
+    );
+    try {
+      await controller.initialize();
+    } catch (_) {
+      await controller.dispose();
+      rethrow;
+    }
+    if (!mounted) {
+      await controller.dispose();
+      return;
+    }
+
+    final CameraController? previous = _controller;
+    _controller = controller;
+    await previous?.dispose();
+
+    widget.onCaptureChanged?.call(_captureAndDetect);
+    widget.onSwitchCameraChanged?.call(
+      _cameras.length > 1 ? _switchCamera : null,
+    );
+    _setStatus(WebScannerStatus.ready);
+  }
+
+  Future<void> _switchCamera() async {
+    if (_switchingCamera || _cameras.length < 2) return;
+
+    final int previousIndex = _activeCameraIndex;
+    final int nextIndex = (_activeCameraIndex + 1) % _cameras.length;
+    _switchingCamera = true;
+    widget.onCaptureChanged?.call(null);
+    widget.onSwitchCameraChanged?.call(null);
+    _setStatus(WebScannerStatus.initializing, message: 'Switching camera...');
+
+    try {
+      await _initializeCamera(_cameras[nextIndex]);
+      _activeCameraIndex = nextIndex;
+    } catch (_) {
+      _activeCameraIndex = previousIndex;
+      if (_controller != null && _controller!.value.isInitialized) {
+        widget.onCaptureChanged?.call(_captureAndDetect);
+      }
+      _setStatus(
+        WebScannerStatus.error,
+        message: 'Camera switch failed. Try again or use Gallery.',
+      );
+    } finally {
+      _switchingCamera = false;
+      if (mounted && _cameras.length > 1) {
+        widget.onSwitchCameraChanged?.call(_switchCamera);
+      }
     }
   }
 

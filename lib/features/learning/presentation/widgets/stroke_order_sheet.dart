@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:kudlit_ph/features/learning/domain/entities/glyph_stroke.dart';
+import 'package:kudlit_ph/features/learning/presentation/widgets/baybayin_glyph_mark.dart';
 
 class StrokeOrderSheet extends StatefulWidget {
   const StrokeOrderSheet({
@@ -146,13 +147,11 @@ class _StrokeSheetTitle extends StatelessWidget {
     final TextTheme text = Theme.of(context).textTheme;
     return Row(
       children: <Widget>[
-        Text(
-          glyph,
-          style: const TextStyle(
-            fontFamily: 'Baybayin Simple TAWBID',
-            fontSize: 36,
-            height: 1,
-          ),
+        BaybayinGlyphMark(
+          glyph: glyph,
+          size: 36,
+          color: cs.onSurface,
+          boxSize: 48,
         ),
         const SizedBox(width: 10),
         Expanded(
@@ -279,6 +278,8 @@ class _StrokeOrderPainter extends CustomPainter {
   final Color completedColor;
   final Color activeColor;
 
+  static const double _canvasInset = 20;
+
   @override
   void paint(Canvas canvas, Size size) {
     if (strokes.isEmpty) return;
@@ -323,10 +324,9 @@ class _StrokeOrderPainter extends CustomPainter {
       ..strokeJoin = StrokeJoin.round
       ..style = PaintingStyle.stroke;
 
-    final Path path = Path()
-      ..moveTo(pts[0].x * size.width, pts[0].y * size.height);
+    final Path path = Path()..moveTo(_x(pts[0], size), _y(pts[0], size));
     for (int i = 1; i < count; i++) {
-      path.lineTo(pts[i].x * size.width, pts[i].y * size.height);
+      path.lineTo(_x(pts[i], size), _y(pts[i], size));
     }
     canvas.drawPath(path, paint);
   }
@@ -340,8 +340,8 @@ class _StrokeOrderPainter extends CustomPainter {
   ) {
     if (stroke.points.isEmpty) return;
     final Offset center = Offset(
-      stroke.points.first.x * size.width,
-      stroke.points.first.y * size.height,
+      _x(stroke.points.first, size),
+      _y(stroke.points.first, size),
     );
     const double r = 10;
 
@@ -376,4 +376,20 @@ class _StrokeOrderPainter extends CustomPainter {
       old.strokes != strokes ||
       old.completedColor != completedColor ||
       old.activeColor != activeColor;
+
+  double _x(GlyphPoint point, Size size) {
+    final double span = (size.width - (_canvasInset * 2)).clamp(
+      0.0,
+      double.infinity,
+    );
+    return _canvasInset + (point.x * span);
+  }
+
+  double _y(GlyphPoint point, Size size) {
+    final double span = (size.height - (_canvasInset * 2)).clamp(
+      0.0,
+      double.infinity,
+    );
+    return _canvasInset + (point.y * span);
+  }
 }

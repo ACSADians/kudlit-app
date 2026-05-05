@@ -158,6 +158,10 @@ class _LessonScaffold extends StatelessWidget {
           attemptStatus: state.attemptStatus,
           completed: state.completed,
           onContinue: onContinue,
+          showPrimaryAction:
+              state.completed ||
+              state.attemptStatus == AttemptStatus.correct ||
+              state.currentStep.mode == LessonMode.reference,
           actionLabel: _actionLabel(state),
           onRetry: onRetry,
           onAvatarTap: () => onOpenHelp(step),

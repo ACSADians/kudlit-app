@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:kudlit_ph/features/learning/domain/entities/glyph_entry.dart';
 import 'package:kudlit_ph/features/learning/presentation/providers/character_gallery_provider.dart';
+import 'package:kudlit_ph/features/learning/presentation/widgets/baybayin_glyph_mark.dart';
 import 'package:kudlit_ph/features/learning/presentation/widgets/glyph_detail_sheet.dart';
 import 'package:kudlit_ph/features/learning/presentation/widgets/learning_route_back.dart';
 
@@ -204,20 +205,17 @@ class _GalleryControls extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 10),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: <Widget>[
-              for (final _GalleryFilter filter in _kFilters) ...<Widget>[
-                ChoiceChip(
-                  label: Text(filter.label),
-                  selected: groupFilter == filter.group,
-                  onSelected: (_) => onFilterChanged(filter.group),
-                ),
-                const SizedBox(width: 8),
-              ],
-            ],
-          ),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: <Widget>[
+            for (final _GalleryFilter filter in _kFilters)
+              ChoiceChip(
+                label: Text(filter.label),
+                selected: groupFilter == filter.group,
+                onSelected: (_) => onFilterChanged(filter.group),
+              ),
+          ],
         ),
       ],
     );
@@ -348,14 +346,10 @@ class _GlyphCellContent extends StatelessWidget {
         children: <Widget>[
           Semantics(
             label: '${entry.label} glyph',
-            child: Text(
-              entry.glyph,
-              style: TextStyle(
-                fontFamily: 'Baybayin Simple TAWBID',
-                fontSize: 44,
-                height: 1,
-                color: cs.onPrimaryContainer,
-              ),
+            child: BaybayinGlyphMark(
+              glyph: entry.glyph,
+              size: 44,
+              color: cs.onPrimaryContainer,
             ),
           ),
           const SizedBox(width: 14),

@@ -65,7 +65,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final double navBottom = MediaQuery.paddingOf(context).bottom + 20;
+    final EdgeInsets safePadding = MediaQuery.paddingOf(context);
+    final double navBottom = safePadding.bottom + 20;
+    final double navRight = safePadding.right + 18;
 
     return Scaffold(
       body: Column(
@@ -80,6 +82,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 activeTab: _activeTab,
                 onTabSelected: _onTabSelected,
                 navBottom: navBottom,
+                navRight: navRight,
               ),
             ),
           ),
@@ -105,12 +108,14 @@ class _HomeBody extends StatelessWidget {
     required this.activeTab,
     required this.onTabSelected,
     required this.navBottom,
+    required this.navRight,
   });
 
   final PageController pageController;
   final AppTab activeTab;
   final ValueChanged<AppTab> onTabSelected;
   final double navBottom;
+  final double navRight;
 
   @override
   Widget build(BuildContext context) {
@@ -128,7 +133,7 @@ class _HomeBody extends StatelessWidget {
           ],
         ),
         Positioned(
-          right: 18,
+          right: navRight,
           bottom: navBottom,
           child: FloatingTabNav(
             activeTab: activeTab,
