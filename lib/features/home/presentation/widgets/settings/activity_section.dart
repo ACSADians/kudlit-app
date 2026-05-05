@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import 'package:kudlit_ph/app/constants.dart';
 import 'package:kudlit_ph/features/home/presentation/providers/profile_management_provider.dart';
+import 'package:kudlit_ph/features/translator/domain/entities/chat_memory_fact.dart';
+import 'package:kudlit_ph/features/translator/domain/entities/chat_message.dart';
+import 'package:kudlit_ph/features/translator/presentation/providers/chat_history_provider.dart';
+import 'package:kudlit_ph/features/translator/presentation/providers/chat_memory_provider.dart';
 
 import 'profile_nav_row.dart';
 import 'settings_card.dart';
@@ -25,6 +31,14 @@ class ActivitySection extends ConsumerWidget {
     final int translations = summary?.translationHistoryItems ?? 0;
     final int bookmarks = summary?.bookmarkedTranslations ?? 0;
 
+    final List<ChatMessage> chatMsgs =
+        ref.watch(chatHistoryNotifierProvider).value ?? <ChatMessage>[];
+    final List<ChatMemoryFact> facts =
+        ref.watch(chatMemoryNotifierProvider).value ?? <ChatMemoryFact>[];
+    final String? buttySubtitle = (chatMsgs.isNotEmpty || facts.isNotEmpty)
+        ? '${chatMsgs.length} msg · ${facts.length} fact${facts.length == 1 ? '' : 's'}'
+        : null;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -36,9 +50,8 @@ class ActivitySection extends ConsumerWidget {
               title: 'Learning progress',
               subtitle: 'Lessons, milestones, and streaks.',
               trailingLabel: lessons > 0 ? '$lessons done' : null,
-              isSoon: true,
               onTap: () =>
-                  onActionTap('Progress dashboard will be available soon.'),
+                  context.push(AppConstants.routeLearningProgress),
             ),
             const SettingsDivider(),
             ProfileNavRow(
@@ -46,9 +59,7 @@ class ActivitySection extends ConsumerWidget {
               title: 'Scanner history',
               subtitle: 'Prior scans and retry results.',
               trailingLabel: scans > 0 ? '$scans scans' : null,
-              isSoon: true,
-              onTap: () =>
-                  onActionTap('Scanner history will be available soon.'),
+              onTap: () => context.push(AppConstants.routeScanHistory),
             ),
             const SettingsDivider(),
             ProfileNavRow(
@@ -58,9 +69,16 @@ class ActivitySection extends ConsumerWidget {
               trailingLabel: (translations > 0 || bookmarks > 0)
                   ? '$translations · $bookmarks saved'
                   : null,
-              isSoon: true,
               onTap: () =>
-                  onActionTap('Saved translations will be available soon.'),
+                  context.push(AppConstants.routeTranslationHistory),
+            ),
+            const SettingsDivider(),
+            ProfileNavRow(
+              icon: Icons.psychology_outlined,
+              title: 'Butty chat & memory',
+              subtitle: 'Manage chat history and what Butty remembers.',
+              trailingLabel: buttySubtitle,
+              onTap: () => context.push(AppConstants.routeButtyData),
             ),
           ],
         ),

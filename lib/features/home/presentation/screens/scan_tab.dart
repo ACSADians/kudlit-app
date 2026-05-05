@@ -2,11 +2,14 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:share_plus/share_plus.dart';
 
 import 'package:kudlit_ph/core/utils/baybayify.dart';
-import 'package:kudlit_ph/features/scanner/domain/entities/baybayin_detection.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/butty_chat/butty_bubble.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/butty_chat/typing_bubble.dart';
+import 'package:kudlit_ph/features/scanner/domain/entities/baybayin_detection.dart';
+import 'package:kudlit_ph/features/scanner/domain/entities/scan_result.dart';
+import 'package:kudlit_ph/features/scanner/presentation/providers/scan_history_provider.dart';
 import 'package:kudlit_ph/features/scanner/presentation/providers/scan_tab_controller.dart';
 import 'package:kudlit_ph/features/scanner/presentation/providers/scanner_evaluation_provider.dart';
 import 'package:kudlit_ph/features/scanner/presentation/providers/scanner_provider.dart';
@@ -89,8 +92,78 @@ class ScanTab extends ConsumerWidget {
               detections: scanState.snapshot,
               onDismiss: controller.dismissResult,
             ),
+          )
+        else if (scanState.aggregatedWinner != null)
+          Positioned(
+            left: 14,
+            right: 14,
+            bottom: controlsBottom + 96,
+            child: _AggregatedWinnerBanner(
+              winner: scanState.aggregatedWinner!,
+            ),
           ),
       ],
+    );
+  }
+}
+
+// ── Aggregated winner banner ─────────────────────────────────────────────────
+
+class _AggregatedWinnerBanner extends StatelessWidget {
+  const _AggregatedWinnerBanner({required this.winner});
+
+  final String winner;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: cs.outline),
+        boxShadow: const <BoxShadow>[
+          BoxShadow(
+            color: Color(0x40000000),
+            blurRadius: 18,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: <Widget>[
+          Icon(Icons.auto_awesome_rounded, size: 16, color: cs.primary),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Text(
+                  'Settled reading',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: cs.onSurface.withAlpha(140),
+                    letterSpacing: 0.4,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  winner,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: cs.onSurface,
+                    letterSpacing: -0.15,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -344,7 +417,61 @@ class _ScanResultPanelState extends ConsumerState<_ScanResultPanel> {
               _ResultActions(
                 onCopy: perms.isEmpty
                     ? null
-                    : () => Clipboard.setData(ClipboardData(text: current)),
+                    : () async {
+                        await Clipboard.setData(
+                          ClipboardData(text: current),
+                        );
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Copied to clipboard.'),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                        }
+                      },
+                onShare: perms.isEmpty
+                    ? null
+                    : () async {
+                        final ScanEvalState evalState =
+                            ref.read(scannerEvaluationProvider);
+                        final String translation =
+                            evalState.translation.value ?? '';
+                        final StringBuffer sb = StringBuffer(
+                          'Scanned Baybayin word: $current',
+                        );
+                        if (translation.isNotEmpty) {
+                          sb
+                            ..write('\n')
+                            ..write(translation);
+                        }
+                        await SharePlus.instance.share(
+                          ShareParams(text: sb.toString()),
+                        );
+                      },
+                onSave: perms.isEmpty
+                    ? null
+                    : () {
+                        final ScanEvalState evalState =
+                            ref.read(scannerEvaluationProvider);
+                        final String translation =
+                            evalState.translation.value ?? '';
+                        ref
+                            .read(scanHistoryNotifierProvider.notifier)
+                            .addResult(
+                              ScanResult(
+                                tokens: _tokens,
+                                translation: translation,
+                                timestamp: DateTime.now(),
+                              ),
+                            );
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Saved to history.'),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      },
                 onDismiss: widget.onDismiss,
               ),
             ],
@@ -516,19 +643,28 @@ class _CyclerButton extends StatelessWidget {
 }
 
 class _ResultActions extends StatelessWidget {
-  const _ResultActions({required this.onCopy, required this.onDismiss});
+  const _ResultActions({
+    required this.onDismiss,
+    this.onCopy,
+    this.onShare,
+    this.onSave,
+  });
 
-  final VoidCallback? onCopy;
   final VoidCallback onDismiss;
+  final VoidCallback? onCopy;
+  final VoidCallback? onShare;
+  final VoidCallback? onSave;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        _ActionChip(icon: Icons.copy_rounded, onTap: onCopy ?? () {}),
+        _ActionChip(icon: Icons.copy_rounded, onTap: onCopy),
         const SizedBox(width: 6),
-        _ActionChip(icon: Icons.share_rounded, onTap: () {}),
+        _ActionChip(icon: Icons.share_rounded, onTap: onShare),
+        const SizedBox(width: 6),
+        _ActionChip(icon: Icons.bookmark_add_outlined, onTap: onSave),
         const SizedBox(width: 6),
         _ActionChip(icon: Icons.close_rounded, onTap: onDismiss),
       ],
@@ -540,22 +676,26 @@ class _ActionChip extends StatelessWidget {
   const _ActionChip({required this.icon, required this.onTap});
 
   final IconData icon;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 34,
-        height: 34,
-        decoration: BoxDecoration(
-          color: cs.surfaceContainer,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: cs.outline),
+    final bool enabled = onTap != null;
+    return Opacity(
+      opacity: enabled ? 1.0 : 0.35,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            color: cs.surfaceContainer,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: cs.outline),
+          ),
+          child: Icon(icon, size: 15, color: cs.onSurface.withAlpha(150)),
         ),
-        child: Icon(icon, size: 15, color: cs.onSurface.withAlpha(150)),
       ),
     );
   }

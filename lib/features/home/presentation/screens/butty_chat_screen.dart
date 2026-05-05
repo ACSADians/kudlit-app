@@ -19,16 +19,37 @@ class ButtyChatScreen extends ConsumerStatefulWidget {
   ConsumerState<ButtyChatScreen> createState() => _ButtyChatScreenState();
 }
 
-class _ButtyChatScreenState extends ConsumerState<ButtyChatScreen> {
+class _ButtyChatScreenState extends ConsumerState<ButtyChatScreen>
+    with WidgetsBindingObserver {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scroll = ScrollController();
   int _lastMessageCount = 0;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _controller.dispose();
     _scroll.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      // Fire-and-forget: distill any new turns into long-term memory before
+      // the OS may suspend us. The service throttles itself, so repeated
+      // pause/resume cycles do not spam the model.
+      unawaited(
+        ref.read(buttyChatControllerProvider.notifier).flushMemoryNow(),
+      );
+    }
   }
 
   void _onSendTap() {

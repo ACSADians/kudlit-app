@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import 'package:kudlit_ph/app/constants.dart';
 import 'package:kudlit_ph/core/error/failures.dart';
 import 'package:kudlit_ph/features/home/domain/entities/profile_preferences.dart';
 import 'package:kudlit_ph/features/home/domain/entities/profile_summary.dart';
@@ -105,6 +107,18 @@ class _ProfileManagementSectionState
         secondaryActionMessage: 'Bookmark flow is available soon.',
       ),
       const ProfileManagementItem(
+        id: 'butty-data',
+        icon: Icons.psychology_outlined,
+        title: 'Butty chat & memory',
+        description:
+            'Manage your chat history (synced to Supabase) and the long-term '
+            'facts Butty has learned about you. Memory survives "Start fresh" '
+            'and reinstalls.',
+        primaryActionId: 'open-butty-data',
+        primaryActionLabel: 'Manage data',
+        primaryActionMessage: 'open-butty-data',
+      ),
+      const ProfileManagementItem(
         id: 'accessibility-options',
         icon: Icons.accessibility_new_rounded,
         title: 'Accessibility options',
@@ -149,6 +163,10 @@ class _ProfileManagementSectionState
     }
     if (message == 'open-privacy-settings') {
       await _showPrivacyDialog();
+      return;
+    }
+    if (message == 'open-butty-data') {
+      context.push(AppConstants.routeButtyData);
       return;
     }
 

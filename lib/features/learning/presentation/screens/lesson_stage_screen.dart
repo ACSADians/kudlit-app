@@ -1,14 +1,17 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-import 'package:kudlit_ph/features/home/presentation/providers/app_preferences_provider.dart';
+import 'package:kudlit_ph/app/constants.dart';
+
 import 'package:kudlit_ph/features/learning/domain/entities/lesson_mode.dart';
 import 'package:kudlit_ph/features/learning/domain/entities/lesson_step.dart';
 import 'package:kudlit_ph/features/learning/presentation/providers/lesson_controller.dart';
 import 'package:kudlit_ph/features/learning/presentation/providers/lesson_state.dart';
 import 'package:kudlit_ph/features/learning/presentation/widgets/butty_coach_panel.dart';
 import 'package:kudlit_ph/features/learning/presentation/widgets/butty_help_sheet.dart';
+import 'package:kudlit_ph/features/learning/presentation/widgets/lesson_completion_overlay.dart';
 import 'package:kudlit_ph/features/learning/presentation/widgets/lesson_progress_bar.dart';
 import 'package:kudlit_ph/features/learning/presentation/widgets/lesson_top_bar.dart';
 import 'package:kudlit_ph/features/learning/presentation/widgets/modes/draw_mode_body.dart';
@@ -30,6 +33,8 @@ class _LessonStageScreenState extends ConsumerState<LessonStageScreen> {
   final GlobalKey<FreeInputModeBodyState> _freeKey =
       GlobalKey<FreeInputModeBodyState>();
 
+  bool _showCompletion = false;
+
   @override
   void initState() {
     super.initState();
@@ -49,10 +54,7 @@ class _LessonStageScreenState extends ConsumerState<LessonStageScreen> {
 
   void _handleContinue(LessonState state) {
     final LessonController ctrl = ref.read(lessonControllerProvider.notifier);
-    if (state.completed) {
-      Navigator.of(context).pop();
-      return;
-    }
+    if (state.completed) return; // overlay handles navigation
     if (state.attemptStatus == AttemptStatus.correct) {
       ctrl.next();
       return;
@@ -67,6 +69,25 @@ class _LessonStageScreenState extends ConsumerState<LessonStageScreen> {
     }
   }
 
+  void _goToNextLesson(String currentLessonId) {
+    const List<String> order = <String>[
+      'vowels-01',
+      'consonants-01',
+      'consonants-02',
+      'consonants-03',
+      'consonants-04',
+      'kudlit-01',
+    ];
+    final int idx = order.indexOf(currentLessonId);
+    if (idx >= 0 && idx < order.length - 1) {
+      context.pushReplacement(
+        '${AppConstants.routeLesson}/${order[idx + 1]}',
+      );
+    } else {
+      context.pop();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.listen<AsyncValue<LessonState?>>(
@@ -75,17 +96,14 @@ class _LessonStageScreenState extends ConsumerState<LessonStageScreen> {
         final bool wasCompleted = prev?.value?.completed ?? false;
         final bool isCompleted = next.value?.completed ?? false;
         if (!wasCompleted && isCompleted) {
-          ref
-              .read(appPreferencesNotifierProvider.notifier)
-              .completeLesson(widget.lessonId);
+          setState(() => _showCompletion = true);
         }
       },
     );
 
     final AsyncValue<LessonState?> async = ref.watch(lessonControllerProvider);
-    // Watch the drawing-pad YOLO model so it starts loading immediately and
-    // Riverpod keeps the instance alive for the duration of this screen.
     if (!kIsWeb) ref.watch(yoloDrawingPadModelProvider);
+
     return Scaffold(
       body: SafeArea(
         child: async.when(
@@ -95,12 +113,30 @@ class _LessonStageScreenState extends ConsumerState<LessonStageScreen> {
             if (data == null) {
               return const Center(child: CircularProgressIndicator());
             }
-            return _LessonScaffold(
-              state: data,
-              drawKey: _drawKey,
-              freeKey: _freeKey,
-              onOpenHelp: _openHelp,
-              onContinue: () => _handleContinue(data),
+            return Stack(
+              children: <Widget>[
+                _LessonScaffold(
+                  state: data,
+                  drawKey: _drawKey,
+                  freeKey: _freeKey,
+                  onOpenHelp: _openHelp,
+                  onContinue: () => _handleContinue(data),
+                ),
+                if (_showCompletion)
+                  LessonCompletionOverlay(
+                    lessonId: widget.lessonId,
+                    lessonTitle: data.lesson.title,
+                    score: data.score,
+                    onNext: () => _goToNextLesson(widget.lessonId),
+                    onPracticeAgain: () {
+                      setState(() => _showCompletion = false);
+                      ref
+                          .read(lessonControllerProvider.notifier)
+                          .restart();
+                    },
+                    onBack: () => context.pop(),
+                  ),
+              ],
             );
           },
         ),
@@ -132,7 +168,7 @@ class _LessonScaffold extends StatelessWidget {
         LessonTopBar(
           title: state.lesson.title,
           subtitle: state.lesson.subtitle,
-          onClose: () => Navigator.of(context).pop(),
+          onClose: () => context.pop(),
         ),
         LessonProgressBar(
           progress: state.progress,
@@ -141,11 +177,29 @@ class _LessonScaffold extends StatelessWidget {
               '${state.lesson.steps.length} — ${step.label}',
         ),
         Expanded(
-          child: _ModeSwitcher(
-            step: step,
-            status: state.attemptStatus,
-            drawKey: drawKey,
-            freeKey: freeKey,
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 280),
+            transitionBuilder: (Widget child, Animation<double> anim) {
+              return FadeTransition(
+                opacity: anim,
+                child: SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0.06, 0),
+                    end: Offset.zero,
+                  ).animate(
+                    CurvedAnimation(parent: anim, curve: Curves.easeOutCubic),
+                  ),
+                  child: child,
+                ),
+              );
+            },
+            child: _ModeSwitcher(
+              key: ValueKey<String>(step.id),
+              step: step,
+              status: state.attemptStatus,
+              drawKey: drawKey,
+              freeKey: freeKey,
+            ),
           ),
         ),
         ButtyCoachPanel(
@@ -163,6 +217,7 @@ class _LessonScaffold extends StatelessWidget {
 
 class _ModeSwitcher extends StatelessWidget {
   const _ModeSwitcher({
+    super.key,
     required this.step,
     required this.status,
     required this.drawKey,
@@ -209,7 +264,7 @@ class _ErrorView extends StatelessWidget {
             Text(message, textAlign: TextAlign.center),
             const SizedBox(height: 16),
             FilledButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => context.pop(),
               child: const Text('Back'),
             ),
           ],

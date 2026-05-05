@@ -248,6 +248,33 @@ class _YoloModelLoadingState implements Exception {
   const _YoloModelLoadingState();
 }
 
+/// A pre-loaded [YOLO] instance for the camera scope.
+///
+/// Used for single-image (gallery) inference in [ScanTabController].
+/// Shares the same downloaded model file as the live camera view so no
+/// additional download is triggered.
+final yoloCameraModelProvider = FutureProvider<YOLO>((Ref ref) async {
+  if (kIsWeb) throw UnsupportedError('YOLO is not available on web.');
+
+  final String modelPath = await ref.watch(
+    yoloModelPathProvider(YoloModelScope.camera).future,
+  );
+
+  ref.keepAlive();
+
+  final YOLO yolo = YOLO(
+    modelPath: modelPath,
+    task: YOLOTask.detect,
+    useGpu: false,
+    useMultiInstance: true,
+  );
+  await yolo.loadModel();
+
+  ref.onDispose(yolo.dispose);
+
+  return yolo;
+});
+
 /// A pre-loaded [YOLO] instance for the drawing pad scope.
 ///
 /// Watching or reading this provider triggers model download (via

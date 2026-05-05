@@ -1,9 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:kudlit_ph/core/utils/baybayify.dart';
+import 'package:kudlit_ph/features/home/domain/entities/translation_result.dart';
 import 'package:kudlit_ph/features/home/presentation/providers/app_preferences_provider.dart';
 import 'package:kudlit_ph/features/home/presentation/providers/translate_page_controller.dart';
+import 'package:kudlit_ph/features/home/presentation/providers/translation_history_provider.dart';
 import 'package:kudlit_ph/features/learning/domain/entities/gemma_prompts.dart';
 import 'package:kudlit_ph/features/translator/domain/entities/chat_message.dart';
 import 'package:kudlit_ph/features/translator/presentation/providers/translator_providers.dart';
@@ -77,18 +81,24 @@ class TranslateTextController extends Notifier<TranslateTextState> {
   static final RegExp _numberPattern = RegExp(r'[0-9]');
   static final RegExp _punctuationPattern = RegExp(r'[!-/:-@[-`{-~]');
   static final RegExp _unsupportedPattern = RegExp(
-    r'[^A-Za-z0-9\s\u00F1\u00D1\u1700-\u171F]',
+    r'[^A-Za-z0-9\sñÑᜀ-ᜟ]',
   );
-  static final RegExp _baybayinPattern = RegExp(r'[\u1700-\u171F]');
+  static final RegExp _baybayinPattern = RegExp(r'[ᜀ-ᜟ]');
+
+  Timer? _saveDebounce;
 
   @override
-  TranslateTextState build() => const TranslateTextState.initial();
+  TranslateTextState build() {
+    ref.onDispose(() => _saveDebounce?.cancel());
+    return const TranslateTextState.initial();
+  }
 
   void setInput(String value) {
     state = _deriveState(
       inputText: value,
       latinToBaybayin: state.latinToBaybayin,
     );
+    _scheduleAutoSave();
   }
 
   void setDirection(bool latinToBaybayin) {
@@ -96,10 +106,39 @@ class TranslateTextController extends Notifier<TranslateTextState> {
       inputText: state.inputText,
       latinToBaybayin: latinToBaybayin,
     );
+    _scheduleAutoSave();
   }
 
   void clearInput() {
+    _saveDebounce?.cancel();
     state = const TranslateTextState.initial();
+  }
+
+  void _scheduleAutoSave() {
+    _saveDebounce?.cancel();
+    _saveDebounce = Timer(const Duration(milliseconds: 1500), _doAutoSave);
+  }
+
+  void _doAutoSave() {
+    final TranslateTextState s = state;
+    if (s.baybayinText.isEmpty && s.latinText.isEmpty) return;
+    unawaited(
+      ref
+          .read(translationHistoryNotifierProvider.notifier)
+          .addResult(
+            TranslationResult(
+              inputText: s.inputText.trim(),
+              baybayinText: s.baybayinText,
+              latinText: s.latinText,
+              direction: s.latinToBaybayin
+                  ? 'latin_to_baybayin'
+                  : 'baybayin_to_latin',
+              aiResponse: '',
+              isBookmarked: false,
+              timestamp: DateTime.now(),
+            ),
+          ),
+    );
   }
 
   Future<void> explain() async {
@@ -250,6 +289,13 @@ class TranslateTextController extends Notifier<TranslateTextState> {
         aiResponse: buffer.toString(),
         aiSource: source,
       );
+      if (buffer.isNotEmpty) {
+        unawaited(
+          ref
+              .read(translationHistoryNotifierProvider.notifier)
+              .updateLastAiResponse(buffer.toString()),
+        );
+      }
     } catch (error) {
       state = state.copyWith(
         aiBusy: false,
