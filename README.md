@@ -6,7 +6,7 @@ Kudlit is a vision-based Baybayin translator and learning app built in Flutter. 
 
 - App shell and auth flow use a shared Flutter design-system layer under `lib/core/design_system/`.
 - The bundled Baybayin display font and reference assets are copied into `assets/fonts/` and `assets/brand/` for normal Flutter usage.
-- The current home screen is a branded placeholder derived from the mobile UI kit while feature work for scanner, translator, and lessons continues.
+- The home shell, scanner, translator, and learning surfaces are active Flutter feature slices using the shared Kudlit visual system.
 - The original design-system source remains in [`Kudlit Design System/`](<Kudlit Design System/>) for previews, reference JSX, and asset provenance.
 
 ## Tech Stack
@@ -71,7 +71,7 @@ The app follows feature-first clean architecture:
 Current feature intent:
 
 - `auth`: implemented and now wrapped in the branded Kudlit auth shell
-- `scanner`: planned camera and image-upload recognition flow
+- `scanner`: native live YOLO scanning plus web webcam preview with capture-based TFLite detection from the active vision model URL
 - `translator`: planned Baybayin transliteration and Gemma-assisted interpretation
 - `learn`: planned lessons, quizzes, and reference content
 

@@ -9,6 +9,30 @@ import 'package:kudlit_ph/features/scanner/presentation/providers/scanner_evalua
 import 'package:kudlit_ph/features/scanner/presentation/providers/scanner_provider.dart';
 
 @immutable
+class ScanNotice {
+  const ScanNotice({
+    required this.title,
+    required this.message,
+    required this.kind,
+  });
+
+  final String title;
+  final String message;
+  final ScanNoticeKind kind;
+}
+
+enum ScanNoticeKind { info, warning, error }
+
+class ScanCaptureException implements Exception {
+  const ScanCaptureException(this.notice);
+
+  final ScanNotice notice;
+
+  @override
+  String toString() => '${notice.title}: ${notice.message}';
+}
+
+@immutable
 class ScanTabState {
   const ScanTabState({
     required this.resultVisible,
@@ -17,6 +41,7 @@ class ScanTabState {
     required this.isLoadingImage,
     required this.detectionsFrozen,
     required this.snapshot,
+    this.scanNotice,
   });
 
   const ScanTabState.initial()
@@ -27,6 +52,7 @@ class ScanTabState {
         isLoadingImage: false,
         detectionsFrozen: false,
         snapshot: const <BaybayinDetection>[],
+        scanNotice: null,
       );
 
   final bool resultVisible;
@@ -35,6 +61,7 @@ class ScanTabState {
   final bool isLoadingImage;
   final bool detectionsFrozen;
   final List<BaybayinDetection> snapshot;
+  final ScanNotice? scanNotice;
 
   ScanTabState copyWith({
     bool? resultVisible,
@@ -44,6 +71,8 @@ class ScanTabState {
     bool? isLoadingImage,
     bool? detectionsFrozen,
     List<BaybayinDetection>? snapshot,
+    ScanNotice? scanNotice,
+    bool clearScanNotice = false,
   }) {
     return ScanTabState(
       resultVisible: resultVisible ?? this.resultVisible,
@@ -54,15 +83,15 @@ class ScanTabState {
       isLoadingImage: isLoadingImage ?? this.isLoadingImage,
       detectionsFrozen: detectionsFrozen ?? this.detectionsFrozen,
       snapshot: snapshot ?? this.snapshot,
+      scanNotice: clearScanNotice ? null : (scanNotice ?? this.scanNotice),
     );
   }
 }
 
 final NotifierProvider<ScanTabController, ScanTabState>
-scanTabControllerProvider =
-    NotifierProvider<ScanTabController, ScanTabState>(
-      ScanTabController.new,
-    );
+scanTabControllerProvider = NotifierProvider<ScanTabController, ScanTabState>(
+  ScanTabController.new,
+);
 
 class ScanTabController extends Notifier<ScanTabState> {
   @override
@@ -81,12 +110,13 @@ class ScanTabController extends Notifier<ScanTabState> {
       return;
     }
 
-    state = state.copyWith(isLoadingImage: true);
+    state = state.copyWith(isLoadingImage: true, clearScanNotice: true);
     final Uint8List bytes = await image.readAsBytes();
     state = state.copyWith(
       selectedImageBytes: bytes,
       isLoadingImage: false,
       resultVisible: true,
+      clearScanNotice: true,
     );
 
     final List<BaybayinDetection> results = await ref
@@ -94,16 +124,86 @@ class ScanTabController extends Notifier<ScanTabState> {
         .detectImage(bytes);
 
     ref.read(scannerNotifierProvider.notifier).update(results);
-    ref.read(scannerEvaluationProvider.notifier).evaluate(results, bytes);
+    _evaluateSafely(results, bytes);
     state = state.copyWith(snapshot: List<BaybayinDetection>.of(results));
   }
 
+  Future<void> captureWebFrame(
+    Future<List<BaybayinDetection>> Function() capture,
+  ) async {
+    state = state.copyWith(
+      isLoadingImage: true,
+      resultVisible: false,
+      clearSelectedImage: true,
+      snapshot: const <BaybayinDetection>[],
+      clearScanNotice: true,
+    );
+
+    try {
+      final List<BaybayinDetection> results = await capture();
+      ref.read(scannerNotifierProvider.notifier).update(results);
+      if (results.isNotEmpty) {
+        _evaluateSafely(results, null);
+      }
+      state = state.copyWith(
+        isLoadingImage: false,
+        resultVisible: results.isNotEmpty,
+        snapshot: List<BaybayinDetection>.of(results),
+        scanNotice: results.isEmpty
+            ? const ScanNotice(
+                title: 'No glyphs detected',
+                message:
+                    'Keep the Baybayin text centered and well lit, then capture again.',
+                kind: ScanNoticeKind.warning,
+              )
+            : null,
+        clearScanNotice: results.isNotEmpty,
+      );
+    } on ScanCaptureException catch (e) {
+      ref.read(scannerNotifierProvider.notifier).clear();
+      state = state.copyWith(
+        isLoadingImage: false,
+        resultVisible: false,
+        snapshot: const <BaybayinDetection>[],
+        scanNotice: e.notice,
+      );
+    } catch (_) {
+      ref.read(scannerNotifierProvider.notifier).clear();
+      state = state.copyWith(
+        isLoadingImage: false,
+        resultVisible: false,
+        snapshot: const <BaybayinDetection>[],
+        scanNotice: const ScanNotice(
+          title: 'Capture failed',
+          message: 'Try again or use Gallery to test an image.',
+          kind: ScanNoticeKind.error,
+        ),
+      );
+    }
+  }
+
   void onShutterTapped() {
-    final List<BaybayinDetection> detections = ref.read(scannerNotifierProvider);
+    final List<BaybayinDetection> detections = ref.read(
+      scannerNotifierProvider,
+    );
     if (state.resultVisible) {
       state = state.copyWith(
         resultVisible: false,
         snapshot: const <BaybayinDetection>[],
+        clearScanNotice: true,
+      );
+      return;
+    }
+
+    if (detections.isEmpty) {
+      state = state.copyWith(
+        resultVisible: false,
+        snapshot: const <BaybayinDetection>[],
+        scanNotice: const ScanNotice(
+          title: 'No glyphs detected',
+          message: 'Frame one or more Baybayin glyphs before capturing.',
+          kind: ScanNoticeKind.warning,
+        ),
       );
       return;
     }
@@ -111,10 +211,9 @@ class ScanTabController extends Notifier<ScanTabState> {
     state = state.copyWith(
       resultVisible: true,
       snapshot: List<BaybayinDetection>.of(detections),
+      clearScanNotice: true,
     );
-    ref
-        .read(scannerEvaluationProvider.notifier)
-        .evaluate(detections, state.selectedImageBytes);
+    _evaluateSafely(detections, state.selectedImageBytes);
   }
 
   void applyLiveDetections(List<BaybayinDetection> detections) {
@@ -133,6 +232,7 @@ class ScanTabController extends Notifier<ScanTabState> {
     state = state.copyWith(
       resultVisible: false,
       snapshot: const <BaybayinDetection>[],
+      clearScanNotice: true,
     );
   }
 
@@ -142,7 +242,31 @@ class ScanTabController extends Notifier<ScanTabState> {
       clearSelectedImage: true,
       resultVisible: false,
       snapshot: const <BaybayinDetection>[],
+      clearScanNotice: true,
     );
+  }
+
+  void showNotice(ScanNotice notice) {
+    state = state.copyWith(scanNotice: notice, resultVisible: false);
+  }
+
+  void clearNotice() {
+    state = state.copyWith(clearScanNotice: true);
+  }
+
+  void _evaluateSafely(
+    List<BaybayinDetection> detections,
+    Uint8List? imageBytes,
+  ) {
+    try {
+      ref
+          .read(scannerEvaluationProvider.notifier)
+          .evaluate(detections, imageBytes);
+    } catch (_) {
+      // The OCR result should remain usable even when the optional AI
+      // explanation path is unavailable in tests, offline, or unauthenticated
+      // web sessions.
+    }
   }
 
   void setDetectionsFrozen(bool value) {

@@ -19,11 +19,29 @@ import 'package:kudlit_ph/features/scanner/presentation/widgets/yolo_model_dropd
 ///
 /// Embeds [ScannerCamera] (which owns the YOLO inference), reads the latest
 /// detections from [ScannerNotifier], and renders the controls + result panel.
-class ScanTab extends ConsumerWidget {
+class ScanTab extends ConsumerStatefulWidget {
   const ScanTab({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ScanTab> createState() => _ScanTabState();
+}
+
+class _ScanTabState extends ConsumerState<ScanTab> {
+  WebScannerCapture? _webCapture;
+  WebScannerStatus _webStatus = WebScannerStatus.initializing;
+
+  void _setWebCapture(WebScannerCapture? capture) {
+    if (_webCapture == capture) return;
+    setState(() => _webCapture = capture);
+  }
+
+  void _setWebStatus(WebScannerStatus status) {
+    if (_webStatus == status) return;
+    setState(() => _webStatus = status);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final ScanTabController controller = ref.read(
       scanTabControllerProvider.notifier,
     );
@@ -43,6 +61,8 @@ class ScanTab extends ConsumerWidget {
           onDetections: controller.applyLiveDetections,
           onFlashToggle: kIsWeb ? null : () => controller.toggleFlash(),
           selectedImageBytes: scanState.selectedImageBytes,
+          onWebCaptureChanged: _setWebCapture,
+          onWebStatusChanged: _setWebStatus,
           onPermutationsTap: (List<String> permutations) async {
             controller.setDetectionsFrozen(true);
             await showDialog<void>(
@@ -65,12 +85,12 @@ class ScanTab extends ConsumerWidget {
                 label: scanState.selectedImageBytes != null
                     ? 'Image preview'
                     : kIsWeb
-                    ? 'Upload image'
+                    ? _webStatus.label
                     : 'Camera ready',
                 icon: scanState.selectedImageBytes != null
                     ? Icons.image_outlined
                     : kIsWeb
-                    ? Icons.photo_library_outlined
+                    ? _webStatus.icon
                     : Icons.camera_alt_outlined,
               ),
             ),
@@ -97,11 +117,30 @@ class ScanTab extends ConsumerWidget {
           bottom: controlsBottom,
           child: _ScanControls(
             flashOn: scanState.flashOn,
-            onShutter: controller.onShutterTapped,
+            onShutter: kIsWeb
+                ? (_webCapture == null || scanState.isLoadingImage
+                      ? null
+                      : () => controller.captureWebFrame(_webCapture!))
+                : controller.onShutterTapped,
+            shutterLabel: kIsWeb ? 'Capture Webcam Frame' : 'Capture Scan',
             onFlashToggle: kIsWeb ? null : () => controller.toggleFlash(),
             onGalleryTap: () => controller.pickImageFromGallery(),
           ),
         ),
+        if (scanState.scanNotice != null)
+          Positioned(
+            left: 14,
+            right: 14,
+            bottom: controlsBottom + 96,
+            child: _ScanNoticePanel(
+              notice: scanState.scanNotice!,
+              onTryAgain: _webCapture == null || scanState.isLoadingImage
+                  ? null
+                  : () => controller.captureWebFrame(_webCapture!),
+              onGalleryTap: () => controller.pickImageFromGallery(),
+              onDismiss: controller.clearNotice,
+            ),
+          ),
         if (scanState.resultVisible)
           Positioned(
             left: 14,
@@ -126,6 +165,8 @@ class _ScanCameraStack extends StatelessWidget {
     required this.onDetections,
     required this.onFlashToggle,
     required this.onPermutationsTap,
+    this.onWebCaptureChanged,
+    this.onWebStatusChanged,
     this.selectedImageBytes,
   });
 
@@ -133,6 +174,8 @@ class _ScanCameraStack extends StatelessWidget {
   final bool flashOn;
   final void Function(List<BaybayinDetection>) onDetections;
   final VoidCallback? onFlashToggle;
+  final ValueChanged<WebScannerCapture?>? onWebCaptureChanged;
+  final ValueChanged<WebScannerStatus>? onWebStatusChanged;
   final Uint8List? selectedImageBytes;
   final void Function(List<String> permutations) onPermutationsTap;
 
@@ -148,6 +191,8 @@ class _ScanCameraStack extends StatelessWidget {
             flashOn: flashOn,
             onDetections: onDetections,
             onFlashToggle: onFlashToggle,
+            onWebCaptureChanged: onWebCaptureChanged,
+            onWebStatusChanged: onWebStatusChanged,
           ),
         AggregatedBoundingBox(
           detections: detections,
@@ -164,12 +209,14 @@ class _ScanControls extends StatelessWidget {
   const _ScanControls({
     required this.flashOn,
     required this.onShutter,
+    required this.shutterLabel,
     required this.onFlashToggle,
     required this.onGalleryTap,
   });
 
   final bool flashOn;
-  final VoidCallback onShutter;
+  final VoidCallback? onShutter;
+  final String shutterLabel;
   final VoidCallback? onFlashToggle;
   final VoidCallback onGalleryTap;
 
@@ -210,7 +257,7 @@ class _ScanControls extends StatelessWidget {
               ),
             ),
           ),
-          _ShutterButton(onTap: onShutter),
+          _ShutterButton(onTap: onShutter, label: shutterLabel),
         ],
       ),
     );
@@ -245,17 +292,19 @@ class _ControlIcon extends StatelessWidget {
 }
 
 class _ShutterButton extends StatelessWidget {
-  const _ShutterButton({required this.onTap});
+  const _ShutterButton({required this.onTap, required this.label});
 
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
     return Tooltip(
-      message: 'Capture Scan',
+      message: label,
       child: Semantics(
-        label: 'Capture Scan',
+        label: label,
         button: true,
+        enabled: onTap != null,
         child: GestureDetector(
           onTap: onTap,
           child: Container(
@@ -265,7 +314,7 @@ class _ShutterButton extends StatelessWidget {
               shape: BoxShape.circle,
               color: const Color(0xFF0E1425).withAlpha(100),
               border: Border.all(
-                color: Colors.white.withAlpha(180),
+                color: Colors.white.withAlpha(onTap == null ? 80 : 180),
                 width: 2.5,
               ),
             ),
@@ -273,10 +322,10 @@ class _ShutterButton extends StatelessWidget {
               child: Container(
                 width: 56,
                 height: 56,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.white,
-                  boxShadow: <BoxShadow>[
+                  color: Colors.white.withAlpha(onTap == null ? 130 : 255),
+                  boxShadow: const <BoxShadow>[
                     BoxShadow(color: Color(0x4D7AAAFF), blurRadius: 18),
                   ],
                 ),
@@ -327,6 +376,204 @@ class _ScanStatusChip extends StatelessWidget {
 }
 
 // ── Result panel ──────────────────────────────────────────────────────────────
+
+class _ScanNoticePanel extends StatelessWidget {
+  const _ScanNoticePanel({
+    required this.notice,
+    required this.onGalleryTap,
+    required this.onDismiss,
+    this.onTryAgain,
+  });
+
+  final ScanNotice notice;
+  final VoidCallback? onTryAgain;
+  final VoidCallback onGalleryTap;
+  final VoidCallback onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    final Color accent = switch (notice.kind) {
+      ScanNoticeKind.info => cs.primary,
+      ScanNoticeKind.warning => cs.tertiary,
+      ScanNoticeKind.error => cs.error,
+    };
+
+    return Semantics(
+      liveRegion: true,
+      label: '${notice.title}. ${notice.message}',
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+        decoration: BoxDecoration(
+          color: cs.surfaceContainerHigh,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: accent.withAlpha(120)),
+          boxShadow: const <BoxShadow>[
+            BoxShadow(
+              color: Color(0x59000000),
+              blurRadius: 24,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Container(
+                  width: 34,
+                  height: 34,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: accent.withAlpha(26),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    notice.kind == ScanNoticeKind.error
+                        ? Icons.error_outline_rounded
+                        : Icons.info_outline_rounded,
+                    size: 18,
+                    color: accent,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        notice.title,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          color: cs.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        notice.message,
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          height: 1.35,
+                          color: cs.onSurface.withAlpha(170),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                _ActionChip(
+                  icon: Icons.close_rounded,
+                  label: 'Dismiss scanner message',
+                  onTap: onDismiss,
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: _NoticeButton(
+                    icon: Icons.image_outlined,
+                    label: 'Use Gallery',
+                    onTap: onGalleryTap,
+                    filled: true,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _NoticeButton(
+                    icon: Icons.center_focus_strong_rounded,
+                    label: 'Try Again',
+                    onTap: onTryAgain,
+                    filled: false,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NoticeButton extends StatelessWidget {
+  const _NoticeButton({
+    required this.icon,
+    required this.label,
+    required this.filled,
+    this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool filled;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    final Color background = filled ? cs.primary : cs.surfaceContainer;
+    final Color foreground = filled ? cs.onPrimary : cs.onSurface;
+    return Tooltip(
+      message: label,
+      child: Semantics(
+        button: true,
+        enabled: onTap != null,
+        label: label,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(10),
+          child: Container(
+            height: 44,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: onTap == null ? cs.surfaceContainer : background,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: onTap == null
+                    ? cs.outline.withAlpha(90)
+                    : filled
+                    ? cs.primary
+                    : cs.outline,
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Icon(
+                  icon,
+                  size: 16,
+                  color: onTap == null
+                      ? cs.onSurface.withAlpha(100)
+                      : foreground,
+                ),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    label,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w800,
+                      color: onTap == null
+                          ? cs.onSurface.withAlpha(100)
+                          : foreground,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 class _ScanResultPanel extends ConsumerStatefulWidget {
   const _ScanResultPanel({required this.detections, required this.onDismiss});
