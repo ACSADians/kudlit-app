@@ -16,10 +16,4 @@ abstract interface class ProfileManagementRepository {
   Future<Either<Failure, Unit>> savePreferences({
     required ProfilePreferences preferences,
   });
-
-  Future<Either<Failure, Unit>> saveLessonProgress({
-    required String lessonId,
-    required bool completed,
-    required int score,
-  });
 }

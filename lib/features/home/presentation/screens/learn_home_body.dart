@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:kudlit_ph/features/home/presentation/providers/app_preferences_provider.dart';
 import 'package:kudlit_ph/features/home/presentation/providers/streak_provider.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/learn_home/butty_talk_card.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/learn_home/learn_section_label.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/learn_home/lesson_card.dart';
+import 'package:kudlit_ph/features/learning/domain/entities/lesson_progress.dart';
+import 'package:kudlit_ph/features/learning/presentation/providers/lesson_progress_provider.dart';
 
 const List<String> _lessonOrder = <String>[
   'vowels-01',
@@ -34,21 +35,21 @@ class LearnHomeBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final Set<String> completed = ref
-        .watch(appPreferencesNotifierProvider)
-        .maybeWhen(
-          data: (AppPreferences p) => p.completedLessons,
-          orElse: () => const <String>{},
-        );
+    final Map<String, LessonProgress> progressMap = ref
+        .watch(lessonProgressNotifierProvider)
+        .value ?? <String, LessonProgress>{};
 
     final int streakCount = ref.watch(streakProvider).value ?? 0;
 
     bool locked(int lessonIndex) {
       if (lessonIndex == 0) return false;
-      return !completed.contains(_lessonOrder[lessonIndex - 1]);
+      return progressMap[_lessonOrder[lessonIndex - 1]]?.status !=
+          LessonStatus.completed;
     }
 
-    final bool hasCompletedAny = completed.isNotEmpty;
+    final bool hasCompletedAny = progressMap.values.any(
+      (LessonProgress p) => p.status == LessonStatus.completed,
+    );
 
     return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(16, 20, 16, bottomPad + 16),
@@ -76,6 +77,7 @@ class LearnHomeBody extends ConsumerWidget {
               ('o', 'O / U'),
             ],
             isLocked: locked(0),
+            progress: progressMap['vowels-01'],
             onStart: () => onStartLesson('vowels-01'),
           ),
           const SizedBox(height: 8),
@@ -90,6 +92,7 @@ class LearnHomeBody extends ConsumerWidget {
               ('g+', 'GA'),
             ],
             isLocked: locked(1),
+            progress: progressMap['consonants-01'],
             onStart: () => onStartLesson('consonants-01'),
           ),
           const SizedBox(height: 8),
@@ -104,6 +107,7 @@ class LearnHomeBody extends ConsumerWidget {
               ('n+', 'NA'),
             ],
             isLocked: locked(2),
+            progress: progressMap['consonants-02'],
             onStart: () => onStartLesson('consonants-02'),
           ),
           const SizedBox(height: 8),
@@ -118,6 +122,7 @@ class LearnHomeBody extends ConsumerWidget {
               ('t+', 'TA'),
             ],
             isLocked: locked(3),
+            progress: progressMap['consonants-03'],
             onStart: () => onStartLesson('consonants-03'),
           ),
           const SizedBox(height: 8),
@@ -130,6 +135,7 @@ class LearnHomeBody extends ConsumerWidget {
               ('y+', 'YA'),
             ],
             isLocked: locked(4),
+            progress: progressMap['consonants-04'],
             onStart: () => onStartLesson('consonants-04'),
           ),
           const SizedBox(height: 8),
@@ -143,6 +149,7 @@ class LearnHomeBody extends ConsumerWidget {
               ('bo', 'BO/BU'),
             ],
             isLocked: locked(5),
+            progress: progressMap['kudlit-01'],
             onStart: () => onStartLesson('kudlit-01'),
           ),
         ],

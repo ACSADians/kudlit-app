@@ -2,18 +2,19 @@
 import 'dart:async';
 
 import 'package:flutter/painting.dart' show Offset;
-import 'package:flutter/foundation.dart' show Uint8List, debugPrint;
+import 'package:flutter/foundation.dart' show Uint8List;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import 'package:kudlit_ph/core/error/failures.dart';
-import 'package:kudlit_ph/features/home/presentation/providers/profile_management_provider.dart';
 import 'package:kudlit_ph/features/learning/domain/entities/gemma_prompts.dart';
 import 'package:kudlit_ph/features/learning/domain/entities/lesson.dart';
 import 'package:kudlit_ph/features/learning/domain/entities/lesson_mode.dart';
+import 'package:kudlit_ph/features/learning/domain/entities/lesson_progress.dart';
 import 'package:kudlit_ph/features/learning/domain/entities/lesson_step.dart';
 import 'package:kudlit_ph/features/learning/domain/usecases/load_lesson.dart';
+import 'package:kudlit_ph/features/learning/presentation/providers/lesson_progress_provider.dart';
 import 'package:kudlit_ph/features/learning/presentation/providers/lesson_repository_provider.dart';
 import 'package:kudlit_ph/features/learning/presentation/providers/lesson_state.dart';
 import 'package:kudlit_ph/features/translator/domain/entities/chat_message.dart';
@@ -39,15 +40,24 @@ class LessonController extends _$LessonController {
         _failureToException(failure),
         StackTrace.current,
       ),
-      (Lesson lesson) => AsyncData<LessonState?>(
-        LessonState(
-          lesson: lesson,
-          currentStepIndex: 0,
-          attemptStatus: AttemptStatus.idle,
-          buttyMessage: _introFor(lesson.steps.first),
-          completed: false,
-        ),
-      ),
+      (Lesson lesson) {
+        final LessonProgress? saved = ref
+            .read(lessonProgressNotifierProvider.notifier)
+            .forLesson(lessonId);
+        final int startIndex =
+            (saved != null && !saved.completed && lesson.steps.isNotEmpty)
+                ? saved.currentStepIndex.clamp(0, lesson.steps.length - 1)
+                : 0;
+        return AsyncData<LessonState?>(
+          LessonState(
+            lesson: lesson,
+            currentStepIndex: startIndex,
+            attemptStatus: AttemptStatus.idle,
+            buttyMessage: _introFor(lesson.steps[startIndex]),
+            completed: false,
+          ),
+        );
+      },
     );
   }
 
@@ -226,7 +236,19 @@ class LessonController extends _$LessonController {
         buttyMessage: 'Lesson complete. Magaling!',
       );
       state = AsyncData<LessonState?>(completed);
-      unawaited(_saveLessonProgress(completed));
+      unawaited(
+        ref.read(lessonProgressNotifierProvider.notifier).saveProgress(
+          LessonProgress(
+            lessonId: completed.lesson.id,
+            currentStepIndex: completed.lesson.steps.length,
+            totalSteps: completed.lesson.steps.length,
+            completed: true,
+            score: completed.score,
+            lastModified: DateTime.now(),
+            completedAt: DateTime.now(),
+          ),
+        ),
+      );
       return;
     }
     final LessonStep nextStep = current.lesson.steps[nextIndex];
@@ -235,6 +257,18 @@ class LessonController extends _$LessonController {
         currentStepIndex: nextIndex,
         attemptStatus: AttemptStatus.idle,
         buttyMessage: _introFor(nextStep),
+      ),
+    );
+    unawaited(
+      ref.read(lessonProgressNotifierProvider.notifier).saveProgress(
+        LessonProgress(
+          lessonId: current.lesson.id,
+          currentStepIndex: nextIndex,
+          totalSteps: current.lesson.steps.length,
+          completed: false,
+          score: 0,
+          lastModified: DateTime.now(),
+        ),
       ),
     );
   }
@@ -250,21 +284,30 @@ class LessonController extends _$LessonController {
     );
   }
 
-  Future<void> _saveLessonProgress(LessonState completed) async {
-    try {
-      await ref
-          .read(profileManagementRepositoryProvider)
-          .saveLessonProgress(
-            lessonId: completed.lesson.id,
-            completed: true,
-            score: completed.score,
-          );
-      debugPrint(
-        '[LessonController] progress saved: ${completed.lesson.id} score=${completed.score}',
-      );
-    } catch (e) {
-      debugPrint('[LessonController] progress save failed (non-fatal): $e');
-    }
+  void restart() {
+    final LessonState? current = state.value;
+    if (current == null) return;
+    unawaited(
+      ref.read(lessonProgressNotifierProvider.notifier).saveProgress(
+        LessonProgress(
+          lessonId: current.lesson.id,
+          currentStepIndex: 0,
+          totalSteps: current.lesson.steps.length,
+          completed: false,
+          score: 0,
+          lastModified: DateTime.now(),
+        ),
+      ),
+    );
+    state = AsyncData<LessonState?>(
+      LessonState(
+        lesson: current.lesson,
+        currentStepIndex: 0,
+        attemptStatus: AttemptStatus.idle,
+        buttyMessage: _introFor(current.lesson.steps.first),
+        completed: false,
+      ),
+    );
   }
 
   static String _introFor(LessonStep step) {

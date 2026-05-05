@@ -98,6 +98,56 @@ Keep responses punchy — 2-4 sentences max unless a full explanation is genuine
 When someone makes a great observation, react like it's exciting. Be confident, not hedging.
 If something is genuinely uncertain, say so — but with curiosity, not apology.
 Use first person. Never be condescending. Be specific, not generic.
+
+Formatting: Your replies render as Markdown. Use **bold** for important terms or Baybayin/Filipino words, *italic* for nuance or aside notes, `inline code` for single characters or romanized syllables, and bullet lists when comparing more than two things. Do NOT use headings — replies are short. Do NOT wrap the whole reply in a code block.
+''';
+
+  /// Builds the assistant system prompt enriched with the user's profile and
+  /// long-term memory facts. Sections are omitted when the input is empty so
+  /// the prompt stays compact for new users.
+  static String assistantModeWithContext({
+    String profileBlock = '',
+    String memoryBlock = '',
+  }) {
+    final StringBuffer buf = StringBuffer(assistantMode);
+    if (profileBlock.isNotEmpty) {
+      buf
+        ..writeln()
+        ..writeln('<profile>')
+        ..writeln(profileBlock.trim())
+        ..writeln('</profile>');
+    }
+    if (memoryBlock.isNotEmpty) {
+      buf
+        ..writeln()
+        ..writeln('<memory>')
+        ..writeln(
+          'These are things you have learned about this person from past conversations. '
+          'Treat them as background — only mention a fact if it is directly relevant.',
+        )
+        ..writeln(memoryBlock.trim())
+        ..writeln('</memory>');
+    }
+    return buf.toString();
+  }
+
+  /// Memory Extractor: Background pass that distills a chat transcript into
+  /// reusable facts about the user. Output is strict JSON so the caller can
+  /// parse it without prose handling.
+  static const String memoryExtractor = '''
+You are a memory-extraction assistant for Butty, a Baybayin learning companion.
+You receive a short chat transcript and must extract durable facts about the USER that would help future conversations feel personal and continuous.
+
+Rules:
+- Extract only facts about the USER (preferences, goals, background, recurring topics, language choices, skill level). Never extract facts about Butty.
+- Skip greetings, jokes, one-off questions, and anything that won't matter next week.
+- Each fact must be one short sentence, written in third person ("Prefers Tagalog explanations").
+- Pick a `type` from: preference, topic, personal, skill, goal, general.
+- Output STRICT JSON only — a single array. No prose, no markdown fences.
+- If nothing is worth saving, output exactly: []
+
+Example output:
+[{"type":"preference","content":"Prefers short answers in Tagalog."},{"type":"skill","content":"Currently learning Baybayin consonants."}]
 ''';
 
   /// Scan Translator Mode: Used when the user snaps a photo of Baybayin text.

@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:kudlit_ph/core/error/exceptions.dart';
@@ -11,11 +10,6 @@ abstract interface class ProfileManagementDatasource {
   Future<ProfilePreferencesModel> getPreferences();
   Future<void> updateDisplayName({required String displayName});
   Future<void> savePreferences({required ProfilePreferencesModel preferences});
-  Future<void> saveLessonProgress({
-    required String lessonId,
-    required bool completed,
-    required int score,
-  });
 }
 
 class SupabaseProfileManagementDatasource
@@ -145,29 +139,4 @@ class SupabaseProfileManagementDatasource
     }
   }
 
-  @override
-  Future<void> saveLessonProgress({
-    required String lessonId,
-    required bool completed,
-    required int score,
-  }) async {
-    final user = _supabase.auth.currentUser;
-    if (user == null) return; // Guest user — skip silently.
-    try {
-      await _supabase.from('learning_progress').upsert(
-        <String, dynamic>{
-          'user_id': user.id,
-          'lesson_id': lessonId,
-          'completed': completed,
-          'score': score,
-          if (completed) 'completed_at': DateTime.now().toIso8601String(),
-          'updated_at': DateTime.now().toIso8601String(),
-        },
-        onConflict: 'user_id,lesson_id',
-      );
-    } catch (e) {
-      // Non-fatal — local completion flag is the source of truth for lock/unlock.
-      debugPrint('[LessonProgress] saveLessonProgress failed (non-fatal): $e');
-    }
-  }
 }

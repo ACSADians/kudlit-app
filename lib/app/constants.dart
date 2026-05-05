@@ -19,6 +19,8 @@ class AppConstants {
   static const String routeQuiz = '/learn/quiz';
   static const String routeScanHistory = '/scan-history';
   static const String routeTranslationHistory = '/translation-history';
+  static const String routeLearningProgress = '/learning-progress';
+  static const String routeButtyData = '/butty-data';
 
   static const String loginTitle = appName;
   static const String loginSubtitle =

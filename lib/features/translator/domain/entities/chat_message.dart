@@ -6,6 +6,7 @@ import 'package:meta/meta.dart';
 class ChatMessage {
   const ChatMessage({
     this.id,
+    this.remoteId,
     required this.text,
     required this.isUser,
     required this.timestamp,
@@ -15,15 +16,19 @@ class ChatMessage {
   /// Local SQLite primary key. Null when not yet persisted.
   final int? id;
 
+  /// Supabase row UUID once synced. Null until the cloud insert succeeds.
+  final String? remoteId;
+
   final String text;
   final bool isUser;
   final DateTime timestamp;
-  
+
   /// Optional raw image bytes for multimodal queries.
   final Uint8List? imageBytes;
 
   ChatMessage copyWith({
     int? id,
+    String? remoteId,
     String? text,
     bool? isUser,
     DateTime? timestamp,
@@ -31,6 +36,7 @@ class ChatMessage {
   }) {
     return ChatMessage(
       id: id ?? this.id,
+      remoteId: remoteId ?? this.remoteId,
       text: text ?? this.text,
       isUser: isUser ?? this.isUser,
       timestamp: timestamp ?? this.timestamp,

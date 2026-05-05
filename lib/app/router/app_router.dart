@@ -22,6 +22,8 @@ import 'package:kudlit_ph/features/learning/presentation/screens/lesson_stage_sc
 import 'package:kudlit_ph/features/admin/presentation/screens/stroke_recording_screen.dart';
 import 'package:kudlit_ph/features/learning/presentation/screens/character_gallery_screen.dart';
 import 'package:kudlit_ph/features/learning/presentation/screens/quiz_screen.dart';
+import 'package:kudlit_ph/features/home/presentation/screens/butty_data_screen.dart';
+import 'package:kudlit_ph/features/home/presentation/screens/learning_progress_screen.dart';
 import 'package:kudlit_ph/features/home/presentation/screens/translation_history_screen.dart';
 import 'package:kudlit_ph/features/scanner/presentation/screens/scan_history_screen.dart';
 
@@ -175,6 +177,16 @@ GoRouter appRouter(Ref ref) {
         path: AppConstants.routeTranslationHistory,
         builder: (BuildContext context, GoRouterState state) =>
             const TranslationHistoryScreen(),
+      ),
+      GoRoute(
+        path: AppConstants.routeLearningProgress,
+        builder: (BuildContext context, GoRouterState state) =>
+            const LearningProgressScreen(),
+      ),
+      GoRoute(
+        path: AppConstants.routeButtyData,
+        builder: (BuildContext context, GoRouterState state) =>
+            const ButtyDataScreen(),
       ),
     ],
   );

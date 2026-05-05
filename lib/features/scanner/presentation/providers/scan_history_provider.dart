@@ -64,6 +64,7 @@ class ScanHistoryNotifier extends AsyncNotifier<List<ScanResult>> {
       // Local save failure is non-fatal — UI already shows the result
     }
     unawaited(_syncToSupabase(result));
+    unawaited(ref.read(profileSummaryNotifierProvider.notifier).refresh());
   }
 
   Future<void> clearHistory() async {

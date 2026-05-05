@@ -5,10 +5,12 @@ class BeginButton extends StatelessWidget {
     super.key,
     required this.onStart,
     this.isLocked = false,
+    this.label = 'Begin Lesson',
   });
 
   final VoidCallback onStart;
   final bool isLocked;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
@@ -45,7 +47,7 @@ class BeginButton extends StatelessWidget {
                   ],
                 )
               : Text(
-                  'Begin Lesson',
+                  label,
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,

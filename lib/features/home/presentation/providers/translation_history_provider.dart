@@ -71,6 +71,7 @@ class TranslationHistoryNotifier
       // Local save failure is non-fatal
     }
     unawaited(_syncToSupabase(saved));
+    unawaited(ref.read(profileSummaryNotifierProvider.notifier).refresh());
   }
 
   Future<void> toggleBookmark(int id, bool value) async {
