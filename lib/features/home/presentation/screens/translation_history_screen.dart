@@ -54,7 +54,6 @@ class _TranslationHistoryHeader extends StatelessWidget {
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
                     color: cs.onSurface,
-                    letterSpacing: -0.3,
                   ),
                 ),
                 Text(
@@ -63,7 +62,7 @@ class _TranslationHistoryHeader extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: 12,
-                    color: cs.onSurface.withAlpha(140),
+                    color: cs.onSurface.withAlpha(185),
                   ),
                 ),
               ],
@@ -144,7 +143,7 @@ class _EmptyState extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 13,
-                    color: cs.onSurface.withAlpha(150),
+                    color: cs.onSurface.withAlpha(185),
                     height: 1.45,
                   ),
                 ),
@@ -250,7 +249,6 @@ class _TranslationResultCard extends ConsumerWidget {
                         fontSize: 15.5,
                         fontWeight: FontWeight.w700,
                         color: cs.onSurface,
-                        letterSpacing: -0.2,
                       ),
                     ),
                   ],
@@ -308,7 +306,7 @@ class _TranslationResultCard extends ConsumerWidget {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontSize: 11.5,
-                color: cs.onSurface.withAlpha(130),
+                color: cs.onSurface.withAlpha(175),
                 height: 1.35,
               ),
             ),
@@ -356,14 +354,14 @@ class _MetaChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Icon(icon, size: 12, color: cs.onSurface.withAlpha(140)),
+          Icon(icon, size: 12, color: cs.onSurface.withAlpha(180)),
           const SizedBox(width: 4),
           Text(
             label,
             style: TextStyle(
               fontSize: 10.8,
               fontWeight: FontWeight.w600,
-              color: cs.onSurface.withAlpha(150),
+              color: cs.onSurface.withAlpha(185),
             ),
           ),
         ],

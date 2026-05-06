@@ -26,33 +26,47 @@ class LessonDetailCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: cs.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: cs.outline, width: 1.25),
-          boxShadow: const <BoxShadow>[
-            BoxShadow(
-              color: Color(0x140E1425),
-              blurRadius: 8,
-              offset: Offset(0, 2),
-              spreadRadius: -2,
+    final BorderRadius radius = BorderRadius.circular(16);
+
+    return Semantics(
+      container: true,
+      button: onTap != null,
+      enabled: onTap != null,
+      label: '$title. $subtitle. $description',
+      child: ExcludeSemantics(
+        child: Material(
+          color: Colors.transparent,
+          child: Ink(
+            decoration: BoxDecoration(
+              color: cs.surface,
+              borderRadius: radius,
+              border: Border.all(color: cs.outline, width: 1.25),
+              boxShadow: const <BoxShadow>[
+                BoxShadow(
+                  color: Color(0x140E1425),
+                  blurRadius: 8,
+                  offset: Offset(0, 2),
+                  spreadRadius: -2,
+                ),
+              ],
             ),
-          ],
-        ),
-        child: Column(
-          children: <Widget>[
-            _DetailImageStrip(
-              imageAsset: imageAsset,
-              glyph: glyph,
-              tag: tag,
-              title: title,
-              subtitle: subtitle,
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: radius,
+              child: Column(
+                children: <Widget>[
+                  _DetailImageStrip(
+                    imageAsset: imageAsset,
+                    glyph: glyph,
+                    tag: tag,
+                    title: title,
+                    subtitle: subtitle,
+                  ),
+                  _DetailBody(description: description),
+                ],
+              ),
             ),
-            _DetailBody(description: description),
-          ],
+          ),
         ),
       ),
     );

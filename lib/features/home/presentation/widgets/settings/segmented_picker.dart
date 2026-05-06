@@ -23,25 +23,48 @@ class SegmentedPicker<T> extends StatelessWidget {
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: cs.outline),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+      child: Wrap(
+        spacing: 2,
+        runSpacing: 2,
         children: options.map(((T, String) opt) {
           final bool active = opt.$1 == selected;
-          return GestureDetector(
-            onTap: () => onSelect(opt.$1),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 160),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: active ? cs.primary : Colors.transparent,
-                borderRadius: BorderRadius.circular(7),
-              ),
-              child: Text(
-                opt.$2,
-                style: TextStyle(
-                  fontSize: 11.5,
-                  fontWeight: active ? FontWeight.w600 : FontWeight.w400,
-                  color: active ? cs.onPrimary : cs.onSurface.withAlpha(102),
+          final BorderRadius radius = BorderRadius.circular(7);
+          return Semantics(
+            button: true,
+            selected: active,
+            label: '${opt.$2} option',
+            excludeSemantics: true,
+            child: Tooltip(
+              message: opt.$2,
+              excludeFromSemantics: true,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => onSelect(opt.$1),
+                  borderRadius: radius,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 160),
+                    constraints: const BoxConstraints(
+                      minWidth: 44,
+                      minHeight: 44,
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: active ? cs.primary : Colors.transparent,
+                      borderRadius: radius,
+                    ),
+                    child: Text(
+                      opt.$2,
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: active ? FontWeight.w600 : FontWeight.w500,
+                        color: active
+                            ? cs.onPrimary
+                            : cs.onSurface.withAlpha(185),
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),

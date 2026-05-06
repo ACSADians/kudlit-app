@@ -55,7 +55,6 @@ class _ScanHistoryHeader extends StatelessWidget {
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
                     color: cs.onSurface,
-                    letterSpacing: -0.3,
                   ),
                 ),
                 Text(
@@ -64,7 +63,7 @@ class _ScanHistoryHeader extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: 12,
-                    color: cs.onSurface.withAlpha(140),
+                    color: cs.onSurface.withAlpha(185),
                   ),
                 ),
               ],
@@ -149,7 +148,7 @@ class _EmptyState extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 13,
-                    color: cs.onSurface.withAlpha(150),
+                    color: cs.onSurface.withAlpha(185),
                     height: 1.45,
                   ),
                 ),
@@ -256,7 +255,6 @@ class _ScanResultCard extends StatelessWidget {
                         fontSize: 15.5,
                         fontWeight: FontWeight.w700,
                         color: cs.onSurface,
-                        letterSpacing: -0.2,
                       ),
                     ),
                   ],
@@ -315,14 +313,14 @@ class _MetaChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Icon(icon, size: 12, color: cs.onSurface.withAlpha(140)),
+          Icon(icon, size: 12, color: cs.onSurface.withAlpha(180)),
           const SizedBox(width: 4),
           Text(
             label,
             style: TextStyle(
               fontSize: 10.8,
               fontWeight: FontWeight.w600,
-              color: cs.onSurface.withAlpha(150),
+              color: cs.onSurface.withAlpha(185),
             ),
           ),
         ],
@@ -356,7 +354,7 @@ class _TokenRow extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 10.5,
                   fontWeight: FontWeight.w600,
-                  color: cs.onSurface.withAlpha(160),
+                  color: cs.onSurface.withAlpha(190),
                   letterSpacing: 0.3,
                 ),
               ),

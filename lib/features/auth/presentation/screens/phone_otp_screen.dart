@@ -12,6 +12,7 @@ import 'package:kudlit_ph/features/auth/presentation/widgets/auth_screen_shell.d
 import 'package:kudlit_ph/features/auth/presentation/widgets/auth_sheet.dart';
 import 'package:kudlit_ph/features/auth/presentation/widgets/auth_sheet_headline.dart';
 import 'package:kudlit_ph/features/auth/presentation/widgets/auth_submit_button.dart';
+import 'package:kudlit_ph/features/auth/presentation/widgets/auth_text_link.dart';
 import 'package:kudlit_ph/features/auth/presentation/widgets/login_hero.dart';
 
 /// OTP verification screen. Receives the [phoneNumber] the code was sent to.
@@ -249,10 +250,16 @@ class _OtpSheetBody extends StatelessWidget {
         ),
         if (errorMessage != null) ...<Widget>[
           const SizedBox(height: 12),
-          Text(
-            errorMessage!,
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: KudlitColors.danger400, fontSize: 12),
+          Semantics(
+            liveRegion: true,
+            child: Text(
+              errorMessage!,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: KudlitColors.danger400,
+                fontSize: 12,
+              ),
+            ),
           ),
         ],
         const SizedBox(height: 24),
@@ -263,12 +270,15 @@ class _OtpSheetBody extends StatelessWidget {
         ),
         if (resendMessage != null) ...<Widget>[
           const SizedBox(height: 12),
-          Text(
-            resendMessage!,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.primary,
-              fontSize: 12,
+          Semantics(
+            liveRegion: true,
+            child: Text(
+              resendMessage!,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.primary,
+                fontSize: 12,
+              ),
             ),
           ),
         ],
@@ -298,17 +308,18 @@ class _OtpRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+    return Wrap(
+      alignment: WrapAlignment.center,
+      runAlignment: WrapAlignment.center,
+      spacing: 6,
+      runSpacing: 8,
       children: List<Widget>.generate(controllers.length, (int i) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 5),
-          child: _OtpBox(
-            controller: controllers[i],
-            focusNode: focusNodes[i],
-            hasError: hasError,
-            onChanged: (String v) => onChanged(i, v),
-          ),
+        return _OtpBox(
+          index: i,
+          controller: controllers[i],
+          focusNode: focusNodes[i],
+          hasError: hasError,
+          onChanged: (String v) => onChanged(i, v),
         );
       }),
     );
@@ -317,12 +328,14 @@ class _OtpRow extends StatelessWidget {
 
 class _OtpBox extends StatelessWidget {
   const _OtpBox({
+    required this.index,
     required this.controller,
     required this.focusNode,
     required this.onChanged,
     this.hasError = false,
   });
 
+  final int index;
   final TextEditingController controller;
   final FocusNode focusNode;
   final bool hasError;
@@ -333,26 +346,30 @@ class _OtpBox extends StatelessWidget {
     final ColorScheme cs = Theme.of(context).colorScheme;
     final Color borderColor = hasError ? KudlitColors.danger400 : cs.primary;
 
-    return SizedBox(
-      width: 44,
-      height: 54,
-      child: TextField(
-        controller: controller,
-        focusNode: focusNode,
-        keyboardType: TextInputType.number,
-        textAlign: TextAlign.center,
-        maxLength: 1,
-        onChanged: onChanged,
-        inputFormatters: <TextInputFormatter>[
-          FilteringTextInputFormatter.digitsOnly,
-        ],
-        style: TextStyle(
-          fontSize: 22,
-          fontWeight: FontWeight.w700,
-          color: cs.onSurface,
-          height: 1,
+    return Semantics(
+      textField: true,
+      label: 'OTP digit ${index + 1}',
+      child: SizedBox(
+        width: 44,
+        height: 54,
+        child: TextField(
+          controller: controller,
+          focusNode: focusNode,
+          keyboardType: TextInputType.number,
+          textAlign: TextAlign.center,
+          maxLength: 1,
+          onChanged: onChanged,
+          inputFormatters: <TextInputFormatter>[
+            FilteringTextInputFormatter.digitsOnly,
+          ],
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w700,
+            color: cs.onSurface,
+            height: 1,
+          ),
+          decoration: _otpDecoration(cs: cs, borderColor: borderColor),
         ),
-        decoration: _otpDecoration(cs: cs, borderColor: borderColor),
       ),
     );
   }
@@ -397,37 +414,34 @@ class _ResendRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+    return Wrap(
+      alignment: WrapAlignment.center,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: 4,
+      runSpacing: 4,
       children: <Widget>[
         Text(
-          'Didn\'t get a code?  ',
-          style: TextStyle(fontSize: 12.5, color: cs.onSurface.withAlpha(153)),
+          'Didn\'t get a code?',
+          style: TextStyle(fontSize: 12.5, color: cs.onSurface.withAlpha(185)),
         ),
         if (isResending)
           Text(
             'Sending...',
-            style: TextStyle(fontSize: 12.5, color: cs.onSurface.withAlpha(80)),
+            style: TextStyle(
+              fontSize: 12.5,
+              color: cs.onSurface.withAlpha(150),
+            ),
           )
         else if (cooldown > 0)
           Text(
             'Resend in ${cooldown}s',
-            style: TextStyle(fontSize: 12.5, color: cs.onSurface.withAlpha(80)),
+            style: TextStyle(
+              fontSize: 12.5,
+              color: cs.onSurface.withAlpha(150),
+            ),
           )
         else
-          GestureDetector(
-            onTap: onResend,
-            child: Text(
-              'Resend code',
-              style: TextStyle(
-                fontSize: 12.5,
-                color: cs.primary,
-                fontWeight: FontWeight.w600,
-                decoration: TextDecoration.underline,
-                decorationColor: cs.primary,
-              ),
-            ),
-          ),
+          AuthTextLink(label: 'Resend code', onTap: () => onResend()),
       ],
     );
   }

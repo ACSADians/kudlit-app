@@ -19,6 +19,7 @@ class AuthTextLink extends StatelessWidget {
     return Semantics(
       button: true,
       label: semanticLabel ?? label,
+      excludeSemantics: true,
       child: TextButton(
         onPressed: onTap,
         style: TextButton.styleFrom(

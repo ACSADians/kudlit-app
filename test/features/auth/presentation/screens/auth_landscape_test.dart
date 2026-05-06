@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kudlit_ph/features/auth/presentation/screens/forgot_password_screen.dart';
 import 'package:kudlit_ph/features/auth/presentation/screens/login_screen.dart';
+import 'package:kudlit_ph/features/auth/presentation/screens/phone_otp_screen.dart';
 import 'package:kudlit_ph/features/auth/presentation/screens/phone_sign_in_screen.dart';
 import 'package:kudlit_ph/features/auth/presentation/screens/reset_password_screen.dart';
 import 'package:kudlit_ph/features/auth/presentation/screens/sign_in_screen.dart';
@@ -124,6 +125,45 @@ void main() {
     await pumpLandscape(tester, const PhoneSignInScreen());
 
     expect(find.text('Sign in with phone'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'phone OTP screen keeps digit boxes and resend action accessible',
+    (WidgetTester tester) async {
+      final SemanticsHandle semantics = tester.ensureSemantics();
+      await tester.binding.setSurfaceSize(const Size(360, 593));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(
+        const ProviderScope(
+          child: MaterialApp(
+            home: PhoneOtpScreen(phoneNumber: '+639171234567'),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Enter the code'), findsOneWidget);
+      expect(find.text('Resend code'), findsOneWidget);
+      expect(find.bySemanticsLabel('OTP digit 1'), findsOneWidget);
+      expect(find.bySemanticsLabel('Resend code'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      semantics.dispose();
+    },
+  );
+
+  testWidgets('phone OTP screen fits compact landscape', (
+    WidgetTester tester,
+  ) async {
+    await pumpLandscape(
+      tester,
+      const PhoneOtpScreen(phoneNumber: '+639171234567'),
+    );
+
+    expect(find.text('Enter the code'), findsOneWidget);
+    expect(find.text('Verify'), findsOneWidget);
+    expect(find.text('Resend code'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
