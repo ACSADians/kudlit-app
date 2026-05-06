@@ -488,11 +488,13 @@ class _WebCameraPreviewState extends ConsumerState<_WebCameraPreview> {
           const YoloSimOverlay(),
         LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
-            final double horizontalPadding = constraints.maxWidth < 380
-                ? 16
+            final double horizontalPadding = constraints.maxWidth < 320
+                ? 10
+                : constraints.maxWidth < 380
+                ? 14
                 : 28;
             return Align(
-              alignment: Alignment.center,
+              alignment: Alignment.centerLeft,
               child: Padding(
                 padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
                 child: WebStatusMessage(
@@ -539,7 +541,8 @@ class WebStatusMessage extends StatelessWidget {
         final double availableWidth = constraints.hasBoundedWidth
             ? constraints.maxWidth
             : 360;
-        final double maxWidth = availableWidth.clamp(220.0, 360.0);
+        final double maxWidth = availableWidth.clamp(200.0, 240.0);
+        final bool narrow = maxWidth < 300;
 
         return Semantics(
           label: message ?? status.label,
@@ -547,7 +550,18 @@ class WebStatusMessage extends StatelessWidget {
             constraints: BoxConstraints(maxWidth: maxWidth),
             child: Container(
               width: double.infinity,
-              padding: EdgeInsets.all(showCompact ? 12 : 16),
+              padding: EdgeInsets.symmetric(
+                horizontal: showCompact
+                    ? 12
+                    : narrow
+                    ? 12
+                    : 16,
+                vertical: showCompact
+                    ? 12
+                    : narrow
+                    ? 14
+                    : 16,
+              ),
               decoration: BoxDecoration(
                 color: cs.surface.withAlpha(showCompact ? 210 : 235),
                 borderRadius: BorderRadius.circular(14),
@@ -558,15 +572,25 @@ class WebStatusMessage extends StatelessWidget {
                 children: <Widget>[
                   Icon(
                     status.icon,
-                    size: showCompact ? 24 : 32,
+                    size: showCompact
+                        ? 24
+                        : narrow
+                        ? 28
+                        : 32,
                     color: cs.onSurface.withAlpha(190),
                   ),
-                  SizedBox(height: showCompact ? 8 : 10),
+                  SizedBox(height: showCompact || narrow ? 8 : 10),
                   Text(
                     status.label,
                     textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: showCompact ? 14 : 16,
+                      fontSize: showCompact
+                          ? 14
+                          : narrow
+                          ? 15
+                          : 16,
                       fontWeight: FontWeight.w700,
                       color: cs.onSurface,
                     ),
@@ -576,8 +600,9 @@ class WebStatusMessage extends StatelessWidget {
                     Text(
                       message!,
                       textAlign: TextAlign.center,
+                      softWrap: true,
                       style: TextStyle(
-                        fontSize: showCompact ? 12.5 : 13,
+                        fontSize: showCompact || narrow ? 12.5 : 13,
                         height: 1.35,
                         color: cs.onSurface.withAlpha(165),
                       ),

@@ -9,10 +9,7 @@ import 'butty_header_text.dart';
 class ButtyHeader extends ConsumerWidget {
   const ButtyHeader({super.key});
 
-  Future<void> _confirmStartFresh(
-    BuildContext context,
-    WidgetRef ref,
-  ) async {
+  Future<void> _confirmStartFresh(BuildContext context, WidgetRef ref) async {
     final bool? confirmed = await showDialog<bool>(
       context: context,
       builder: (BuildContext ctx) {
@@ -54,67 +51,77 @@ class ButtyHeader extends ConsumerWidget {
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
+          padding: const EdgeInsets.fromLTRB(16, 10, 12, 10),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              Stack(
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: <Widget>[
-                  Container(
-                    width: 46,
-                    height: 46,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: cs.primaryContainer,
-                    ),
-                    child: ClipOval(
-                      child: Image.asset(
-                        'assets/brand/ButtyRead.webp',
-                        fit: BoxFit.cover,
+                  Stack(
+                    children: <Widget>[
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: cs.primaryContainer,
+                        ),
+                        child: ClipOval(
+                          child: Image.asset(
+                            'assets/brand/ButtyRead.webp',
+                            fit: BoxFit.cover,
+                          ),
+                        ),
                       ),
-                    ),
+                      Positioned(
+                        bottom: 1,
+                        right: 1,
+                        child: Container(
+                          width: 12,
+                          height: 12,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF46B986),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: headerBg, width: 2),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  Positioned(
-                    bottom: 1,
-                    right: 1,
-                    child: Container(
-                      width: 12,
-                      height: 12,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF46B986),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: headerBg, width: 2),
-                      ),
-                    ),
+                  const SizedBox(width: 10),
+                  const Expanded(child: ButtyHeaderText()),
+                  PopupMenuButton<String>(
+                    tooltip: 'Chat options',
+                    icon: Icon(Icons.more_vert, color: cs.onSurface),
+                    onSelected: (String value) {
+                      if (value == 'start_fresh') {
+                        _confirmStartFresh(context, ref);
+                      }
+                    },
+                    itemBuilder: (BuildContext ctx) {
+                      return const <PopupMenuEntry<String>>[
+                        PopupMenuItem<String>(
+                          value: 'start_fresh',
+                          child: ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: Icon(Icons.restart_alt),
+                            title: Text('Start fresh'),
+                            subtitle: Text('Clear chat, keep memory'),
+                          ),
+                        ),
+                      ];
+                    },
                   ),
                 ],
               ),
-              const SizedBox(width: 12),
-              const Expanded(child: ButtyHeaderText()),
-              const SizedBox(width: 10),
-              const ButtyModelModeSelector(showHelperText: false),
-              const SizedBox(width: 4),
-              PopupMenuButton<String>(
-                tooltip: 'Chat options',
-                icon: Icon(Icons.more_vert, color: cs.onSurface),
-                onSelected: (String value) {
-                  if (value == 'start_fresh') {
-                    _confirmStartFresh(context, ref);
-                  }
-                },
-                itemBuilder: (BuildContext ctx) {
-                  return const <PopupMenuEntry<String>>[
-                    PopupMenuItem<String>(
-                      value: 'start_fresh',
-                      child: ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: Icon(Icons.restart_alt),
-                        title: Text('Start fresh'),
-                        subtitle: Text('Clear chat, keep memory'),
-                      ),
-                    ),
-                  ];
-                },
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 50),
+                  child: const ButtyModelModeSelector(showHelperText: false),
+                ),
               ),
             ],
           ),

@@ -14,7 +14,10 @@ class UserBubble extends StatelessWidget {
         alignment: Alignment.centerRight,
         child: Container(
           constraints: BoxConstraints(
-            maxWidth: MediaQuery.sizeOf(context).width * 0.72,
+            maxWidth: (MediaQuery.sizeOf(context).width * 0.72).clamp(
+              220.0,
+              280.0,
+            ),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
           decoration: BoxDecoration(

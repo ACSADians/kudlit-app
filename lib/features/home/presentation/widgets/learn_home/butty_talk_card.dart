@@ -22,15 +22,15 @@ class ButtyTalkCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: const Padding(
-          padding: EdgeInsets.all(16),
+          padding: EdgeInsets.fromLTRB(14, 14, 14, 12),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               ButtyCardTop(),
-              SizedBox(height: 12),
-              ButtyPreviewBubble(),
               SizedBox(height: 10),
-              ButtyChatCta(),
+              ButtyPreviewBubble(),
+              SizedBox(height: 8),
+              Align(alignment: Alignment.centerRight, child: ButtyChatCta()),
             ],
           ),
         ),
