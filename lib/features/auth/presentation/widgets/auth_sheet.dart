@@ -10,6 +10,12 @@ class AuthSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Color surface = Theme.of(context).colorScheme.surface;
+    final Size screenSize = MediaQuery.sizeOf(context);
+    final bool landscape = screenSize.width > screenSize.height;
+    final bool keyboardVisible = MediaQuery.viewInsetsOf(context).bottom > 0;
+    final double keyboardClearance = keyboardVisible
+        ? (landscape ? 260 : 40)
+        : 0;
 
     return Container(
       decoration: BoxDecoration(
@@ -26,7 +32,7 @@ class AuthSheet extends StatelessWidget {
       child: SafeArea(
         top: false,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
+          padding: EdgeInsets.fromLTRB(20, 14, 20, 24 + keyboardClearance),
           child: child,
         ),
       ),

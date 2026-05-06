@@ -31,14 +31,29 @@ class LoginHeroContent extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: <Widget>[
-              if (showBackButton)
-                const _HeroBackButton()
-              else
-                const SizedBox(width: 36),
-              if (showLanguageToggle)
-                const LoginLanguageToggle()
-              else
-                const SizedBox(width: 36),
+              Expanded(
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: showBackButton
+                        ? const _HeroBackButton()
+                        : const SizedBox(width: 36, height: 44),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: showLanguageToggle
+                        ? const LoginLanguageToggle()
+                        : const SizedBox(width: 36, height: 44),
+                  ),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 6),

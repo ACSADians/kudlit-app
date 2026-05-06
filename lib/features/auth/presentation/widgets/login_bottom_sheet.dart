@@ -129,13 +129,13 @@ class _TermsText extends StatelessWidget {
           AuthTextLink(
             label: 'Terms',
             semanticLabel: 'Open terms of service',
-            onTap: () => context.push(AppConstants.routeTerms),
+            onTap: () => context.go(AppConstants.routeTerms),
           ),
           Text('and', style: baseStyle.copyWith(color: baseColor)),
           AuthTextLink(
             label: 'Privacy Policy',
             semanticLabel: 'Open privacy policy',
-            onTap: () => context.push(AppConstants.routePrivacyPolicy),
+            onTap: () => context.go(AppConstants.routePrivacyPolicy),
           ),
         ],
       ),

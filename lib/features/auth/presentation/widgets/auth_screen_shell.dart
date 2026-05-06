@@ -23,7 +23,8 @@ class AuthScreenShell extends StatelessWidget {
     final Size screenSize = MediaQuery.sizeOf(context);
     final double keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
     final bool landscape = screenSize.width > screenSize.height;
-    final bool landscapeKeyboardVisible = landscape && keyboardInset > 0;
+    final bool landscapeKeyboardVisible =
+        landscape && (keyboardInset > 0 || screenSize.height < 320);
 
     if (landscape) {
       return Scaffold(
