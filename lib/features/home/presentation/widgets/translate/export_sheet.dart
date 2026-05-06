@@ -1,3 +1,4 @@
+import 'dart:math' show Random;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
@@ -8,6 +9,14 @@ import 'package:share_plus/share_plus.dart';
 
 // Export card width in logical pixels — height is intrinsic (grows with content).
 const double _kCardWidth = 320;
+
+const List<String> _kButtyAssets = <String>[
+  'assets/brand/ButtyPaint.webp',
+  'assets/brand/ButtyPencilRun.webp',
+  'assets/brand/ButtyPhone.webp',
+  'assets/brand/ButtyRead.webp',
+  'assets/brand/ButtyWave.webp',
+];
 
 class _BgOption {
   const _BgOption(this.name, this.start, this.end);
@@ -59,6 +68,9 @@ class _BaybayinExportSheetState extends State<BaybayinExportSheet> {
   final GlobalKey _cardKey = GlobalKey();
   int _selectedBg = 0;
   bool _exporting = false;
+  // Chosen once per sheet open so it stays stable across background changes.
+  final String _buttyAsset =
+      _kButtyAssets[Random().nextInt(_kButtyAssets.length)];
 
   Future<void> _export() async {
     if (_exporting) return;
@@ -136,6 +148,7 @@ class _BaybayinExportSheetState extends State<BaybayinExportSheet> {
                 baybayin: widget.baybayin,
                 latin: widget.latin,
                 bg: bg,
+                buttyAsset: _buttyAsset,
               ),
             ),
           ),
@@ -210,11 +223,13 @@ class _ExportCard extends StatelessWidget {
     required this.baybayin,
     required this.latin,
     required this.bg,
+    required this.buttyAsset,
   });
 
   final String baybayin;
   final String latin;
   final _BgOption bg;
+  final String buttyAsset;
 
   @override
   Widget build(BuildContext context) {
@@ -264,17 +279,26 @@ class _ExportCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          Align(
-            alignment: Alignment.bottomRight,
-            child: Text(
-              'Kudlit',
-              style: TextStyle(
-                fontSize: 10,
-                color: subtleColor,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1.4,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: <Widget>[
+              Image.asset(
+                buttyAsset,
+                width: 48,
+                height: 48,
+                fit: BoxFit.contain,
               ),
-            ),
+              Text(
+                'Kudlit',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: subtleColor,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.4,
+                ),
+              ),
+            ],
           ),
         ],
       ),
