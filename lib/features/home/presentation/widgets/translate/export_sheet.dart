@@ -8,7 +8,7 @@ import 'package:share_plus/share_plus.dart';
 
 // Export card dimensions in logical pixels.
 const double _kCardWidth = 320;
-const double _kCardHeight = 220;
+const double _kCardHeight = 180;
 
 class _BgOption {
   const _BgOption(this.name, this.start, this.end);
@@ -94,21 +94,26 @@ class _BaybayinExportSheetState extends State<BaybayinExportSheet> {
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
     final _BgOption bg = _kBgOptions[_selectedBg];
+    // Cap the sheet at 90% of screen height so controls are always reachable.
+    final double maxHeight = MediaQuery.sizeOf(context).height * 0.90;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: cs.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      padding: EdgeInsets.fromLTRB(
-        24,
-        12,
-        24,
-        MediaQuery.paddingOf(context).bottom + 24,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxHeight: maxHeight),
+      child: Container(
+        decoration: BoxDecoration(
+          color: cs.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: EdgeInsets.fromLTRB(
+          24,
+          12,
+          24,
+          MediaQuery.paddingOf(context).bottom + 24,
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
           Container(
             width: 36,
             height: 4,
@@ -194,6 +199,8 @@ class _BaybayinExportSheetState extends State<BaybayinExportSheet> {
             ),
           ),
         ],
+      ),
+        ),
       ),
     );
   }
