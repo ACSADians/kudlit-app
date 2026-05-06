@@ -18,63 +18,74 @@ class ReferenceModeBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 560),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 18),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              const Spacer(),
-              Center(
-                child: ReferenceGlyphCard(
-                  glyph: step.glyph,
-                  glyphImage: step.glyphImage,
-                  label: step.label,
-                  hideGlyph: step.hideGlyph,
-                ),
-              ),
-              const SizedBox(height: 18),
-              if (step.narration != null)
-                Text(
-                  step.narration!,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: cs.onSurface.withValues(alpha: 0.8),
-                    height: 1.45,
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final bool compact =
+            constraints.maxHeight < 360 ||
+            constraints.maxWidth > constraints.maxHeight;
+        return Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 560),
+            child: SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(20, compact ? 8 : 12, 20, 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  Center(
+                    child: ReferenceGlyphCard(
+                      glyph: step.glyph,
+                      glyphImage: step.glyphImage,
+                      label: step.label,
+                      hideGlyph: step.hideGlyph,
+                      compact: compact,
+                    ),
                   ),
-                ),
-              const Spacer(),
-              OutlinedButton.icon(
-                onPressed:
-                    (step.strokeOrder == null || step.strokeOrder!.isEmpty)
-                    ? null
-                    : () => showModalBottomSheet<void>(
-                        context: context,
-                        isScrollControlled: true,
-                        backgroundColor: Colors.transparent,
-                        builder: (_) => StrokeOrderSheet(
-                          glyph: step.glyph,
-                          label: step.label,
-                          data: step.strokeOrder!,
-                        ),
+                  SizedBox(height: compact ? 10 : 16),
+                  if (step.narration != null)
+                    Text(
+                      step.narration!,
+                      textAlign: TextAlign.center,
+                      maxLines: compact ? 3 : 5,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: cs.onSurface.withValues(alpha: 0.8),
+                        height: 1.35,
                       ),
-                icon: const Icon(Icons.play_arrow_rounded),
-                label: Text(
-                  (step.strokeOrder == null || step.strokeOrder!.isEmpty)
-                      ? 'Stroke order not recorded'
-                      : 'Show stroke order',
-                ),
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size.fromHeight(48),
-                  side: BorderSide(color: cs.outlineVariant),
-                ),
+                    ),
+                  SizedBox(height: compact ? 12 : 18),
+                  OutlinedButton.icon(
+                    onPressed:
+                        (step.strokeOrder == null || step.strokeOrder!.isEmpty)
+                        ? null
+                        : () => showModalBottomSheet<void>(
+                            context: context,
+                            isScrollControlled: true,
+                            backgroundColor: Colors.transparent,
+                            builder: (_) => StrokeOrderSheet(
+                              glyph: step.glyph,
+                              label: step.label,
+                              data: step.strokeOrder!,
+                            ),
+                          ),
+                    icon: const Icon(Icons.play_arrow_rounded, size: 18),
+                    label: Text(
+                      (step.strokeOrder == null || step.strokeOrder!.isEmpty)
+                          ? 'Stroke order not recorded'
+                          : 'Show stroke order',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(44),
+                      side: BorderSide(color: cs.outlineVariant),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

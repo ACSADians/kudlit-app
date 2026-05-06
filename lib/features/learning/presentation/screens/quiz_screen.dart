@@ -124,34 +124,52 @@ class _QuizBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool isAnswered = quizState.status != QuizStatus.answering;
-    return SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(
-        24,
-        16,
-        24,
-        MediaQuery.paddingOf(context).bottom + 24,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          _QuizProgressBar(
-            current: quizState.currentIndex + 1,
-            total: quizState.totalQuestions,
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final bool compact =
+            constraints.maxHeight < 500 ||
+            constraints.maxWidth > constraints.maxHeight;
+        return SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(
+            compact ? 16 : 24,
+            compact ? 10 : 16,
+            compact ? 16 : 24,
+            MediaQuery.paddingOf(context).bottom + (compact ? 16 : 24),
           ),
-          const SizedBox(height: 32),
-          _GlyphDisplay(step: quizState.currentStep),
-          const SizedBox(height: 32),
-          if (isAnswered)
-            _AnsweredSection(
-              status: quizState.status,
-              step: quizState.currentStep,
-              isLast: quizState.currentIndex + 1 >= quizState.totalQuestions,
-              onNext: onNext,
-            )
-          else
-            _AnsweringSection(controller: controller, onCheck: onCheck),
-        ],
-      ),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 560),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  _QuizProgressBar(
+                    current: quizState.currentIndex + 1,
+                    total: quizState.totalQuestions,
+                  ),
+                  SizedBox(height: compact ? 14 : 24),
+                  _GlyphDisplay(step: quizState.currentStep, compact: compact),
+                  SizedBox(height: compact ? 14 : 24),
+                  if (isAnswered)
+                    _AnsweredSection(
+                      status: quizState.status,
+                      step: quizState.currentStep,
+                      isLast:
+                          quizState.currentIndex + 1 >=
+                          quizState.totalQuestions,
+                      onNext: onNext,
+                    )
+                  else
+                    _AnsweringSection(
+                      controller: controller,
+                      onCheck: onCheck,
+                      compact: compact,
+                    ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -192,15 +210,16 @@ class _QuizProgressBar extends StatelessWidget {
 }
 
 class _GlyphDisplay extends StatelessWidget {
-  const _GlyphDisplay({required this.step});
+  const _GlyphDisplay({required this.step, required this.compact});
 
   final LessonStep step;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 32),
+      padding: EdgeInsets.symmetric(vertical: compact ? 16 : 26),
       decoration: BoxDecoration(
         color: cs.primaryContainer,
         borderRadius: BorderRadius.circular(20),
@@ -214,12 +233,12 @@ class _GlyphDisplay extends StatelessWidget {
             step.glyph,
             style: TextStyle(
               fontFamily: 'Baybayin Simple TAWBID',
-              fontSize: 96,
+              fontSize: compact ? 72 : 88,
               height: 1,
               color: cs.onPrimaryContainer,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: compact ? 4 : 8),
           Text(
             'What is this character?',
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
@@ -233,10 +252,15 @@ class _GlyphDisplay extends StatelessWidget {
 }
 
 class _AnsweringSection extends StatelessWidget {
-  const _AnsweringSection({required this.controller, required this.onCheck});
+  const _AnsweringSection({
+    required this.controller,
+    required this.onCheck,
+    required this.compact,
+  });
 
   final TextEditingController controller;
   final VoidCallback onCheck;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -245,17 +269,25 @@ class _AnsweringSection extends StatelessWidget {
       children: <Widget>[
         TextField(
           controller: controller,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             labelText: 'Romanization',
             hintText: 'e.g. ba, ka, da...',
-            border: OutlineInputBorder(),
+            border: const OutlineInputBorder(),
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: compact ? 12 : 14,
+            ),
           ),
           autofocus: true,
           textCapitalization: TextCapitalization.none,
           onSubmitted: (_) => onCheck(),
         ),
-        const SizedBox(height: 16),
-        FilledButton(onPressed: onCheck, child: const Text('Check')),
+        SizedBox(height: compact ? 10 : 14),
+        FilledButton(
+          onPressed: onCheck,
+          style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(44)),
+          child: const Text('Check'),
+        ),
       ],
     );
   }
@@ -313,6 +345,7 @@ class _AnsweredSection extends StatelessWidget {
         const SizedBox(height: 16),
         FilledButton(
           onPressed: onNext,
+          style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(44)),
           child: Text(isLast ? 'See Results' : 'Next'),
         ),
       ],

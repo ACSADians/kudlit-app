@@ -18,7 +18,7 @@ class LessonTopBar extends StatelessWidget {
     final ColorScheme cs = Theme.of(context).colorScheme;
     return Container(
       color: cs.surface,
-      padding: const EdgeInsets.fromLTRB(8, 8, 16, 4),
+      padding: const EdgeInsets.fromLTRB(8, 6, 14, 4),
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 720),
@@ -29,6 +29,10 @@ class LessonTopBar extends StatelessWidget {
                 icon: const Icon(Icons.close_rounded),
                 onPressed: onClose,
                 tooltip: 'Close lesson',
+                constraints: const BoxConstraints.tightFor(
+                  width: 44,
+                  height: 44,
+                ),
               ),
               Expanded(
                 child: Column(
@@ -41,6 +45,7 @@ class LessonTopBar extends StatelessWidget {
                       style: text.titleMedium?.copyWith(
                         fontWeight: FontWeight.w800,
                         color: cs.onSurface,
+                        letterSpacing: 0,
                       ),
                     ),
                     Text(

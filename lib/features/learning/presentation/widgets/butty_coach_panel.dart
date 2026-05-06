@@ -29,6 +29,7 @@ class ButtyCoachPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
+    final bool compact = MediaQuery.sizeOf(context).height < 430;
     return Container(
       decoration: BoxDecoration(
         color: cs.surface,
@@ -37,13 +38,14 @@ class ButtyCoachPanel extends StatelessWidget {
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+          padding: EdgeInsets.fromLTRB(12, compact ? 6 : 10, 12, 10),
           child: _CoachCard(
             message: message,
             attemptStatus: attemptStatus,
             completed: completed,
             actionLabel: actionLabel,
             showPrimaryAction: showPrimaryAction,
+            compact: compact,
             onAvatarTap: onAvatarTap,
             onAskHelp: onAskHelp,
             onRetry: onRetry,
@@ -62,6 +64,7 @@ class _CoachCard extends StatelessWidget {
     required this.completed,
     required this.actionLabel,
     required this.showPrimaryAction,
+    required this.compact,
     required this.onAvatarTap,
     required this.onAskHelp,
     required this.onRetry,
@@ -73,6 +76,7 @@ class _CoachCard extends StatelessWidget {
   final bool completed;
   final String actionLabel;
   final bool showPrimaryAction;
+  final bool compact;
   final VoidCallback onAvatarTap;
   final VoidCallback onAskHelp;
   final VoidCallback onRetry;
@@ -82,7 +86,7 @@ class _CoachCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
     return Container(
-      padding: const EdgeInsets.fromLTRB(10, 10, 10, 12),
+      padding: EdgeInsets.fromLTRB(10, compact ? 8 : 10, 10, compact ? 8 : 10),
       decoration: BoxDecoration(
         color: _statusSurface(cs),
         borderRadius: BorderRadius.circular(16),
@@ -94,22 +98,24 @@ class _CoachCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              _ButtyButton(onTap: onAvatarTap),
-              const SizedBox(width: 10),
+              _ButtyButton(onTap: onAvatarTap, compact: compact),
+              SizedBox(width: compact ? 8 : 10),
               Expanded(
                 child: _CoachText(
                   message: message,
                   attemptStatus: attemptStatus,
+                  compact: compact,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: compact ? 6 : 8),
           _CoachActions(
             attemptStatus: attemptStatus,
             completed: completed,
             actionLabel: actionLabel,
             showPrimaryAction: showPrimaryAction,
+            compact: compact,
             onAskHelp: onAskHelp,
             onRetry: onRetry,
             onContinue: onContinue,
@@ -145,9 +151,10 @@ class _CoachCard extends StatelessWidget {
 }
 
 class _ButtyButton extends StatelessWidget {
-  const _ButtyButton({required this.onTap});
+  const _ButtyButton({required this.onTap, required this.compact});
 
   final VoidCallback onTap;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -158,8 +165,8 @@ class _ButtyButton extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),
         child: SizedBox(
-          width: 66,
-          height: 78,
+          width: compact ? 50 : 62,
+          height: compact ? 54 : 68,
           child: Image.asset(
             'assets/brand/ButtyWave.webp',
             fit: BoxFit.contain,
@@ -172,10 +179,15 @@ class _ButtyButton extends StatelessWidget {
 }
 
 class _CoachText extends StatelessWidget {
-  const _CoachText({required this.message, required this.attemptStatus});
+  const _CoachText({
+    required this.message,
+    required this.attemptStatus,
+    required this.compact,
+  });
 
   final String message;
   final AttemptStatus attemptStatus;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -200,9 +212,12 @@ class _CoachText extends StatelessWidget {
             ? const _ThinkingDots()
             : Text(
                 message,
-                maxLines: 4,
+                maxLines: compact ? 2 : 3,
                 overflow: TextOverflow.ellipsis,
-                style: text.bodyMedium?.copyWith(color: cs.onSurface),
+                style: text.bodyMedium?.copyWith(
+                  color: cs.onSurface,
+                  height: 1.28,
+                ),
               ),
       ],
     );
@@ -215,6 +230,7 @@ class _CoachActions extends StatelessWidget {
     required this.completed,
     required this.actionLabel,
     required this.showPrimaryAction,
+    required this.compact,
     required this.onAskHelp,
     required this.onRetry,
     required this.onContinue,
@@ -224,6 +240,7 @@ class _CoachActions extends StatelessWidget {
   final bool completed;
   final String actionLabel;
   final bool showPrimaryAction;
+  final bool compact;
   final VoidCallback onAskHelp;
   final VoidCallback onRetry;
   final VoidCallback onContinue;
@@ -232,22 +249,35 @@ class _CoachActions extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool isChecking = attemptStatus == AttemptStatus.checking;
     final bool canRetry = attemptStatus == AttemptStatus.retry;
+    final ButtonStyle compactStyle = TextButton.styleFrom(
+      minimumSize: const Size(44, 44),
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      padding: EdgeInsets.symmetric(horizontal: compact ? 10 : 12),
+      visualDensity: VisualDensity.compact,
+    );
     return Wrap(
       spacing: 8,
-      runSpacing: 8,
+      runSpacing: compact ? 6 : 8,
       crossAxisAlignment: WrapCrossAlignment.center,
-      alignment: WrapAlignment.spaceBetween,
+      alignment: WrapAlignment.end,
       children: <Widget>[
         TextButton.icon(
           onPressed: onAskHelp,
           icon: const Icon(Icons.help_outline_rounded, size: 18),
           label: const Text('Help'),
+          style: compactStyle,
         ),
         if (canRetry)
           OutlinedButton.icon(
             onPressed: onRetry,
             icon: const Icon(Icons.refresh_rounded, size: 18),
             label: const Text('Retry'),
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size(44, 44),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              padding: EdgeInsets.symmetric(horizontal: compact ? 12 : 14),
+              visualDensity: VisualDensity.compact,
+            ),
           ),
         if (showPrimaryAction)
           FilledButton.icon(
@@ -261,8 +291,15 @@ class _CoachActions extends StatelessWidget {
                     completed
                         ? Icons.flag_rounded
                         : Icons.arrow_forward_rounded,
+                    size: 18,
                   ),
             label: Text(isChecking ? 'Checking' : actionLabel),
+            style: FilledButton.styleFrom(
+              minimumSize: const Size(44, 44),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              padding: EdgeInsets.symmetric(horizontal: compact ? 12 : 14),
+              visualDensity: VisualDensity.compact,
+            ),
           ),
       ],
     );
