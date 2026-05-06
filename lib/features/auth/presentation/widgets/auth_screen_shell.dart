@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'login_hero_background.dart';
+
 /// Shared scaffold for all auth sub-screens: a hero panel overlaid by
 /// a rounded bottom-sheet card. Both panels are sized from [heroFraction].
 class AuthScreenShell extends StatelessWidget {
@@ -19,7 +21,9 @@ class AuthScreenShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Size screenSize = MediaQuery.sizeOf(context);
+    final double keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
     final bool landscape = screenSize.width > screenSize.height;
+    final bool landscapeKeyboardVisible = landscape && keyboardInset > 0;
 
     if (landscape) {
       return Scaffold(
@@ -27,7 +31,12 @@ class AuthScreenShell extends StatelessWidget {
         body: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            Expanded(flex: 5, child: hero),
+            Expanded(
+              flex: 5,
+              child: landscapeKeyboardVisible
+                  ? const _LandscapeKeyboardHeroFallback()
+                  : hero,
+            ),
             Expanded(flex: 6, child: sheet),
           ],
         ),
@@ -56,6 +65,20 @@ class AuthScreenShell extends StatelessWidget {
             child: sheet,
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _LandscapeKeyboardHeroFallback extends StatelessWidget {
+  const _LandscapeKeyboardHeroFallback();
+
+  @override
+  Widget build(BuildContext context) {
+    return const ExcludeSemantics(
+      child: KeyedSubtree(
+        key: Key('auth-keyboard-hero-fallback'),
+        child: LoginHeroBackground(),
       ),
     );
   }

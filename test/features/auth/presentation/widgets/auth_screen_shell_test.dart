@@ -39,4 +39,43 @@ void main() {
     expect(sheetRect.top, 0);
     expect(sheetRect.bottom, 390);
   });
+
+  testWidgets('auth shell collapses decorative hero under landscape keyboard', (
+    WidgetTester tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(844, 390));
+    tester.view.viewInsets = const FakeViewPadding(bottom: 220);
+    addTearDown(() {
+      tester.view.resetViewInsets();
+      tester.binding.setSurfaceSize(null);
+    });
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: AuthScreenShell(
+          hero: const ColoredBox(key: Key('hero'), color: Colors.blue),
+          sheet: AuthSheet(
+            child: KeyedSubtree(
+              key: const Key('sheet-content'),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: List<Widget>.generate(
+                  12,
+                  (int index) => const SizedBox(height: 56),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byKey(const Key('hero')), findsNothing);
+    expect(
+      find.byKey(const Key('auth-keyboard-hero-fallback')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const Key('sheet-content')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }
