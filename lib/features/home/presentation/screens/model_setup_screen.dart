@@ -63,7 +63,7 @@ class _ModelSetupScreenState extends ConsumerState<ModelSetupScreen> {
     if (setupError != null && setupError.trim().isNotEmpty) {
       return _SetupStatus.error(
         title: 'Download needs attention',
-        message: setupError,
+        message: _friendlyModelSetupError(setupError),
       );
     }
 
@@ -93,7 +93,7 @@ class _ModelSetupScreenState extends ConsumerState<ModelSetupScreen> {
         ),
         AiInferenceError(:final String message) => _SetupStatus.error(
           title: 'Model setup paused',
-          message: message,
+          message: _friendlyModelSetupError(message),
         ),
         AiInferenceIdle() => _SetupStatus.loading(
           title: 'Preparing AI catalog',
@@ -109,6 +109,47 @@ class _ModelSetupScreenState extends ConsumerState<ModelSetupScreen> {
     AiDownloading(:final GemmaModelInfo model) => model,
     _ => null,
   };
+
+  String _friendlyModelSetupError(String rawMessage) {
+    final String message = rawMessage.trim();
+    if (message.isEmpty) {
+      return 'Local AI setup is paused. You can use cloud AI and retry later.';
+    }
+
+    final String lower = message.toLowerCase();
+    final bool looksLikeNetworkIssue =
+        lower.contains('socketexception') ||
+        lower.contains('clientexception') ||
+        lower.contains('failed host lookup') ||
+        lower.contains('network') ||
+        lower.contains('connection') ||
+        lower.contains('timeout') ||
+        lower.contains('supabase.co');
+    if (looksLikeNetworkIssue) {
+      return 'Check your connection, then retry the model download.';
+    }
+
+    if (lower.contains('cancel')) {
+      return 'Download canceled. You can retry when you are ready.';
+    }
+
+    if (lower.contains('no ai models configured')) {
+      return 'The local model list is not available yet. You can use cloud AI for now.';
+    }
+
+    final bool looksTechnical =
+        lower.contains('exception') ||
+        lower.contains('stacktrace') ||
+        lower.contains('statuscode') ||
+        lower.contains('errno') ||
+        lower.contains('uri=') ||
+        lower.contains('https://');
+    if (looksTechnical) {
+      return 'Local AI setup is paused. You can use cloud AI and retry later.';
+    }
+
+    return message;
+  }
 }
 
 class _SetupBackground extends StatelessWidget {

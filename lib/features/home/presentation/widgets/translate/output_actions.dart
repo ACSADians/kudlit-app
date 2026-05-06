@@ -59,21 +59,21 @@ class OutputActions extends ConsumerWidget {
         ?.firstOrNull;
     final bool isBookmarked = latest?.isBookmarked ?? false;
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+    return Wrap(
+      alignment: WrapAlignment.center,
+      spacing: 8,
+      runSpacing: 8,
       children: <Widget>[
         OutputActionPill(
           icon: Icons.copy_rounded,
           label: copyLabel,
           onTap: onCopy ?? (hasOutput ? () => _copy(context, state) : null),
         ),
-        const SizedBox(width: 8),
         OutputActionPill(
           icon: Icons.share_rounded,
           label: shareLabel,
           onTap: onShare ?? (hasOutput ? () => _share(state) : null),
         ),
-        const SizedBox(width: 8),
         OutputActionPill(
           icon: isBookmarked
               ? Icons.bookmark_rounded

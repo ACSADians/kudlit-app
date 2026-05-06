@@ -26,22 +26,29 @@ class _AccessibilityDialogState extends State<AccessibilityDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text('Accessibility'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          SwitchListTile(
-            title: const Text('High Contrast'),
-            subtitle: const Text('Increases text and icon contrast.'),
-            value: _highContrast,
-            onChanged: (bool val) => setState(() => _highContrast = val),
+      content: SingleChildScrollView(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 360),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('High Contrast'),
+                subtitle: const Text('Increases text and icon contrast.'),
+                value: _highContrast,
+                onChanged: (bool val) => setState(() => _highContrast = val),
+              ),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Reduced Motion'),
+                subtitle: const Text('Limits animations and transitions.'),
+                value: _reducedMotion,
+                onChanged: (bool val) => setState(() => _reducedMotion = val),
+              ),
+            ],
           ),
-          SwitchListTile(
-            title: const Text('Reduced Motion'),
-            subtitle: const Text('Limits animations and transitions.'),
-            value: _reducedMotion,
-            onChanged: (bool val) => setState(() => _reducedMotion = val),
-          ),
-        ],
+        ),
       ),
       actions: <Widget>[
         TextButton(

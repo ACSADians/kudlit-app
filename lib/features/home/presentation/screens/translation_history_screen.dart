@@ -30,24 +30,42 @@ class _TranslationHistoryHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      padding: const EdgeInsets.fromLTRB(8, 10, 16, 8),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: <Widget>[
           IconButton(
+            tooltip: 'Back',
             icon: const Icon(Icons.arrow_back_rounded),
             color: cs.onSurface,
             onPressed: () => Navigator.of(context).pop(),
-            padding: EdgeInsets.zero,
-            visualDensity: VisualDensity.compact,
           ),
-          const SizedBox(width: 4),
-          Text(
-            'Translation History',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              color: cs.onSurface,
-              letterSpacing: -0.3,
+          const SizedBox(width: 2),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Text(
+                  'Translation History',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: cs.onSurface,
+                  ),
+                ),
+                Text(
+                  'Saved Baybayin readings and AI notes',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: cs.onSurface.withAlpha(185),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -61,8 +79,9 @@ class _TranslationHistoryList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final AsyncValue<List<TranslationResult>> historyAsync =
-        ref.watch(translationHistoryNotifierProvider);
+    final AsyncValue<List<TranslationResult>> historyAsync = ref.watch(
+      translationHistoryNotifierProvider,
+    );
 
     return historyAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -70,9 +89,14 @@ class _TranslationHistoryList extends ConsumerWidget {
       data: (List<TranslationResult> results) {
         if (results.isEmpty) return const _EmptyState();
         return ListView.separated(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: EdgeInsets.fromLTRB(
+            14,
+            8,
+            14,
+            MediaQuery.paddingOf(context).bottom + 20,
+          ),
           itemCount: results.length,
-          separatorBuilder: (_, _) => const SizedBox(height: 10),
+          separatorBuilder: (_, _) => const SizedBox(height: 8),
           itemBuilder: (BuildContext context, int i) =>
               _TranslationResultCard(result: results[i]),
         );
@@ -88,36 +112,44 @@ class _EmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Icon(
-              Icons.translate_rounded,
-              size: 48,
-              color: cs.onSurface.withAlpha(80),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 360),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(20, 22, 20, 24),
+            decoration: BoxDecoration(
+              color: cs.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: cs.outlineVariant),
             ),
-            const SizedBox(height: 16),
-            Text(
-              'No translations yet',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: cs.onSurface.withAlpha(140),
-              ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Icon(Icons.translate_rounded, size: 44, color: cs.primary),
+                const SizedBox(height: 14),
+                Text(
+                  'No translations yet',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: cs.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Translate Baybayin and your saved readings will appear here.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: cs.onSurface.withAlpha(185),
+                    height: 1.45,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 6),
-            Text(
-              'Translate Baybayin and your history will appear here.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 13,
-                color: cs.onSurface.withAlpha(100),
-                height: 1.5,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -133,12 +165,27 @@ class _ErrorState extends StatelessWidget {
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Text(
-          'Could not load history.\n$message',
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 13, color: cs.error, height: 1.5),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 380),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
+            decoration: BoxDecoration(
+              color: cs.errorContainer.withAlpha(90),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: cs.error.withAlpha(90)),
+            ),
+            child: Text(
+              'Could not load history.\n$message',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 13,
+                color: cs.onErrorContainer,
+                height: 1.5,
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -166,10 +213,10 @@ class _TranslationResultCard extends ConsumerWidget {
     final bool isLatinToBaybayin = result.direction == 'latin_to_baybayin';
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 13),
       decoration: BoxDecoration(
         color: cs.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: cs.outlineVariant),
       ),
       child: Column(
@@ -185,81 +232,85 @@ class _TranslationResultCard extends ConsumerWidget {
                     if (result.baybayinText.isNotEmpty)
                       Text(
                         result.baybayinText,
+                        softWrap: true,
                         style: TextStyle(
                           fontFamily: 'Baybayin Simple TAWBID',
-                          fontSize: 22,
+                          fontSize: 21,
                           color: cs.onSurface,
-                          letterSpacing: 4,
-                          height: 1.2,
+                          letterSpacing: 3.5,
+                          height: 1.25,
                         ),
                       ),
                     const SizedBox(height: 2),
                     Text(
                       result.latinText,
+                      softWrap: true,
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: 15.5,
                         fontWeight: FontWeight.w700,
                         color: cs.onSurface,
-                        letterSpacing: -0.2,
                       ),
-                    ),
-                    const SizedBox(height: 3),
-                    Row(
-                      children: <Widget>[
-                        Text(
-                          result.inputText,
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            color: cs.onSurface.withAlpha(120),
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Icon(
-                          isLatinToBaybayin
-                              ? Icons.arrow_forward_rounded
-                              : Icons.arrow_back_rounded,
-                          size: 11,
-                          color: cs.onSurface.withAlpha(100),
-                        ),
-                      ],
                     ),
                   ],
                 ),
               ),
               const SizedBox(width: 8),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: <Widget>[
-                  GestureDetector(
-                    onTap: result.id != null
-                        ? () => ref
-                              .read(
-                                translationHistoryNotifierProvider.notifier,
-                              )
-                              .toggleBookmark(result.id!, !result.isBookmarked)
-                        : null,
-                    child: Icon(
-                      result.isBookmarked
-                          ? Icons.bookmark_rounded
-                          : Icons.bookmark_add_outlined,
-                      size: 18,
-                      color: result.isBookmarked
-                          ? cs.primary
-                          : cs.onSurface.withAlpha(100),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    _formattedDate(result.timestamp),
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: cs.onSurface.withAlpha(110),
-                    ),
-                  ),
-                ],
+              IconButton(
+                tooltip: result.isBookmarked ? 'Remove bookmark' : 'Bookmark',
+                constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+                padding: EdgeInsets.zero,
+                onPressed: result.id != null
+                    ? () => ref
+                          .read(translationHistoryNotifierProvider.notifier)
+                          .toggleBookmark(result.id!, !result.isBookmarked)
+                    : null,
+                icon: Icon(
+                  result.isBookmarked
+                      ? Icons.bookmark_rounded
+                      : Icons.bookmark_add_outlined,
+                  size: 20,
+                  color: result.isBookmarked
+                      ? cs.primary
+                      : cs.onSurface.withAlpha(120),
+                ),
               ),
             ],
           ),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 6,
+            runSpacing: 4,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: <Widget>[
+              _MetaChip(
+                icon: isLatinToBaybayin
+                    ? Icons.arrow_forward_rounded
+                    : Icons.arrow_back_rounded,
+                label: isLatinToBaybayin
+                    ? 'Latin to Baybayin'
+                    : 'Baybayin to Latin',
+                cs: cs,
+              ),
+              _MetaChip(
+                icon: Icons.schedule_rounded,
+                label: _formattedDate(result.timestamp),
+                cs: cs,
+              ),
+            ],
+          ),
+          if (result.inputText.trim().isNotEmpty) ...<Widget>[
+            const SizedBox(height: 5),
+            Text(
+              result.inputText,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 11.5,
+                color: cs.onSurface.withAlpha(175),
+                height: 1.35,
+              ),
+            ),
+          ],
           if (hasAi) ...<Widget>[
             const SizedBox(height: 8),
             Container(
@@ -278,6 +329,41 @@ class _TranslationResultCard extends ConsumerWidget {
               ),
             ),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+class _MetaChip extends StatelessWidget {
+  const _MetaChip({required this.icon, required this.label, required this.cs});
+
+  final IconData icon;
+  final String label;
+  final ColorScheme cs;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainer,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: cs.outlineVariant),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(icon, size: 12, color: cs.onSurface.withAlpha(180)),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10.8,
+              fontWeight: FontWeight.w600,
+              color: cs.onSurface.withAlpha(185),
+            ),
+          ),
         ],
       ),
     );

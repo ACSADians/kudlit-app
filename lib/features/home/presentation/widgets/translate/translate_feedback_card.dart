@@ -33,18 +33,24 @@ class TranslateFeedbackCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Row(
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: <Widget>[
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w700,
-                  color: cs.onSurface,
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 220),
+                child: Text(
+                  title,
+                  softWrap: true,
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                    color: cs.onSurface,
+                  ),
                 ),
               ),
               if (sourceLabel != null) ...<Widget>[
-                const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 8,
@@ -56,10 +62,11 @@ class TranslateFeedbackCard extends StatelessWidget {
                   ),
                   child: Text(
                     sourceLabel!,
+                    softWrap: true,
                     style: TextStyle(
                       fontSize: 10.5,
                       fontWeight: FontWeight.w600,
-                      color: cs.onSurface.withAlpha(180),
+                      color: cs.onSurface.withAlpha(205),
                     ),
                   ),
                 ),
@@ -69,7 +76,11 @@ class TranslateFeedbackCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             displayBody,
-            style: TextStyle(fontSize: 13, color: cs.onSurface.withAlpha(195)),
+            style: TextStyle(
+              fontSize: 13,
+              height: 1.45,
+              color: cs.onSurface.withAlpha(215),
+            ),
           ),
           if (warning != null && warning!.trim().isNotEmpty) ...<Widget>[
             const SizedBox(height: 10),

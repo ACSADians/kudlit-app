@@ -34,54 +34,104 @@ class _GuestProfile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          Image.asset('assets/brand/ButtyWave.webp', width: 120, height: 120),
-          const SizedBox(height: 20),
-          Text(
-            'Kumusta, Bisita!',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              color: cs.onSurface,
-              letterSpacing: -0.3,
-            ),
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final bool compact =
+            constraints.maxHeight < 520 ||
+            constraints.maxWidth > constraints.maxHeight;
+        final double mascotSize = compact ? 78 : 112;
+
+        return SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(
+            20,
+            compact ? 18 : 28,
+            20,
+            MediaQuery.paddingOf(context).bottom + 24,
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Create an account to save your progress\nand access your profile.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 13.5,
-              color: cs.onSurface.withAlpha(180),
-              height: 1.5,
-            ),
-          ),
-          const SizedBox(height: 28),
-          GestureDetector(
-            onTap: onSignIn,
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 13),
-              decoration: BoxDecoration(
-                color: cs.primary,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Center(
-                child: Text(
-                  'Sign In or Create Account',
-                  style: TextStyle(
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w600,
-                    color: cs.onPrimary,
-                  ),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight - 42),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Image.asset(
+                      'assets/brand/ButtyWave.webp',
+                      width: mascotSize,
+                      height: mascotSize,
+                    ),
+                    SizedBox(height: compact ? 12 : 18),
+                    Text(
+                      'Kumusta, Bisita!',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: compact ? 20 : 22,
+                        fontWeight: FontWeight.w800,
+                        color: cs.onSurface,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Create an account to save your progress and access your profile.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        color: cs.onSurface.withAlpha(180),
+                        height: 1.45,
+                      ),
+                    ),
+                    SizedBox(height: compact ? 18 : 26),
+                    _PrimaryProfileAction(
+                      label: 'Sign In or Create Account',
+                      onTap: onSignIn,
+                      cs: cs,
+                    ),
+                  ],
                 ),
               ),
             ),
           ),
-        ],
+        );
+      },
+    );
+  }
+}
+
+class _PrimaryProfileAction extends StatelessWidget {
+  const _PrimaryProfileAction({
+    required this.label,
+    required this.onTap,
+    required this.cs,
+  });
+
+  final String label;
+  final VoidCallback onTap;
+  final ColorScheme cs;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: cs.primary,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 48),
+          alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14.5,
+              fontWeight: FontWeight.w700,
+              color: cs.onPrimary,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -103,53 +153,91 @@ class _UserProfile extends ConsumerWidget {
     final String displayName =
         summary?.displayName ?? user.email.split('@').first;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: <Widget>[
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: cs.primary, width: 2.5),
-            ),
-            child: ClipOval(
-              child: Image.asset(
-                'assets/brand/user.profile/butty.thumbsup.webp',
-                fit: BoxFit.cover,
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final bool compact =
+            constraints.maxHeight < 560 ||
+            constraints.maxWidth > constraints.maxHeight;
+        final double avatarSize = compact ? 62 : 76;
+
+        return SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(
+            18,
+            compact ? 16 : 24,
+            18,
+            MediaQuery.paddingOf(context).bottom + 24,
+          ),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 520),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: <Widget>[
+                  Container(
+                    width: avatarSize,
+                    height: avatarSize,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: cs.primary, width: 2.5),
+                    ),
+                    child: ClipOval(
+                      child: Image.asset(
+                        'assets/brand/user.profile/butty.thumbsup.webp',
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: compact ? 10 : 12),
+                  Text(
+                    displayName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: compact ? 17 : 18,
+                      fontWeight: FontWeight.w800,
+                      color: cs.onSurface,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    user.email,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      color: cs.onSurface.withAlpha(150),
+                    ),
+                  ),
+                  SizedBox(height: compact ? 18 : 24),
+                  if (summary != null) ...<Widget>[
+                    _StatsRow(summary: summary, cs: cs),
+                    SizedBox(height: compact ? 18 : 24),
+                  ],
+                  _HistoryShortcut(
+                    cs: cs,
+                    icon: Icons.document_scanner_outlined,
+                    title: 'Scanner History',
+                    subtitle: 'Review saved scans and readings',
+                    onTap: () => context.push(AppConstants.routeScanHistory),
+                  ),
+                  const SizedBox(height: 10),
+                  _HistoryShortcut(
+                    cs: cs,
+                    icon: Icons.translate_rounded,
+                    title: 'Translation History',
+                    subtitle: 'Find past translations and bookmarks',
+                    onTap: () =>
+                        context.push(AppConstants.routeTranslationHistory),
+                  ),
+                ],
               ),
             ),
           ),
-          const SizedBox(height: 14),
-          Text(
-            displayName,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: cs.onSurface,
-              letterSpacing: -0.2,
-            ),
-          ),
-          const SizedBox(height: 3),
-          Text(
-            user.email,
-            style: TextStyle(
-              fontSize: 12.5,
-              color: cs.onSurface.withAlpha(150),
-            ),
-          ),
-          const SizedBox(height: 28),
-          if (summary != null) ...<Widget>[
-            _StatsRow(summary: summary, cs: cs),
-            const SizedBox(height: 28),
-          ],
-          _ScanHistoryShortcut(cs: cs),
-          const SizedBox(height: 12),
-          _TranslationHistoryShortcut(cs: cs),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -162,37 +250,46 @@ class _StatsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: <Widget>[
-        _StatCell(
-          label: 'Scans',
-          value: '${summary.scanHistoryItems}',
-          cs: cs,
-        ),
-        _StatDivider(cs: cs),
-        _StatCell(
-          label: 'Lessons',
-          value: '${summary.completedLessons}',
-          cs: cs,
-        ),
-        _StatDivider(cs: cs),
-        _StatCell(
-          label: 'Saved',
-          value: '${summary.bookmarkedTranslations}',
-          cs: cs,
-        ),
-      ],
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: cs.outlineVariant),
+      ),
+      child: Row(
+        children: <Widget>[
+          Expanded(
+            child: _StatCell(
+              label: 'Scans',
+              value: '${summary.scanHistoryItems}',
+              cs: cs,
+            ),
+          ),
+          _StatDivider(cs: cs),
+          Expanded(
+            child: _StatCell(
+              label: 'Lessons',
+              value: '${summary.completedLessons}',
+              cs: cs,
+            ),
+          ),
+          _StatDivider(cs: cs),
+          Expanded(
+            child: _StatCell(
+              label: 'Saved',
+              value: '${summary.bookmarkedTranslations}',
+              cs: cs,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
 class _StatCell extends StatelessWidget {
-  const _StatCell({
-    required this.label,
-    required this.value,
-    required this.cs,
-  });
+  const _StatCell({required this.label, required this.value, required this.cs});
 
   final String label;
   final String value;
@@ -232,140 +329,90 @@ class _StatDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 1,
-      height: 36,
-      color: cs.outlineVariant,
-    );
+    return Container(width: 1, height: 36, color: cs.outlineVariant);
   }
 }
 
-class _ScanHistoryShortcut extends StatelessWidget {
-  const _ScanHistoryShortcut({required this.cs});
+class _HistoryShortcut extends StatelessWidget {
+  const _HistoryShortcut({
+    required this.cs,
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
 
   final ColorScheme cs;
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => context.push(AppConstants.routeScanHistory),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: cs.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: cs.outlineVariant),
-        ),
-        child: Row(
-          children: <Widget>[
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: cs.primaryContainer,
-                borderRadius: BorderRadius.circular(10),
+    return Material(
+      color: cs.surfaceContainerLow,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 64),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: cs.outlineVariant),
+          ),
+          child: Row(
+            children: <Widget>[
+              Container(
+                width: 36,
+                height: 36,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: cs.primaryContainer,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, size: 18, color: cs.onPrimaryContainer),
               ),
-              child: Icon(
-                Icons.document_scanner_outlined,
-                size: 18,
-                color: cs.onPrimaryContainer,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    'Scanner History',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: cs.onSurface,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: cs.onSurface,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 1),
-                  Text(
-                    'View all your past scans',
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      color: cs.onSurface.withAlpha(120),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        height: 1.25,
+                        color: cs.onSurface.withAlpha(130),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            Icon(
-              Icons.chevron_right_rounded,
-              size: 20,
-              color: cs.onSurface.withAlpha(64),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _TranslationHistoryShortcut extends StatelessWidget {
-  const _TranslationHistoryShortcut({required this.cs});
-
-  final ColorScheme cs;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => context.push(AppConstants.routeTranslationHistory),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: cs.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: cs.outlineVariant),
-        ),
-        child: Row(
-          children: <Widget>[
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: cs.primaryContainer,
-                borderRadius: BorderRadius.circular(10),
+              const SizedBox(width: 8),
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 20,
+                color: cs.onSurface.withAlpha(90),
               ),
-              child: Icon(
-                Icons.translate_rounded,
-                size: 18,
-                color: cs.onPrimaryContainer,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    'Translation History',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: cs.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 1),
-                  Text(
-                    'View your past translations',
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      color: cs.onSurface.withAlpha(120),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              Icons.chevron_right_rounded,
-              size: 20,
-              color: cs.onSurface.withAlpha(64),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

@@ -24,6 +24,7 @@ void main() {
   testWidgets('model setup card keeps long model names within phone width', (
     tester,
   ) async {
+    final SemanticsHandle semantics = tester.ensureSemantics();
     await tester.binding.setSurfaceSize(const Size(320, 593));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -42,7 +43,14 @@ void main() {
       ),
     );
 
+    expect(
+      find.bySemanticsLabel(
+        'Local AI model Butty Local AI Model Preview. Works offline after download.',
+      ),
+      findsOneWidget,
+    );
     expect(find.text('Butty Local AI Model Preview'), findsOneWidget);
     expect(tester.takeException(), isNull);
+    semantics.dispose();
   });
 }

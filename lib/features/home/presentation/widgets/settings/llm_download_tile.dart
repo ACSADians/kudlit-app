@@ -228,25 +228,31 @@ class _TileHeader extends StatelessWidget {
       children: <Widget>[
         Icon(icon, size: 18, color: cs.primary),
         const SizedBox(width: 8),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: cs.onSurface,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: cs.onSurface,
+                ),
               ),
-            ),
-            Text(
-              sublabel,
-              style: TextStyle(
-                fontSize: 11,
-                color: cs.onSurface.withAlpha(128),
+              Text(
+                sublabel,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: cs.onSurface.withAlpha(128),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ],
     );

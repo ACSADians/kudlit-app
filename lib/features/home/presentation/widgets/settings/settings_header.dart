@@ -27,6 +27,11 @@ class SettingsHeader extends ConsumerWidget {
         ?.toNullable();
     final String? name = (summary?.displayName ?? user?.displayName)?.trim();
     final String greeting = _greeting(name);
+    final Size viewport = MediaQuery.sizeOf(context);
+    final bool compact =
+        viewport.height < 560 || viewport.width > viewport.height;
+    final double headerHeight = compact ? 128 : 160;
+    final double mascotHeight = compact ? 96 : 126;
 
     return ClipPath(
       clipper: const _WaveClipper(),
@@ -42,7 +47,7 @@ class SettingsHeader extends ConsumerWidget {
         child: SafeArea(
           bottom: false,
           child: SizedBox(
-            height: 168,
+            height: headerHeight,
             child: Stack(
               children: <Widget>[
                 Positioned(
@@ -66,7 +71,7 @@ class SettingsHeader extends ConsumerWidget {
                   child:
                       Image.asset(
                             'assets/brand/ButtyWave.webp',
-                            height: 132,
+                            height: mascotHeight,
                             fit: BoxFit.fitHeight,
                           )
                           .animate(delay: 80.ms)
@@ -106,8 +111,8 @@ class SettingsHeader extends ConsumerWidget {
                 ),
                 Positioned(
                   left: 20,
-                  right: 140,
-                  bottom: 18,
+                  right: compact ? 104 : 138,
+                  bottom: compact ? 14 : 18,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
@@ -127,10 +132,10 @@ class SettingsHeader extends ConsumerWidget {
                           .fadeIn(duration: 260.ms)
                           .slideY(begin: 0.1, end: 0, duration: 260.ms),
                       const SizedBox(height: 4),
-                      const Text(
+                      Text(
                         'Profile, history, and Butty.',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: compact ? 11.5 : 12,
                           color: _foam,
                           fontWeight: FontWeight.w500,
                           height: 1.3,

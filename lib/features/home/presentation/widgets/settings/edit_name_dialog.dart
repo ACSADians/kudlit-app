@@ -28,13 +28,18 @@ class _EditNameDialogState extends State<EditNameDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text('Edit Display Name'),
-      content: TextField(
-        controller: _controller,
-        decoration: const InputDecoration(
-          hintText: 'Enter your new display name',
+      content: SingleChildScrollView(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 360),
+          child: TextField(
+            controller: _controller,
+            decoration: const InputDecoration(
+              hintText: 'Enter your new display name',
+            ),
+            autofocus: true,
+            textCapitalization: TextCapitalization.words,
+          ),
         ),
-        autofocus: true,
-        textCapitalization: TextCapitalization.words,
       ),
       actions: <Widget>[
         TextButton(

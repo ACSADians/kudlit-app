@@ -96,7 +96,7 @@ class _DropdownShell extends StatelessWidget {
         label: 'Scanner model picker',
         button: true,
         child: Container(
-          constraints: const BoxConstraints(minHeight: 40, maxWidth: 220),
+          constraints: const BoxConstraints(minHeight: 44, maxWidth: 220),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           decoration: BoxDecoration(
             color: const Color(0xFF0E1425).withAlpha(160),

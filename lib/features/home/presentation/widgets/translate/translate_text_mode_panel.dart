@@ -231,10 +231,7 @@ class _InputFieldState extends State<_InputField> {
           borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide(color: cs.outline.withAlpha(100)),
         ),
-        hintStyle: TextStyle(
-          color: cs.onSurface.withAlpha(120),
-          fontSize: 14,
-        ),
+        hintStyle: TextStyle(color: cs.onSurface.withAlpha(120), fontSize: 14),
         suffixIcon: _controller.text.isNotEmpty
             ? IconButton(
                 icon: Icon(
@@ -301,23 +298,29 @@ class _ActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
-    return GestureDetector(
-      onTap: enabled ? onTap : null,
-      child: Container(
-        constraints: const BoxConstraints(minHeight: 44),
-        alignment: Alignment.center,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-        decoration: BoxDecoration(
-          color: enabled ? cs.surfaceContainer : cs.surfaceContainerLowest,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: cs.outline),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: enabled ? cs.onSurface : cs.onSurface.withAlpha(110),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: enabled ? onTap : null,
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 44),
+          alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+          decoration: BoxDecoration(
+            color: enabled ? cs.surfaceContainer : cs.surfaceContainerLowest,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: enabled ? cs.outline : cs.outline.withAlpha(90),
+            ),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: enabled ? cs.onSurface : cs.onSurface.withAlpha(120),
+            ),
           ),
         ),
       ),
