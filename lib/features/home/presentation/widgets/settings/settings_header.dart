@@ -112,27 +112,6 @@ class SettingsHeader extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 9,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withAlpha(40),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: _foam.withAlpha(120)),
-                        ),
-                        child: Text(
-                          'KUDLIT - BEACH MODE',
-                          style: TextStyle(
-                            fontSize: 9.5,
-                            fontWeight: FontWeight.w800,
-                            color: _foam,
-                            letterSpacing: 1.0,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
                       Text(
                             greeting,
                             maxLines: 2,
