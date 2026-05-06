@@ -43,8 +43,6 @@ class SettingsList extends StatelessWidget {
         ],
         const PreferencesSection(),
         const SizedBox(height: 24),
-        const AiModelsSection(),
-        const SizedBox(height: 24),
         if (u != null) ...<Widget>[
           const AdminSection(),
           const SizedBox(height: 24),
@@ -54,6 +52,8 @@ class SettingsList extends StatelessWidget {
           const SizedBox(height: 24),
         ],
         const AboutSection(),
+        const SizedBox(height: 24),
+        const AiModelsSection(),
         if (u != null || isAuthLoading) ...<Widget>[
           const SizedBox(height: 24),
           SignOutTile(isLoading: isAuthLoading, onTap: onSignOutTap),

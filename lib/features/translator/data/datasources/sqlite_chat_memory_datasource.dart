@@ -1,10 +1,16 @@
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 
 import 'package:kudlit_ph/core/error/exceptions.dart';
+import 'package:kudlit_ph/features/translator/data/datasources/chat_memory_web_store.dart';
 import 'package:kudlit_ph/features/translator/domain/entities/chat_memory_fact.dart';
 
 /// SQLite-backed long-term memory for the Butty chat.
+///
+/// On web, sqflite is unavailable. All methods use an in-memory map so the
+/// Supabase fire-and-forget sync path fires correctly and facts are restored
+/// from Supabase on cold load.
 ///
 /// Schema:
 /// ```sql
@@ -20,11 +26,22 @@ import 'package:kudlit_ph/features/translator/domain/entities/chat_memory_fact.d
 /// CREATE UNIQUE INDEX chat_memory_facts_norm ON chat_memory_facts(normalized);
 /// ```
 class SqliteChatMemoryDatasource {
-  SqliteChatMemoryDatasource();
+  SqliteChatMemoryDatasource() : _forceInMemory = false;
+
+  /// Forces the in-memory path regardless of [kIsWeb]. Use in unit tests only.
+  @visibleForTesting
+  SqliteChatMemoryDatasource.inMemory() : _forceInMemory = true;
 
   static const String _dbName = 'kudlit_chat_memory.db';
   static const int _dbVersion = 1;
   static const String _table = 'chat_memory_facts';
+
+  // ── Web in-memory fallback ────────────────────────────────────────────────
+  final bool _forceInMemory;
+  bool get _useInMemory => kIsWeb || _forceInMemory;
+
+  final ChatMemoryWebStore _webStore = ChatMemoryWebStore();
+  // ─────────────────────────────────────────────────────────────────────────
 
   Database? _db;
 
@@ -60,6 +77,7 @@ class SqliteChatMemoryDatasource {
   }
 
   Future<List<ChatMemoryFact>> loadAll({int? limit}) async {
+    if (_useInMemory) return _webStore.loadAll(limit: limit);
     try {
       final Database db = await _open();
       final List<Map<String, Object?>> rows = await db.query(
@@ -76,6 +94,7 @@ class SqliteChatMemoryDatasource {
   /// Inserts the fact, ignoring duplicates by normalized content.
   /// Returns the persisted fact (with `id`) on success, null on dedupe-skip.
   Future<ChatMemoryFact?> insertIfNew(ChatMemoryFact fact) async {
+    if (_useInMemory) return _webStore.insertIfNew(fact);
     try {
       final Database db = await _open();
       final int id = await db.insert(
@@ -94,6 +113,10 @@ class SqliteChatMemoryDatasource {
     required int localId,
     required String remoteId,
   }) async {
+    if (_useInMemory) {
+      _webStore.setRemoteId(localId: localId, remoteId: remoteId);
+      return;
+    }
     try {
       final Database db = await _open();
       await db.update(
@@ -115,6 +138,14 @@ class SqliteChatMemoryDatasource {
     required String factType,
     required String content,
   }) async {
+    if (_useInMemory) {
+      _webStore.updateFact(
+        localId: localId,
+        factType: factType,
+        content: content,
+      );
+      return;
+    }
     try {
       final Database db = await _open();
       await db.update(
@@ -136,6 +167,7 @@ class SqliteChatMemoryDatasource {
   /// Reads a single row by local id. Used when we need the remote_id to
   /// mirror a delete to Supabase.
   Future<ChatMemoryFact?> findById(int localId) async {
+    if (_useInMemory) return _webStore.findById(localId);
     try {
       final Database db = await _open();
       final List<Map<String, Object?>> rows = await db.query(
@@ -152,6 +184,10 @@ class SqliteChatMemoryDatasource {
   }
 
   Future<void> deleteById(int localId) async {
+    if (_useInMemory) {
+      _webStore.deleteById(localId);
+      return;
+    }
     try {
       final Database db = await _open();
       await db.delete(_table, where: 'id = ?', whereArgs: <Object?>[localId]);
@@ -161,6 +197,10 @@ class SqliteChatMemoryDatasource {
   }
 
   Future<void> clear() async {
+    if (_useInMemory) {
+      _webStore.clear();
+      return;
+    }
     try {
       final Database db = await _open();
       await db.delete(_table);
@@ -170,6 +210,7 @@ class SqliteChatMemoryDatasource {
   }
 
   Future<void> dispose() async {
+    if (_useInMemory) return;
     await _db?.close();
     _db = null;
   }

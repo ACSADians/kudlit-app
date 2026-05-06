@@ -1,10 +1,16 @@
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 
 import 'package:kudlit_ph/core/error/exceptions.dart';
+import 'package:kudlit_ph/features/translator/data/datasources/chat_history_web_store.dart';
 import 'package:kudlit_ph/features/translator/domain/entities/chat_message.dart';
 
 /// SQLite-backed chat history store.
+///
+/// On web, sqflite is unavailable. All methods use an in-memory list instead,
+/// so the Supabase fire-and-forget sync path still fires correctly and history
+/// is restored from Supabase on the next cold load.
 ///
 /// Schema:
 /// ```sql
@@ -17,11 +23,22 @@ import 'package:kudlit_ph/features/translator/domain/entities/chat_message.dart'
 /// );
 /// ```
 class SqliteChatDatasource {
-  SqliteChatDatasource();
+  SqliteChatDatasource() : _forceInMemory = false;
+
+  /// Forces the in-memory path regardless of [kIsWeb]. Use in unit tests only.
+  @visibleForTesting
+  SqliteChatDatasource.inMemory() : _forceInMemory = true;
 
   static const String _dbName = 'kudlit_chat.db';
   static const int _dbVersion = 2;
   static const String _table = 'chat_messages';
+
+  // ── Web in-memory fallback ────────────────────────────────────────────────
+  final bool _forceInMemory;
+  bool get _useInMemory => kIsWeb || _forceInMemory;
+
+  final ChatHistoryWebStore _webStore = ChatHistoryWebStore();
+  // ─────────────────────────────────────────────────────────────────────────
 
   Database? _db;
 
@@ -52,6 +69,7 @@ class SqliteChatDatasource {
   }
 
   Future<List<ChatMessage>> loadAll({int? limit}) async {
+    if (_useInMemory) return _webStore.loadAll(limit: limit);
     try {
       final Database db = await _open();
       final List<Map<String, Object?>> rows = await db.query(
@@ -67,6 +85,7 @@ class SqliteChatDatasource {
 
   /// Last [limit] messages in chronological order, ready for prompt injection.
   Future<List<ChatMessage>> loadRecent({required int limit}) async {
+    if (_useInMemory) return _webStore.loadRecent(limit: limit);
     try {
       final Database db = await _open();
       final List<Map<String, Object?>> rows = await db.query(
@@ -86,6 +105,7 @@ class SqliteChatDatasource {
   }
 
   Future<ChatMessage> insert(ChatMessage message) async {
+    if (_useInMemory) return _webStore.insert(message);
     try {
       final Database db = await _open();
       final int id = await db.insert(_table, _toRow(message));
@@ -96,7 +116,14 @@ class SqliteChatDatasource {
   }
 
   /// Attach the Supabase UUID to a previously-inserted local row.
-  Future<void> setRemoteId({required int localId, required String remoteId}) async {
+  Future<void> setRemoteId({
+    required int localId,
+    required String remoteId,
+  }) async {
+    if (_useInMemory) {
+      _webStore.setRemoteId(localId: localId, remoteId: remoteId);
+      return;
+    }
     try {
       final Database db = await _open();
       await db.update(
@@ -111,6 +138,10 @@ class SqliteChatDatasource {
   }
 
   Future<void> clear() async {
+    if (_useInMemory) {
+      _webStore.clear();
+      return;
+    }
     try {
       final Database db = await _open();
       await db.delete(_table);
@@ -120,6 +151,7 @@ class SqliteChatDatasource {
   }
 
   Future<void> dispose() async {
+    if (_useInMemory) return;
     await _db?.close();
     _db = null;
   }
