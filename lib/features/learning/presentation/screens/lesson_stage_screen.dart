@@ -11,6 +11,7 @@ import 'package:kudlit_ph/features/learning/presentation/providers/lesson_contro
 import 'package:kudlit_ph/features/learning/presentation/providers/lesson_state.dart';
 import 'package:kudlit_ph/features/learning/presentation/widgets/butty_coach_panel.dart';
 import 'package:kudlit_ph/features/learning/presentation/widgets/butty_help_sheet.dart';
+import 'package:kudlit_ph/features/learning/presentation/widgets/learning_route_back.dart';
 import 'package:kudlit_ph/features/learning/presentation/widgets/lesson_completion_overlay.dart';
 import 'package:kudlit_ph/features/learning/presentation/widgets/lesson_progress_bar.dart';
 import 'package:kudlit_ph/features/learning/presentation/widgets/lesson_top_bar.dart';
@@ -54,7 +55,10 @@ class _LessonStageScreenState extends ConsumerState<LessonStageScreen> {
 
   void _handleContinue(LessonState state) {
     final LessonController ctrl = ref.read(lessonControllerProvider.notifier);
-    if (state.completed) return; // overlay handles navigation
+    if (state.completed) {
+      returnToLearn(context);
+      return;
+    }
     if (state.attemptStatus == AttemptStatus.correct) {
       ctrl.next();
       return;
@@ -80,26 +84,24 @@ class _LessonStageScreenState extends ConsumerState<LessonStageScreen> {
     ];
     final int idx = order.indexOf(currentLessonId);
     if (idx >= 0 && idx < order.length - 1) {
-      context.pushReplacement(
-        '${AppConstants.routeLesson}/${order[idx + 1]}',
-      );
+      context.pushReplacement('${AppConstants.routeLesson}/${order[idx + 1]}');
     } else {
-      context.pop();
+      returnToLearn(context);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<AsyncValue<LessonState?>>(
-      lessonControllerProvider,
-      (AsyncValue<LessonState?>? prev, AsyncValue<LessonState?> next) {
-        final bool wasCompleted = prev?.value?.completed ?? false;
-        final bool isCompleted = next.value?.completed ?? false;
-        if (!wasCompleted && isCompleted) {
-          setState(() => _showCompletion = true);
-        }
-      },
-    );
+    ref.listen<AsyncValue<LessonState?>>(lessonControllerProvider, (
+      AsyncValue<LessonState?>? prev,
+      AsyncValue<LessonState?> next,
+    ) {
+      final bool wasCompleted = prev?.value?.completed ?? false;
+      final bool isCompleted = next.value?.completed ?? false;
+      if (!wasCompleted && isCompleted) {
+        setState(() => _showCompletion = true);
+      }
+    });
 
     final AsyncValue<LessonState?> async = ref.watch(lessonControllerProvider);
     if (!kIsWeb) ref.watch(yoloDrawingPadModelProvider);
@@ -121,6 +123,9 @@ class _LessonStageScreenState extends ConsumerState<LessonStageScreen> {
                   freeKey: _freeKey,
                   onOpenHelp: _openHelp,
                   onContinue: () => _handleContinue(data),
+                  onRetry: () => ref
+                      .read(lessonControllerProvider.notifier)
+                      .resetAttempt(),
                 ),
                 if (_showCompletion)
                   LessonCompletionOverlay(
@@ -130,11 +135,9 @@ class _LessonStageScreenState extends ConsumerState<LessonStageScreen> {
                     onNext: () => _goToNextLesson(widget.lessonId),
                     onPracticeAgain: () {
                       setState(() => _showCompletion = false);
-                      ref
-                          .read(lessonControllerProvider.notifier)
-                          .restart();
+                      ref.read(lessonControllerProvider.notifier).restart();
                     },
-                    onBack: () => context.pop(),
+                    onBack: () => returnToLearn(context),
                   ),
               ],
             );
@@ -152,6 +155,7 @@ class _LessonScaffold extends StatelessWidget {
     required this.freeKey,
     required this.onOpenHelp,
     required this.onContinue,
+    required this.onRetry,
   });
 
   final LessonState state;
@@ -159,6 +163,7 @@ class _LessonScaffold extends StatelessWidget {
   final GlobalKey<FreeInputModeBodyState> freeKey;
   final void Function(LessonStep step) onOpenHelp;
   final VoidCallback onContinue;
+  final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
@@ -168,7 +173,7 @@ class _LessonScaffold extends StatelessWidget {
         LessonTopBar(
           title: state.lesson.title,
           subtitle: state.lesson.subtitle,
-          onClose: () => context.pop(),
+          onClose: () => returnToLearn(context),
         ),
         LessonProgressBar(
           progress: state.progress,
@@ -183,12 +188,16 @@ class _LessonScaffold extends StatelessWidget {
               return FadeTransition(
                 opacity: anim,
                 child: SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0.06, 0),
-                    end: Offset.zero,
-                  ).animate(
-                    CurvedAnimation(parent: anim, curve: Curves.easeOutCubic),
-                  ),
+                  position:
+                      Tween<Offset>(
+                        begin: const Offset(0.06, 0),
+                        end: Offset.zero,
+                      ).animate(
+                        CurvedAnimation(
+                          parent: anim,
+                          curve: Curves.easeOutCubic,
+                        ),
+                      ),
                   child: child,
                 ),
               );
@@ -207,11 +216,30 @@ class _LessonScaffold extends StatelessWidget {
           attemptStatus: state.attemptStatus,
           completed: state.completed,
           onContinue: onContinue,
+          showPrimaryAction:
+              state.completed ||
+              state.attemptStatus == AttemptStatus.correct ||
+              state.currentStep.mode == LessonMode.reference,
+          actionLabel: _actionLabel(state),
+          onRetry: onRetry,
           onAvatarTap: () => onOpenHelp(step),
           onAskHelp: () => onOpenHelp(step),
         ),
       ],
     );
+  }
+
+  String _actionLabel(LessonState state) {
+    if (state.completed) return 'Finish';
+    if (state.attemptStatus == AttemptStatus.correct) return 'Continue';
+    switch (state.currentStep.mode) {
+      case LessonMode.reference:
+        return 'Got it';
+      case LessonMode.draw:
+        return 'Check drawing';
+      case LessonMode.freeInput:
+        return 'Check answer';
+    }
   }
 }
 
@@ -264,7 +292,7 @@ class _ErrorView extends StatelessWidget {
             Text(message, textAlign: TextAlign.center),
             const SizedBox(height: 16),
             FilledButton(
-              onPressed: () => context.pop(),
+              onPressed: () => returnToLearn(context),
               child: const Text('Back'),
             ),
           ],

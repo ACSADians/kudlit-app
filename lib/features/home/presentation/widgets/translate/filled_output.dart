@@ -3,10 +3,22 @@ import 'package:flutter/material.dart';
 import 'output_actions.dart';
 
 class FilledOutput extends StatelessWidget {
-  const FilledOutput({super.key, required this.baybayin, required this.latin});
+  const FilledOutput({
+    super.key,
+    required this.baybayin,
+    required this.latin,
+    required this.copyLabel,
+    required this.shareLabel,
+    required this.onCopy,
+    required this.onShare,
+  });
 
   final String baybayin;
   final String latin;
+  final String copyLabel;
+  final String shareLabel;
+  final VoidCallback onCopy;
+  final VoidCallback onShare;
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +54,12 @@ class FilledOutput extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 24),
-        const OutputActions(),
+        OutputActions(
+          copyLabel: copyLabel,
+          shareLabel: shareLabel,
+          onCopy: onCopy,
+          onShare: onShare,
+        ),
       ],
     );
   }

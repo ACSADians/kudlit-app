@@ -15,7 +15,7 @@ import '../widgets/auth_sheet_headline.dart';
 import '../widgets/login_hero.dart';
 import '../widgets/sign_in_form.dart';
 import '../widgets/sign_up_prompt.dart';
-import 'reset_password_screen.dart';
+import 'forgot_password_screen.dart';
 import 'sign_up_screen.dart';
 
 /// Email + password sign-in screen.
@@ -87,7 +87,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
 
   void _openResetPassword() {
     Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const ResetPasswordScreen()),
+      MaterialPageRoute<void>(builder: (_) => const ForgotPasswordScreen()),
     );
   }
 

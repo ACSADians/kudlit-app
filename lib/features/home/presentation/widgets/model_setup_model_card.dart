@@ -88,17 +88,28 @@ class _OfflineBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: const <Widget>[
-        Icon(Icons.offline_bolt_rounded, size: 13, color: KudlitColors.blue800),
-        SizedBox(width: 4),
-        Text(
-          'Works offline after download',
-          style: TextStyle(
+    return const Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Padding(
+          padding: EdgeInsets.only(top: 1),
+          child: Icon(
+            Icons.offline_bolt_rounded,
+            size: 13,
             color: KudlitColors.blue800,
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
+          ),
+        ),
+        SizedBox(width: 4),
+        Flexible(
+          child: Text(
+            'Works offline after download',
+            softWrap: true,
+            style: TextStyle(
+              color: KudlitColors.blue800,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              height: 1.25,
+            ),
           ),
         ),
       ],

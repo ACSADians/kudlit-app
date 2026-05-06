@@ -18,39 +18,50 @@ class AuthSubmitButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
+    final bool enabled = !isLoading;
 
-    return GestureDetector(
-      onTap: isLoading ? null : onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 13),
-        decoration: BoxDecoration(
-          color: isLoading ? cs.primary.withAlpha(153) : cs.primary,
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      label: label,
+      child: Material(
+        color: isLoading ? cs.primary.withAlpha(153) : cs.primary,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          onTap: enabled ? onTap : null,
           borderRadius: BorderRadius.circular(12),
-          boxShadow: const <BoxShadow>[
-            BoxShadow(
-              color: Color(0x400E1425),
-              blurRadius: 10,
-              offset: Offset(0, 4),
-              spreadRadius: -2,
-            ),
-          ],
-        ),
-        alignment: Alignment.center,
-        child: isLoading
-            ? KudlitLoadingIndicator(
-                size: 20,
-                strokeWidth: 2,
-                color: cs.onPrimary,
-              )
-            : Text(
-                label,
-                style: TextStyle(
-                  color: cs.onPrimary,
-                  fontSize: 14.5,
-                  fontWeight: FontWeight.w600,
-                  height: 1.2,
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 48),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+            decoration: const BoxDecoration(
+              boxShadow: <BoxShadow>[
+                BoxShadow(
+                  color: Color(0x400E1425),
+                  blurRadius: 10,
+                  offset: Offset(0, 4),
+                  spreadRadius: -2,
                 ),
-              ),
+              ],
+            ),
+            alignment: Alignment.center,
+            child: isLoading
+                ? KudlitLoadingIndicator(
+                    size: 20,
+                    strokeWidth: 2,
+                    color: cs.onPrimary,
+                  )
+                : Text(
+                    label,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: cs.onPrimary,
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w600,
+                      height: 1.2,
+                    ),
+                  ),
+          ),
+        ),
       ),
     );
   }

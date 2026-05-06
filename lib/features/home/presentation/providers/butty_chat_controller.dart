@@ -7,6 +7,7 @@ import 'package:fpdart/fpdart.dart';
 import 'package:kudlit_ph/features/home/domain/entities/profile_summary.dart';
 import 'package:kudlit_ph/features/home/presentation/providers/app_preferences_provider.dart';
 import 'package:kudlit_ph/features/home/presentation/providers/profile_management_provider.dart';
+import 'package:kudlit_ph/features/home/presentation/utils/safe_ai_output.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/butty_chat/chat_msg.dart';
 import 'package:kudlit_ph/features/learning/domain/entities/gemma_prompts.dart';
 import 'package:kudlit_ph/features/translator/domain/entities/chat_memory_fact.dart';
@@ -69,8 +70,9 @@ class ButtyChatController extends Notifier<ButtyChatState> {
 
   Future<void> _loadHistory() async {
     try {
-      final List<ChatMessage> history =
-          await ref.read(chatHistoryNotifierProvider.future);
+      final List<ChatMessage> history = await ref.read(
+        chatHistoryNotifierProvider.future,
+      );
       _userMessageCount = history.where((ChatMessage m) => m.isUser).length;
       if (history.isEmpty) return;
       final List<ChatMsg> loaded = history
@@ -105,9 +107,11 @@ class ButtyChatController extends Notifier<ButtyChatState> {
     state = state.copyWith(messages: nextMessages, responding: true);
 
     unawaited(
-      ref.read(chatHistoryNotifierProvider.notifier).addMessage(
-        ChatMessage(text: trimmed, isUser: true, timestamp: DateTime.now()),
-      ),
+      ref
+          .read(chatHistoryNotifierProvider.notifier)
+          .addMessage(
+            ChatMessage(text: trimmed, isUser: true, timestamp: DateTime.now()),
+          ),
     );
 
     _userMessageCount += 1;
@@ -131,10 +135,7 @@ class ButtyChatController extends Notifier<ButtyChatState> {
     try {
       final Stream<String> responseStream = ref
           .read(aiInferenceNotifierProvider.notifier)
-          .generateResponse(
-            history,
-            systemInstruction: systemInstruction,
-          );
+          .generateResponse(history, systemInstruction: systemInstruction);
       debugPrint('[Butty] response stream opened');
 
       state = state.copyWith(
@@ -144,10 +145,11 @@ class ButtyChatController extends Notifier<ButtyChatState> {
       final StringBuffer buffer = StringBuffer();
       await for (final String chunk in responseStream) {
         buffer.write(chunk);
+        final String displayText = cleanAssistantOutput(buffer.toString());
         state = state.copyWith(
           messages: <ChatMsg>[
             ...state.messages.take(state.messages.length - 1),
-            (isButty: true, text: buffer.toString()),
+            (isButty: true, text: displayText),
           ],
         );
       }
@@ -155,13 +157,15 @@ class ButtyChatController extends Notifier<ButtyChatState> {
         '[Butty] response completed | chars=${buffer.toString().length}',
       );
       unawaited(
-        ref.read(chatHistoryNotifierProvider.notifier).addMessage(
-          ChatMessage(
-            text: buffer.toString(),
-            isUser: false,
-            timestamp: DateTime.now(),
-          ),
-        ),
+        ref
+            .read(chatHistoryNotifierProvider.notifier)
+            .addMessage(
+              ChatMessage(
+                text: buffer.toString(),
+                isUser: false,
+                timestamp: DateTime.now(),
+              ),
+            ),
       );
 
       // Memory extraction runs in the background — never blocks the user.

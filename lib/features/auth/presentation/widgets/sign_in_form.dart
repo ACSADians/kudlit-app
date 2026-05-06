@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kudlit_ph/app/constants.dart';
 import 'auth_submit_button.dart';
 import 'email_field.dart';
 import 'forgot_password_link.dart';
@@ -24,6 +25,21 @@ class SignInForm extends StatelessWidget {
   final VoidCallback onSubmit;
   final VoidCallback onForgotPassword;
 
+  String? _validateEmail(String? value) {
+    final String email = value?.trim() ?? '';
+    if (email.isEmpty) return AppConstants.emailRequiredMessage;
+    final bool valid = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email);
+    if (!valid) return AppConstants.invalidEmailMessage;
+    return null;
+  }
+
+  String? _validatePassword(String? value) {
+    if (value == null || value.isEmpty) {
+      return AppConstants.passwordRequiredMessage;
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Form(
@@ -34,11 +50,13 @@ class SignInForm extends StatelessWidget {
           children: <Widget>[
             EmailField(
               controller: emailController,
+              validator: _validateEmail,
               textInputAction: TextInputAction.next,
             ),
             const SizedBox(height: 12),
             PasswordField(
               controller: passwordController,
+              validator: _validatePassword,
               textInputAction: TextInputAction.done,
               onSubmitted: (_) => onSubmit(),
             ),

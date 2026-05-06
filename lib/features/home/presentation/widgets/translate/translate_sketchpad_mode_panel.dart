@@ -82,12 +82,15 @@ class _TranslateSketchpadModePanelState
         !widget.state.aiBusy &&
         _latestStrokes.isNotEmpty &&
         widget.state.target.trim().isNotEmpty;
+    final String? actionReason = _disabledReason(canRequest);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
+          _SketchpadIntro(target: widget.state.target),
+          const SizedBox(height: 12),
           TextField(
             controller: _targetController,
             onChanged: widget.onTargetChanged,
@@ -128,6 +131,15 @@ class _TranslateSketchpadModePanelState
                 color: Theme.of(context).colorScheme.onSurface.withAlpha(170),
               ),
             ),
+          ] else if (actionReason != null) ...<Widget>[
+            const SizedBox(height: 8),
+            Text(
+              actionReason,
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurface.withAlpha(170),
+              ),
+            ),
           ],
           const SizedBox(height: 4),
           Text(
@@ -138,13 +150,11 @@ class _TranslateSketchpadModePanelState
             ),
           ),
           const SizedBox(height: 10),
-          Text(
-            _latestStrokes.isEmpty
-                ? 'No sketch yet. Open Sketchpad and draw your target.'
-                : 'Sketch ready: ${_latestStrokes.length} stroke(s).',
-            style: TextStyle(
-              fontSize: 12,
-              color: Theme.of(context).colorScheme.onSurface.withAlpha(175),
+          _SketchSummary(
+            strokeCount: _latestStrokes.length,
+            pointCount: _latestStrokes.fold<int>(
+              0,
+              (int total, List<Offset> stroke) => total + stroke.length,
             ),
           ),
           if (widget.state.aiResponse.trim().isNotEmpty) ...<Widget>[
@@ -155,6 +165,133 @@ class _TranslateSketchpadModePanelState
               sourceLabel: widget.state.aiSource?.label,
             ),
           ],
+        ],
+      ),
+    );
+  }
+
+  String? _disabledReason(bool canRequest) {
+    if (canRequest) return null;
+    if (!widget.aiActionsEnabled) {
+      return widget.disabledReason ?? 'Model unavailable for sketch feedback.';
+    }
+    if (widget.state.aiBusy) return 'Feedback is already running.';
+    if (widget.state.target.trim().isEmpty) {
+      return 'Enter a target before opening feedback.';
+    }
+    if (_latestStrokes.isEmpty) {
+      return 'Draw first, then request feedback.';
+    }
+    return null;
+  }
+}
+
+class _SketchpadIntro extends StatelessWidget {
+  const _SketchpadIntro({required this.target});
+
+  final String target;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    final String preview = target.trim().isEmpty ? 'ba' : target.trim();
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: cs.outline),
+      ),
+      child: Row(
+        children: <Widget>[
+          Container(
+            width: 56,
+            height: 56,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: cs.surface,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: cs.outline),
+            ),
+            child: Text(
+              preview,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontFamily: 'Baybayin Simple TAWBID',
+                fontSize: 28,
+                color: cs.onSurface,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  'Sketch a Target',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: cs.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Enter the glyph or syllable you want to practice, then draw it in the sheet.',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    height: 1.35,
+                    color: cs.onSurface.withAlpha(165),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SketchSummary extends StatelessWidget {
+  const _SketchSummary({required this.strokeCount, required this.pointCount});
+
+  final int strokeCount;
+  final int pointCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    final bool hasSketch = strokeCount > 0;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: hasSketch ? cs.surfaceContainerLow : cs.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: cs.outline),
+      ),
+      child: Row(
+        children: <Widget>[
+          Icon(
+            hasSketch ? Icons.gesture_rounded : Icons.edit_outlined,
+            size: 18,
+            color: cs.onSurface.withAlpha(150),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              hasSketch
+                  ? 'Sketch ready: $strokeCount stroke(s), $pointCount points.'
+                  : 'No sketch yet. Open Sketchpad and draw your target.',
+              style: TextStyle(
+                fontSize: 12.5,
+                color: cs.onSurface.withAlpha(175),
+              ),
+            ),
+          ),
         ],
       ),
     );

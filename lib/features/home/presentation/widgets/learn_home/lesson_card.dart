@@ -16,18 +16,24 @@ class LessonCard extends ConsumerWidget {
     required this.index,
     required this.title,
     required this.subtitle,
+    required this.glyphCount,
+    required this.estimatedLength,
     required this.items,
     required this.onStart,
     this.isLocked = false,
+    this.lockedReason,
     this.progress,
   });
 
   final int index;
   final String title;
   final String subtitle;
+  final int glyphCount;
+  final String estimatedLength;
   final List<(String, String)> items;
   final VoidCallback onStart;
   final bool isLocked;
+  final String? lockedReason;
   final LessonProgress? progress;
 
   @override
@@ -39,20 +45,35 @@ class LessonCard extends ConsumerWidget {
       opacity: isLocked ? 0.55 : 1.0,
       child: Container(
         decoration: BoxDecoration(
-          color: cs.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(16),
+          color: isLocked ? cs.surfaceContainerHigh : cs.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(color: cs.outline),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            _CardHeader(
-              index: index,
-              title: title,
-              subtitle: subtitle,
-              status: status,
-              progress: progress,
-              cs: cs,
+            Stack(
+              children: <Widget>[
+                LessonCardInfo(
+                  index: index,
+                  title: title,
+                  subtitle: subtitle,
+                  glyphCount: glyphCount,
+                  estimatedLength: estimatedLength,
+                  status: _statusLabel(status, isLocked),
+                  isLocked: isLocked,
+                ),
+                if (status != LessonStatus.notStarted && !isLocked)
+                  Positioned(
+                    top: 12,
+                    right: 14,
+                    child: _ProgressBadge(
+                      status: status,
+                      progress: progress,
+                      cs: cs,
+                    ),
+                  ),
+              ],
             ),
             if (items.isNotEmpty) GlyphPreviewRow(items: items),
             if (status == LessonStatus.inProgress && progress != null)
@@ -60,6 +81,7 @@ class LessonCard extends ConsumerWidget {
             BeginButton(
               onStart: onStart,
               isLocked: isLocked,
+              lockedReason: lockedReason,
               label: _buttonLabel(status),
             ),
             if (status == LessonStatus.completed && !isLocked)
@@ -96,46 +118,25 @@ class LessonCard extends ConsumerWidget {
       case LessonStatus.completed:
         return 'Review';
       case LessonStatus.notStarted:
-        return 'Begin';
+        return 'Begin Lesson';
+    }
+  }
+
+  String _statusLabel(LessonStatus status, bool locked) {
+    if (locked) return 'Locked';
+    switch (status) {
+      case LessonStatus.inProgress:
+        return 'In progress';
+      case LessonStatus.completed:
+        return 'Done';
+      case LessonStatus.notStarted:
+        return 'Ready';
     }
   }
 }
 
-class _CardHeader extends StatelessWidget {
-  const _CardHeader({
-    required this.index,
-    required this.title,
-    required this.subtitle,
-    required this.status,
-    required this.progress,
-    required this.cs,
-  });
-
-  final int index;
-  final String title;
-  final String subtitle;
-  final LessonStatus status;
-  final LessonProgress? progress;
-  final ColorScheme cs;
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      children: <Widget>[
-        LessonCardInfo(index: index, title: title, subtitle: subtitle),
-        if (status != LessonStatus.notStarted)
-          Positioned(
-            top: 12,
-            right: 14,
-            child: _StatusBadge(status: status, progress: progress, cs: cs),
-          ),
-      ],
-    );
-  }
-}
-
-class _StatusBadge extends StatelessWidget {
-  const _StatusBadge({
+class _ProgressBadge extends StatelessWidget {
+  const _ProgressBadge({
     required this.status,
     required this.progress,
     required this.cs,
@@ -148,21 +149,17 @@ class _StatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool done = status == LessonStatus.completed;
-    final Color bgColor = done
-        ? const Color(0xFF46B986).withAlpha(30)
-        : const Color(0xFFF5A623).withAlpha(30);
     final Color fgColor = done
         ? const Color(0xFF46B986)
         : const Color(0xFFF5A623);
-
     final String label = done
         ? '${progress?.score ?? 0}%'
-        : 'Step ${(progress?.currentStepIndex ?? 0)} / ${progress?.totalSteps ?? 0}';
+        : 'Step ${(progress?.currentStepIndex ?? 0) + 1} / ${progress?.totalSteps ?? 0}';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: bgColor,
+        color: fgColor.withAlpha(30),
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: fgColor.withAlpha(80)),
       ),
@@ -223,13 +220,14 @@ class _RestartButton extends StatelessWidget {
       child: Center(
         child: TextButton.icon(
           onPressed: onRestart,
-          icon: Icon(Icons.replay_rounded, size: 14, color: cs.onSurface.withAlpha(120)),
+          icon: Icon(
+            Icons.replay_rounded,
+            size: 14,
+            color: cs.onSurface.withAlpha(120),
+          ),
           label: Text(
             'Restart from beginning',
-            style: TextStyle(
-              fontSize: 12,
-              color: cs.onSurface.withAlpha(120),
-            ),
+            style: TextStyle(fontSize: 12, color: cs.onSurface.withAlpha(120)),
           ),
           style: TextButton.styleFrom(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),

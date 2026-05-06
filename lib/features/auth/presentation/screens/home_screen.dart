@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:kudlit_ph/features/home/presentation/screens/butty_chat_screen.dart';
 import 'package:kudlit_ph/features/home/presentation/screens/learn_tab.dart';
@@ -17,7 +18,8 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   AppTab _activeTab = AppTab.scan;
-  late final PageController _pageController;
+  late PageController _pageController;
+  String? _appliedRouteTab;
 
   @override
   void initState() {
@@ -29,6 +31,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void dispose() {
     _pageController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final String? routeTab = GoRouterState.of(
+      context,
+    ).uri.queryParameters['tab'];
+    if (routeTab == _appliedRouteTab) return;
+    _appliedRouteTab = routeTab;
+
+    final AppTab? targetTab = _tabFromRoute(routeTab);
+    if (targetTab == null || targetTab == _activeTab) return;
+    _activeTab = targetTab;
+    if (_pageController.hasClients) {
+      _pageController.jumpToPage(targetTab.index);
+    } else {
+      _pageController.dispose();
+      _pageController = PageController(initialPage: targetTab.index);
+    }
   }
 
   void _onTabSelected(AppTab tab) {
@@ -43,7 +65,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final double navBottom = MediaQuery.paddingOf(context).bottom + 20;
+    final EdgeInsets safePadding = MediaQuery.paddingOf(context);
+    final double navBottom = safePadding.bottom + 20;
+    final double navRight = safePadding.right + 18;
 
     return Scaffold(
       body: Column(
@@ -58,12 +82,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 activeTab: _activeTab,
                 onTabSelected: _onTabSelected,
                 navBottom: navBottom,
+                navRight: navRight,
               ),
             ),
           ),
         ],
       ),
     );
+  }
+
+  AppTab? _tabFromRoute(String? value) {
+    return switch (value) {
+      'scan' => AppTab.scan,
+      'translate' => AppTab.translate,
+      'learn' => AppTab.learn,
+      'butty' => AppTab.butty,
+      _ => null,
+    };
   }
 }
 
@@ -73,12 +108,14 @@ class _HomeBody extends StatelessWidget {
     required this.activeTab,
     required this.onTabSelected,
     required this.navBottom,
+    required this.navRight,
   });
 
   final PageController pageController;
   final AppTab activeTab;
   final ValueChanged<AppTab> onTabSelected;
   final double navBottom;
+  final double navRight;
 
   @override
   Widget build(BuildContext context) {
@@ -96,7 +133,7 @@ class _HomeBody extends StatelessWidget {
           ],
         ),
         Positioned(
-          right: 18,
+          right: navRight,
           bottom: navBottom,
           child: FloatingTabNav(
             activeTab: activeTab,

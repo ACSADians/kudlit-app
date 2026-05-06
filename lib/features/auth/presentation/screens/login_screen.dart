@@ -72,7 +72,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   void _onForgotPassword(BuildContext context) {
-    context.push(AppConstants.routeForgotPassword);
+    context.go(AppConstants.routeForgotPassword);
   }
 
   void _onContinueAsGuest(BuildContext context) {
@@ -81,8 +81,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final double screenHeight = MediaQuery.sizeOf(context).height;
-    final double heroHeight = screenHeight * 0.52;
+    final Size screenSize = MediaQuery.sizeOf(context);
+    final bool landscape = screenSize.width > screenSize.height;
+    final Widget authSheet = LoginBottomSheet(
+      onContinueWithPhone: () => _onContinueWithPhone(context),
+      onContinueWithEmail: () => _onContinueWithEmail(context),
+      onContinueWithGoogle: () => _onContinueWithGoogle(context),
+      onCreateAccount: () => _onCreateAccount(context),
+      onForgotPassword: () => _onForgotPassword(context),
+      onContinueAsGuest: () => _onContinueAsGuest(context),
+      isGoogleLoading: _isGoogleLoading,
+    );
+
+    if (landscape) {
+      return Scaffold(
+        body: Row(
+          children: <Widget>[
+            const Expanded(flex: 4, child: LoginHero()),
+            Expanded(flex: 7, child: SafeArea(left: false, child: authSheet)),
+          ],
+        ),
+      );
+    }
+
+    final double heroFraction = screenSize.height < 700 ? 0.42 : 0.52;
+    final double heroHeight = screenSize.height * heroFraction;
 
     return Scaffold(
       body: Stack(
@@ -102,14 +125,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             right: 0,
             top: heroHeight - 22,
             bottom: 0,
-            child: LoginBottomSheet(
-              onContinueWithPhone: () => _onContinueWithPhone(context),
-              onContinueWithEmail: () => _onContinueWithEmail(context),
-              onContinueWithGoogle: () => _onContinueWithGoogle(context),
-              onCreateAccount: () => _onCreateAccount(context),
-              onForgotPassword: () => _onForgotPassword(context),
-              onContinueAsGuest: () => _onContinueAsGuest(context),
-            ),
+            child: authSheet,
           ),
         ],
       ),

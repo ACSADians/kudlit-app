@@ -97,6 +97,7 @@ class TranslateScreen extends ConsumerWidget {
                         .checkInput(),
                   ),
                   onCopy: () => _copyOutput(context, textState),
+                  onShare: () => _shareOutput(context, textState),
                 ),
                 TranslateWorkspaceMode.sketchpad => TranslateSketchpadModePanel(
                   state: sketchState,
@@ -127,9 +128,7 @@ class TranslateScreen extends ConsumerWidget {
     BuildContext context,
     TranslateTextState state,
   ) async {
-    final String output = state.latinToBaybayin
-        ? state.baybayinText
-        : state.latinText;
+    final String output = _textOutput(state);
     if (output.trim().isEmpty) {
       if (context.mounted) {
         ScaffoldMessenger.of(
@@ -146,4 +145,30 @@ class TranslateScreen extends ConsumerWidget {
     }
   }
 
+  Future<void> _shareOutput(
+    BuildContext context,
+    TranslateTextState state,
+  ) async {
+    final String output = _textOutput(state);
+    if (output.trim().isEmpty) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Nothing to share yet.')));
+      }
+      return;
+    }
+    await Clipboard.setData(ClipboardData(text: output));
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Share sheet is not available yet. Copied output.'),
+        ),
+      );
+    }
+  }
+
+  String _textOutput(TranslateTextState state) {
+    return state.latinToBaybayin ? state.baybayinText : state.latinText;
+  }
 }

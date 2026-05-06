@@ -9,7 +9,18 @@ import 'package:kudlit_ph/features/home/presentation/providers/translation_histo
 import 'output_action_pill.dart';
 
 class OutputActions extends ConsumerWidget {
-  const OutputActions({super.key});
+  const OutputActions({
+    super.key,
+    this.copyLabel = 'Copy',
+    this.shareLabel = 'Share',
+    this.onCopy,
+    this.onShare,
+  });
+
+  final String copyLabel;
+  final String shareLabel;
+  final VoidCallback? onCopy;
+  final VoidCallback? onShare;
 
   String _outputText(TranslateTextState state) =>
       state.latinToBaybayin ? state.baybayinText : state.latinText;
@@ -33,14 +44,13 @@ class OutputActions extends ConsumerWidget {
     if (output.trim().isEmpty) return;
     final String shareText = state.latinToBaybayin
         ? '"${state.inputText}" in Baybayin: $output'
-        : '"${state.inputText}" → $output';
+        : '"${state.inputText}" -> $output';
     await SharePlus.instance.share(ShareParams(text: shareText));
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final TranslateTextState state =
-        ref.watch(translateTextControllerProvider);
+    final TranslateTextState state = ref.watch(translateTextControllerProvider);
     final bool hasOutput = _outputText(state).trim().isNotEmpty;
 
     final TranslationResult? latest = ref
@@ -54,14 +64,14 @@ class OutputActions extends ConsumerWidget {
       children: <Widget>[
         OutputActionPill(
           icon: Icons.copy_rounded,
-          label: 'Copy',
-          onTap: hasOutput ? () => _copy(context, state) : null,
+          label: copyLabel,
+          onTap: onCopy ?? (hasOutput ? () => _copy(context, state) : null),
         ),
         const SizedBox(width: 8),
         OutputActionPill(
           icon: Icons.share_rounded,
-          label: 'Share',
-          onTap: hasOutput ? () => _share(state) : null,
+          label: shareLabel,
+          onTap: onShare ?? (hasOutput ? () => _share(state) : null),
         ),
         const SizedBox(width: 8),
         OutputActionPill(

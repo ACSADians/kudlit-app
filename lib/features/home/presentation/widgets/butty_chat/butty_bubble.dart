@@ -2,12 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 
+import 'package:kudlit_ph/features/home/presentation/utils/safe_ai_output.dart';
+
 class ButtyBubble extends StatelessWidget {
-  const ButtyBubble({
-    super.key,
-    required this.text,
-    this.isStreaming = false,
-  });
+  const ButtyBubble({super.key, required this.text, this.isStreaming = false});
 
   final String text;
 
@@ -18,6 +16,7 @@ class ButtyBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
+    final String displayText = cleanAssistantOutput(text);
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(
@@ -50,7 +49,10 @@ class ButtyBubble extends StatelessWidget {
                 ),
                 border: Border.all(color: cs.outline),
               ),
-              child: _BubbleContent(text: text, isStreaming: isStreaming),
+              child: _BubbleContent(
+                text: displayText,
+                isStreaming: isStreaming,
+              ),
             ),
           ),
         ],
@@ -132,16 +134,19 @@ class _StreamingCursor extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 3),
-      child: Container(
-        width: 6,
-        height: 14,
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(2),
-        ),
-      )
-          .animate(onPlay: (AnimationController c) => c.repeat(reverse: true))
-          .fadeOut(duration: 600.ms, curve: Curves.easeInOut),
+      child:
+          Container(
+                width: 6,
+                height: 14,
+                decoration: BoxDecoration(
+                  color: color,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              )
+              .animate(
+                onPlay: (AnimationController c) => c.repeat(reverse: true),
+              )
+              .fadeOut(duration: 600.ms, curve: Curves.easeInOut),
     );
   }
 }

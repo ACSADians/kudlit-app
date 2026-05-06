@@ -8,6 +8,7 @@ import 'package:kudlit_ph/features/home/domain/entities/translation_result.dart'
 import 'package:kudlit_ph/features/home/presentation/providers/app_preferences_provider.dart';
 import 'package:kudlit_ph/features/home/presentation/providers/translate_page_controller.dart';
 import 'package:kudlit_ph/features/home/presentation/providers/translation_history_provider.dart';
+import 'package:kudlit_ph/features/home/presentation/utils/safe_ai_output.dart';
 import 'package:kudlit_ph/features/learning/domain/entities/gemma_prompts.dart';
 import 'package:kudlit_ph/features/translator/domain/entities/chat_message.dart';
 import 'package:kudlit_ph/features/translator/presentation/providers/translator_providers.dart';
@@ -80,9 +81,7 @@ translateTextControllerProvider =
 class TranslateTextController extends Notifier<TranslateTextState> {
   static final RegExp _numberPattern = RegExp(r'[0-9]');
   static final RegExp _punctuationPattern = RegExp(r'[!-/:-@[-`{-~]');
-  static final RegExp _unsupportedPattern = RegExp(
-    r'[^A-Za-z0-9\sñÑᜀ-ᜟ]',
-  );
+  static final RegExp _unsupportedPattern = RegExp(r'[^A-Za-z0-9\sñÑᜀ-ᜟ]');
   static final RegExp _baybayinPattern = RegExp(r'[ᜀ-ᜟ]');
 
   Timer? _saveDebounce;
@@ -278,15 +277,17 @@ class TranslateTextController extends Notifier<TranslateTextState> {
     try {
       await for (final String chunk in stream) {
         buffer.write(chunk);
+        final String displayResponse = cleanAssistantOutput(buffer.toString());
         state = state.copyWith(
           aiBusy: true,
-          aiResponse: buffer.toString(),
+          aiResponse: displayResponse,
           aiSource: source,
         );
       }
+      final String displayResponse = cleanAssistantOutput(buffer.toString());
       state = state.copyWith(
         aiBusy: false,
-        aiResponse: buffer.toString(),
+        aiResponse: displayResponse,
         aiSource: source,
       );
       if (buffer.isNotEmpty) {

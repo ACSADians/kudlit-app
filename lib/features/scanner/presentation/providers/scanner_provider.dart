@@ -4,10 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import 'package:kudlit_ph/features/scanner/data/datasources/device_inference_capability_checker.dart';
-import 'package:kudlit_ph/features/scanner/data/datasources/web_baybayin_detector.dart';
+import 'package:kudlit_ph/features/scanner/data/datasources/web_baybayin_detector_factory.dart';
 import 'package:kudlit_ph/features/scanner/data/datasources/yolo_baybayin_detector.dart';
 import 'package:kudlit_ph/features/scanner/domain/entities/baybayin_detection.dart';
 import 'package:kudlit_ph/features/scanner/domain/repositories/baybayin_detector.dart';
+import 'package:kudlit_ph/features/scanner/presentation/providers/yolo_model_selection_provider.dart';
+import 'package:kudlit_ph/features/translator/domain/entities/ai_model_info.dart';
 
 part 'scanner_provider.g.dart';
 
@@ -15,10 +17,30 @@ part 'scanner_provider.g.dart';
 @Riverpod(keepAlive: true)
 BaybayinDetector baybayinDetector(Ref ref) {
   final BaybayinDetector detector = kIsWeb
-      ? WebBaybayinDetector()
+      ? createWebBaybayinDetector(
+          modelUrlResolver: () => _resolveWebVisionModelUrl(ref),
+        )
       : YoloBaybayinDetector();
   ref.onDispose(detector.dispose);
   return detector;
+}
+
+Future<String?> _resolveWebVisionModelUrl(Ref ref) async {
+  final List<AiModelInfo> models = await ref.read(
+    availableYoloModelsProvider.future,
+  );
+  if (models.isEmpty) return null;
+
+  final YoloModelSelection selection = await ref.read(
+    yoloModelSelectionProvider.future,
+  );
+  final String? selectedId = selection.idFor(YoloModelScope.camera);
+  if (selectedId != null) {
+    for (final AiModelInfo model in models) {
+      if (model.id == selectedId) return model.modelLink;
+    }
+  }
+  return models.first.modelLink;
 }
 
 /// Holds the latest list of detections pushed from [ScannerCamera].

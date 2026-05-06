@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import 'package:kudlit_ph/features/learning/domain/entities/lesson_step.dart';
 import 'package:kudlit_ph/features/learning/presentation/providers/quiz_provider.dart';
+import 'package:kudlit_ph/features/learning/presentation/widgets/learning_route_back.dart';
 import 'package:kudlit_ph/features/learning/presentation/widgets/quiz_result_card.dart';
 
 class QuizScreen extends ConsumerStatefulWidget {
@@ -43,7 +43,10 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
   Widget build(BuildContext context) {
     final AsyncValue<QuizState?> quizAsync = ref.watch(quizProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Quick Quiz')),
+      appBar: AppBar(
+        leading: const LearnRouteBackButton(),
+        title: const Text('Quick Quiz'),
+      ),
       body: quizAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (Object e, _) => const _QuizErrorBody(),
@@ -59,7 +62,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
         score: state.correctCount,
         total: state.totalQuestions,
         onRetry: () => ref.read(quizProvider.notifier).loadQuiz(),
-        onDone: () => context.pop(),
+        onDone: () => returnToLearn(context),
       );
     }
     return _QuizBody(
@@ -181,10 +184,7 @@ class _QuizProgressBar extends StatelessWidget {
         const SizedBox(height: 6),
         ClipRRect(
           borderRadius: BorderRadius.circular(4),
-          child: LinearProgressIndicator(
-            value: current / total,
-            minHeight: 6,
-          ),
+          child: LinearProgressIndicator(value: current / total, minHeight: 6),
         ),
       ],
     );
@@ -233,10 +233,7 @@ class _GlyphDisplay extends StatelessWidget {
 }
 
 class _AnsweringSection extends StatelessWidget {
-  const _AnsweringSection({
-    required this.controller,
-    required this.onCheck,
-  });
+  const _AnsweringSection({required this.controller, required this.onCheck});
 
   final TextEditingController controller;
   final VoidCallback onCheck;
@@ -258,10 +255,7 @@ class _AnsweringSection extends StatelessWidget {
           onSubmitted: (_) => onCheck(),
         ),
         const SizedBox(height: 16),
-        FilledButton(
-          onPressed: onCheck,
-          child: const Text('Check'),
-        ),
+        FilledButton(onPressed: onCheck, child: const Text('Check')),
       ],
     );
   }
@@ -296,9 +290,7 @@ class _AnsweredSection extends StatelessWidget {
           child: Row(
             children: <Widget>[
               Icon(
-                isCorrect
-                    ? Icons.check_circle_rounded
-                    : Icons.cancel_rounded,
+                isCorrect ? Icons.check_circle_rounded : Icons.cancel_rounded,
                 color: isCorrect ? cs.primary : cs.error,
               ),
               const SizedBox(width: 12),

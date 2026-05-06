@@ -12,24 +12,27 @@ class ButtyTalkCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: cs.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: cs.outline),
-        ),
-        child: const Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            ButtyCardTop(),
-            SizedBox(height: 12),
-            ButtyPreviewBubble(),
-            SizedBox(height: 10),
-            ButtyChatCta(),
-          ],
+    return Card(
+      color: cs.surfaceContainerLow,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: cs.outline),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: const Padding(
+          padding: EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              ButtyCardTop(),
+              SizedBox(height: 12),
+              ButtyPreviewBubble(),
+              SizedBox(height: 10),
+              ButtyChatCta(),
+            ],
+          ),
         ),
       ),
     );

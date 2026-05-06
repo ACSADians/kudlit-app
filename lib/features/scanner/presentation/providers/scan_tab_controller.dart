@@ -4,13 +4,35 @@ import 'dart:collection';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:ultralytics_yolo/ultralytics_yolo.dart';
 
 import 'package:kudlit_ph/core/utils/baybayify.dart';
 import 'package:kudlit_ph/features/scanner/domain/entities/baybayin_detection.dart';
 import 'package:kudlit_ph/features/scanner/presentation/providers/scanner_evaluation_provider.dart';
 import 'package:kudlit_ph/features/scanner/presentation/providers/scanner_provider.dart';
-import 'package:kudlit_ph/features/scanner/presentation/providers/yolo_model_selection_provider.dart';
+
+@immutable
+class ScanNotice {
+  const ScanNotice({
+    required this.title,
+    required this.message,
+    required this.kind,
+  });
+
+  final String title;
+  final String message;
+  final ScanNoticeKind kind;
+}
+
+enum ScanNoticeKind { info, warning, error }
+
+class ScanCaptureException implements Exception {
+  const ScanCaptureException(this.notice);
+
+  final ScanNotice notice;
+
+  @override
+  String toString() => '${notice.title}: ${notice.message}';
+}
 
 @immutable
 class ScanTabState {
@@ -22,6 +44,7 @@ class ScanTabState {
     required this.detectionsFrozen,
     required this.snapshot,
     required this.aggregatedWinner,
+    this.scanNotice,
   });
 
   const ScanTabState.initial()
@@ -33,6 +56,7 @@ class ScanTabState {
         detectionsFrozen: false,
         snapshot: const <BaybayinDetection>[],
         aggregatedWinner: null,
+        scanNotice: null,
       );
 
   final bool resultVisible;
@@ -43,9 +67,8 @@ class ScanTabState {
   final List<BaybayinDetection> snapshot;
 
   /// Most-frequent reading from the recent live-scan rolling window.
-  /// Persists past idle so the user keeps seeing the last stable read
-  /// after pulling the camera away.
   final String? aggregatedWinner;
+  final ScanNotice? scanNotice;
 
   ScanTabState copyWith({
     bool? resultVisible,
@@ -57,6 +80,8 @@ class ScanTabState {
     List<BaybayinDetection>? snapshot,
     String? aggregatedWinner,
     bool clearAggregatedWinner = false,
+    ScanNotice? scanNotice,
+    bool clearScanNotice = false,
   }) {
     return ScanTabState(
       resultVisible: resultVisible ?? this.resultVisible,
@@ -70,21 +95,18 @@ class ScanTabState {
       aggregatedWinner: clearAggregatedWinner
           ? null
           : (aggregatedWinner ?? this.aggregatedWinner),
+      scanNotice: clearScanNotice ? null : (scanNotice ?? this.scanNotice),
     );
   }
 }
 
 final NotifierProvider<ScanTabController, ScanTabState>
-scanTabControllerProvider =
-    NotifierProvider<ScanTabController, ScanTabState>(
-      ScanTabController.new,
-    );
+scanTabControllerProvider = NotifierProvider<ScanTabController, ScanTabState>(
+  ScanTabController.new,
+);
 
 class ScanTabController extends Notifier<ScanTabState> {
-  /// Sliding window of per-frame winning candidates.
   static const int _kAggMaxBuffer = 50;
-
-  /// Idle period after which the rolling buffer is cleared (winner persists).
   static const Duration _kAggIdleTimeout = Duration(milliseconds: 1000);
 
   final Queue<String> _aggBuffer = Queue<String>();
@@ -103,6 +125,10 @@ class ScanTabController extends Notifier<ScanTabState> {
     await ref.read(baybayinDetectorProvider).toggleTorch(enabled: next);
   }
 
+  Future<void> switchCamera() async {
+    await ref.read(baybayinDetectorProvider).switchCamera();
+  }
+
   Future<void> pickImageFromGallery() async {
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
@@ -114,29 +140,104 @@ class ScanTabController extends Notifier<ScanTabState> {
     state = state.copyWith(
       isLoadingImage: true,
       clearAggregatedWinner: true,
+      clearScanNotice: true,
     );
     final Uint8List bytes = await image.readAsBytes();
     state = state.copyWith(
       selectedImageBytes: bytes,
       isLoadingImage: false,
       resultVisible: true,
+      clearScanNotice: true,
     );
 
-    final List<BaybayinDetection> results = kIsWeb
-        ? <BaybayinDetection>[]
-        : await _detectImageWithYolo(bytes);
+    final List<BaybayinDetection> results = await ref
+        .read(baybayinDetectorProvider)
+        .detectImage(bytes);
 
     ref.read(scannerNotifierProvider.notifier).update(results);
-    ref.read(scannerEvaluationProvider.notifier).evaluate(results, bytes);
+    _evaluateSafely(results, bytes);
     state = state.copyWith(snapshot: List<BaybayinDetection>.of(results));
   }
 
+  Future<void> captureWebFrame(
+    Future<List<BaybayinDetection>> Function() capture,
+  ) async {
+    _resetAggregator();
+    state = state.copyWith(
+      isLoadingImage: true,
+      resultVisible: false,
+      clearSelectedImage: true,
+      snapshot: const <BaybayinDetection>[],
+      clearAggregatedWinner: true,
+      clearScanNotice: true,
+    );
+
+    try {
+      final List<BaybayinDetection> results = await capture();
+      ref.read(scannerNotifierProvider.notifier).update(results);
+      if (results.isNotEmpty) {
+        _evaluateSafely(results, null);
+      }
+      state = state.copyWith(
+        isLoadingImage: false,
+        resultVisible: results.isNotEmpty,
+        snapshot: List<BaybayinDetection>.of(results),
+        scanNotice: results.isEmpty
+            ? const ScanNotice(
+                title: 'No glyphs detected',
+                message:
+                    'Keep the Baybayin text centered and well lit, then capture again.',
+                kind: ScanNoticeKind.warning,
+              )
+            : null,
+        clearScanNotice: results.isNotEmpty,
+      );
+    } on ScanCaptureException catch (e) {
+      ref.read(scannerNotifierProvider.notifier).clear();
+      state = state.copyWith(
+        isLoadingImage: false,
+        resultVisible: false,
+        snapshot: const <BaybayinDetection>[],
+        scanNotice: e.notice,
+      );
+    } catch (e) {
+      debugPrint('[ScanTab] capture failed: $e');
+      ref.read(scannerNotifierProvider.notifier).clear();
+      state = state.copyWith(
+        isLoadingImage: false,
+        resultVisible: false,
+        snapshot: const <BaybayinDetection>[],
+        scanNotice: const ScanNotice(
+          title: 'Capture failed',
+          message: 'Try again or use Gallery to test an image.',
+          kind: ScanNoticeKind.error,
+        ),
+      );
+    }
+  }
+
   void onShutterTapped() {
-    final List<BaybayinDetection> detections = ref.read(scannerNotifierProvider);
+    final List<BaybayinDetection> detections = ref.read(
+      scannerNotifierProvider,
+    );
     if (state.resultVisible) {
       state = state.copyWith(
         resultVisible: false,
         snapshot: const <BaybayinDetection>[],
+        clearScanNotice: true,
+      );
+      return;
+    }
+
+    if (detections.isEmpty) {
+      state = state.copyWith(
+        resultVisible: false,
+        snapshot: const <BaybayinDetection>[],
+        scanNotice: const ScanNotice(
+          title: 'No glyphs detected',
+          message: 'Frame one or more Baybayin glyphs before capturing.',
+          kind: ScanNoticeKind.warning,
+        ),
       );
       return;
     }
@@ -144,10 +245,9 @@ class ScanTabController extends Notifier<ScanTabState> {
     state = state.copyWith(
       resultVisible: true,
       snapshot: List<BaybayinDetection>.of(detections),
+      clearScanNotice: true,
     );
-    ref
-        .read(scannerEvaluationProvider.notifier)
-        .evaluate(detections, state.selectedImageBytes);
+    _evaluateSafely(detections, state.selectedImageBytes);
   }
 
   void applyLiveDetections(List<BaybayinDetection> detections) {
@@ -169,6 +269,7 @@ class ScanTabController extends Notifier<ScanTabState> {
       resultVisible: false,
       snapshot: const <BaybayinDetection>[],
       clearAggregatedWinner: true,
+      clearScanNotice: true,
     );
   }
 
@@ -180,11 +281,33 @@ class ScanTabController extends Notifier<ScanTabState> {
       resultVisible: false,
       snapshot: const <BaybayinDetection>[],
       clearAggregatedWinner: true,
+      clearScanNotice: true,
     );
+  }
+
+  void showNotice(ScanNotice notice) {
+    state = state.copyWith(scanNotice: notice, resultVisible: false);
+  }
+
+  void clearNotice() {
+    state = state.copyWith(clearScanNotice: true);
   }
 
   void setDetectionsFrozen(bool value) {
     state = state.copyWith(detectionsFrozen: value);
+  }
+
+  void _evaluateSafely(
+    List<BaybayinDetection> detections,
+    Uint8List? imageBytes,
+  ) {
+    try {
+      ref
+          .read(scannerEvaluationProvider.notifier)
+          .evaluate(detections, imageBytes);
+    } catch (_) {
+      // OCR result remains usable if optional AI evaluation is unavailable.
+    }
   }
 
   void _resetAggregator() {
@@ -224,10 +347,10 @@ class ScanTabController extends Notifier<ScanTabState> {
 
     String top = '';
     int max = 0;
-    _aggFreq.forEach((String k, int v) {
-      if (v > max) {
-        max = v;
-        top = k;
+    _aggFreq.forEach((String key, int value) {
+      if (value > max) {
+        max = value;
+        top = key;
       }
     });
 
@@ -240,31 +363,5 @@ class ScanTabController extends Notifier<ScanTabState> {
       _aggBuffer.clear();
       _aggFreq.clear();
     });
-  }
-
-  Future<List<BaybayinDetection>> _detectImageWithYolo(
-    Uint8List bytes,
-  ) async {
-    try {
-      final YOLO yolo = await ref.read(yoloCameraModelProvider.future);
-      final Map<String, dynamic> raw = await yolo.predict(bytes);
-      final List<dynamic> detectionMaps =
-          raw['detections'] as List<dynamic>? ?? <dynamic>[];
-      return detectionMaps.map((dynamic d) {
-        final YOLOResult r =
-            YOLOResult.fromMap(d as Map<dynamic, dynamic>);
-        return BaybayinDetection(
-          label: r.className,
-          confidence: r.confidence,
-          left: r.normalizedBox.left,
-          top: r.normalizedBox.top,
-          width: r.normalizedBox.width,
-          height: r.normalizedBox.height,
-        );
-      }).toList(growable: false);
-    } catch (e) {
-      debugPrint('[ScanTab] gallery detection failed: $e');
-      return <BaybayinDetection>[];
-    }
   }
 }

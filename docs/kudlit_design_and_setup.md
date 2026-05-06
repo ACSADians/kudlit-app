@@ -77,7 +77,7 @@ Strict adherence to these rules ensures consistency and maintainability.
 ### **Critical Constraints**
 - **`build_runner` is broken:** Do not run it. You must **hand-write `.g.dart` files** or use standard boilerplate.
 - **Domain Purity:** The `domain/` folder must not import `package:flutter`. Use `package:meta` for `@immutable`.
-- **Target Target:** Web is the primary design target during development, but the YOLO/Scanner functionality requires Native (Android/iOS). Use `kIsWeb` guards.
+- **Target Target:** Web is the primary design target during development. Native uses `ultralytics_yolo` for live YOLO scanning; web uses browser webcam preview with capture-based TFLite detection from the active vision model URL. Keep platform-specific scanner code behind `kIsWeb` or conditional imports.
 
 ### **Quick Commands**
 ```bash

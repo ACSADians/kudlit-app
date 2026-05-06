@@ -2,9 +2,9 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
-/// Vertical space (px) the floating nav occupies from the screen bottom,
-/// excluding the device's safe-area inset.
-const double kFloatingNavClearance = 56.0;
+/// Vertical space (px) reserved by scrollable screens so the floating nav does
+/// not cover bottom content. Excludes the device's safe-area inset.
+const double kFloatingNavClearance = 112.0;
 
 /// The three primary app tabs.
 enum AppTab { scan, translate, learn, butty }

@@ -219,6 +219,7 @@ class DrawModeBodyState extends ConsumerState<DrawModeBody> {
   }
 
   void _onCameraDetections(List<BaybayinDetection> dets) {
+    _resetRetryIfNeeded();
     if (dets.isEmpty) {
       if (_lastCameraLabel != null) {
         setState(() {
@@ -240,6 +241,7 @@ class DrawModeBodyState extends ConsumerState<DrawModeBody> {
   }
 
   void _onPanStart(DragStartDetails d) {
+    _resetRetryIfNeeded();
     setState(() {
       _current
         ..clear()
@@ -271,11 +273,18 @@ class DrawModeBodyState extends ConsumerState<DrawModeBody> {
   }
 
   void _clear() {
+    _resetRetryIfNeeded();
     setState(() {
       _strokes.clear();
       _undone.clear();
       _current.clear();
     });
+  }
+
+  void _resetRetryIfNeeded() {
+    if (widget.attemptStatus == AttemptStatus.retry) {
+      ref.read(lessonControllerProvider.notifier).resetAttempt();
+    }
   }
 
   @override
@@ -329,6 +338,25 @@ class DrawModeBodyState extends ConsumerState<DrawModeBody> {
             hideGlyph: widget.step.hideGlyph,
             visible: _glyphVisible,
             onToggle: () => setState(() => _glyphVisible = !_glyphVisible),
+          ),
+          const SizedBox(height: 10),
+          FilledButton.icon(
+            onPressed:
+                widget.attemptStatus == AttemptStatus.checking ||
+                    widget.attemptStatus == AttemptStatus.correct
+                ? null
+                : submitToController,
+            icon: widget.attemptStatus == AttemptStatus.checking
+                ? const SizedBox.square(
+                    dimension: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.check_rounded),
+            label: Text(
+              widget.attemptStatus == AttemptStatus.checking
+                  ? 'Checking drawing'
+                  : 'Check drawing',
+            ),
           ),
         ],
       ),
@@ -567,6 +595,7 @@ class _DrawCanvas extends StatelessWidget {
         onPanStart: onPanStart,
         onPanUpdate: onPanUpdate,
         onPanEnd: onPanEnd,
+        behavior: HitTestBehavior.opaque,
         child: CustomPaint(
           painter: LiveStrokePainter(
             strokes: strokes,
@@ -633,20 +662,22 @@ class _GlyphToggle extends StatelessWidget {
           Positioned(
             top: -6,
             right: -6,
-            child: Tooltip(
-              message: 'Hide reference',
-              child: InkWell(
-                onTap: onToggle,
-                customBorder: const CircleBorder(),
-                child: CircleAvatar(
-                  radius: 14,
-                  backgroundColor: cs.surfaceContainerHighest,
-                  child: Icon(
-                    Icons.visibility_off_rounded,
-                    size: 16,
-                    color: cs.onSurface,
-                  ),
+            child: Material(
+              color: cs.surfaceContainerHighest,
+              shape: const CircleBorder(),
+              child: IconButton(
+                visualDensity: VisualDensity.compact,
+                constraints: const BoxConstraints.tightFor(
+                  width: 36,
+                  height: 36,
                 ),
+                onPressed: onToggle,
+                icon: Icon(
+                  Icons.visibility_off_rounded,
+                  size: 16,
+                  color: cs.onSurface,
+                ),
+                tooltip: 'Hide reference',
               ),
             ),
           ),
