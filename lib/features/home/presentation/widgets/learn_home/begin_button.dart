@@ -5,18 +5,20 @@ class BeginButton extends StatelessWidget {
     super.key,
     required this.onStart,
     this.isLocked = false,
+    this.label = 'Begin Lesson',
     this.lockedReason,
   });
 
   final VoidCallback onStart;
   final bool isLocked;
+  final String label;
   final String? lockedReason;
 
   @override
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 6, 18, 0),
+      padding: const EdgeInsets.fromLTRB(18, 6, 18, 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
@@ -26,11 +28,15 @@ class BeginButton extends StatelessWidget {
               minimumSize: const Size.fromHeight(44),
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               visualDensity: VisualDensity.compact,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             icon: Icon(
               isLocked ? Icons.lock_rounded : Icons.play_arrow_rounded,
+              size: 18,
             ),
-            label: Text(isLocked ? 'Locked' : 'Begin Lesson'),
+            label: Text(isLocked ? 'Locked' : label),
           ),
           if (isLocked && lockedReason != null) ...<Widget>[
             const SizedBox(height: 8),

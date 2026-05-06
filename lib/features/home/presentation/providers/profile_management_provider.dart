@@ -76,6 +76,25 @@ class ProfileSummaryNotifier extends _$ProfileSummaryNotifier {
     return result.fold((l) => const None(), (r) => Some(r));
   }
 
+  /// Clears the local summary cache and re-fetches fresh counts from Supabase.
+  /// Call this after any write that changes profile stats (lesson complete,
+  /// new scan, new translation).
+  Future<void> refresh() async {
+    final String? userId = ref
+        .read(profileManagementDatasourceProvider)
+        .getCurrentUserId();
+    if (userId != null) {
+      try {
+        await ref
+            .read(localProfileManagementDatasourceProvider)
+            .clearCachedSummary(userId: userId);
+      } catch (_) {}
+    }
+    state = const AsyncLoading<Option<ProfileSummary>>();
+    final Option<ProfileSummary> summary = await _fetchSummary();
+    state = AsyncValue<Option<ProfileSummary>>.data(summary);
+  }
+
   Future<void> updateDisplayName(String displayName) async {
     state = AsyncValue.data(state.value ?? const None());
 

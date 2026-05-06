@@ -9,8 +9,10 @@ import 'package:kudlit_ph/features/auth/presentation/providers/auth_provider.dar
 import 'package:kudlit_ph/features/home/presentation/providers/app_preferences_provider.dart';
 import 'package:kudlit_ph/features/translator/data/datasources/cloud_gemma_datasource.dart';
 import 'package:kudlit_ph/features/translator/data/datasources/local_gemma_datasource.dart';
+import 'package:kudlit_ph/features/home/presentation/providers/profile_management_provider.dart';
 import 'package:kudlit_ph/features/translator/data/datasources/sqlite_chat_datasource.dart';
 import 'package:kudlit_ph/features/translator/data/datasources/supabase_ai_models_datasource.dart';
+import 'package:kudlit_ph/features/translator/data/datasources/supabase_chat_datasource.dart';
 import 'package:kudlit_ph/features/translator/data/datasources/supabase_gemma_models_datasource.dart';
 import 'package:kudlit_ph/features/translator/data/repositories/ai_inference_repository_impl.dart';
 import 'package:kudlit_ph/features/translator/domain/entities/gemma_model_info.dart';
@@ -61,6 +63,13 @@ SqliteChatDatasource sqliteChatDatasource(Ref ref) {
   ref.onDispose(ds.dispose);
   return ds;
 }
+
+/// Cloud mirror for chat messages. Plain Provider (no codegen) so the file
+/// does not require a regen step.
+final Provider<SupabaseChatDatasource> supabaseChatDatasourceProvider =
+    Provider<SupabaseChatDatasource>((Ref ref) {
+      return SupabaseChatDatasource(ref.watch(supabaseProvider));
+    });
 
 @Riverpod(keepAlive: true)
 AiInferenceRepository aiInferenceRepository(Ref ref) {

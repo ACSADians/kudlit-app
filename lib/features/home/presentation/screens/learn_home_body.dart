@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:kudlit_ph/features/home/presentation/providers/app_preferences_provider.dart';
 import 'package:kudlit_ph/features/home/presentation/providers/streak_provider.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/learn_home/butty_talk_card.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/learn_home/learn_section_label.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/learn_home/lesson_card.dart';
+import 'package:kudlit_ph/features/learning/domain/entities/lesson_progress.dart';
+import 'package:kudlit_ph/features/learning/presentation/providers/lesson_progress_provider.dart';
 
 const List<String> _lessonOrder = <String>[
   'vowels-01',
@@ -118,21 +119,21 @@ class LearnHomeBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final Set<String> completed = ref
-        .watch(appPreferencesNotifierProvider)
-        .maybeWhen(
-          data: (AppPreferences p) => p.completedLessons,
-          orElse: () => const <String>{},
-        );
+    final Map<String, LessonProgress> progressMap =
+        ref.watch(lessonProgressNotifierProvider).value ??
+        <String, LessonProgress>{};
 
     final int streakCount = ref.watch(streakProvider).value ?? 0;
 
     bool locked(int lessonIndex) {
       if (lessonIndex == 0) return false;
-      return !completed.contains(_lessonOrder[lessonIndex - 1]);
+      return progressMap[_lessonOrder[lessonIndex - 1]]?.status !=
+          LessonStatus.completed;
     }
 
-    final bool hasCompletedAny = completed.isNotEmpty;
+    final bool hasCompletedAny = progressMap.values.any(
+      (LessonProgress p) => p.status == LessonStatus.completed,
+    );
 
     return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(16, 20, 16, bottomPad + 16),
@@ -160,15 +161,12 @@ class LearnHomeBody extends ConsumerWidget {
                   subtitle: _lessons[i].subtitle,
                   glyphCount: _lessons[i].glyphCount,
                   estimatedLength: _lessons[i].estimatedLength,
-                  status: _statusFor(
-                    isLocked: locked(i),
-                    isCompleted: completed.contains(_lessons[i].id),
-                  ),
+                  items: _lessons[i].items,
+                  isLocked: locked(i),
                   lockedReason: i == 0
                       ? null
                       : 'Complete ${_lessons[i - 1].title} first',
-                  items: _lessons[i].items,
-                  isLocked: locked(i),
+                  progress: progressMap[_lessons[i].id],
                   onStart: () => onStartLesson(_lessons[i].id),
                 ),
                 if (i != _lessons.length - 1) const SizedBox(height: 10),
@@ -178,12 +176,6 @@ class LearnHomeBody extends ConsumerWidget {
         ),
       ),
     );
-  }
-
-  String _statusFor({required bool isLocked, required bool isCompleted}) {
-    if (isCompleted) return 'Done';
-    if (isLocked) return 'Locked';
-    return 'Ready';
   }
 }
 

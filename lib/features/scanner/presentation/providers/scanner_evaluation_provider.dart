@@ -7,6 +7,8 @@ import 'package:meta/meta.dart';
 import 'package:kudlit_ph/core/utils/baybayify.dart';
 import 'package:kudlit_ph/features/learning/domain/entities/gemma_prompts.dart';
 import 'package:kudlit_ph/features/scanner/domain/entities/baybayin_detection.dart';
+import 'package:kudlit_ph/features/scanner/domain/entities/scan_result.dart';
+import 'package:kudlit_ph/features/scanner/presentation/providers/scan_history_provider.dart';
 import 'package:kudlit_ph/features/translator/domain/entities/chat_message.dart';
 import 'package:kudlit_ph/features/translator/presentation/providers/ai_inference_provider.dart';
 import 'package:kudlit_ph/features/translator/presentation/providers/translator_providers.dart';
@@ -40,6 +42,8 @@ scannerEvaluationProvider =
     );
 
 class ScannerEvaluationNotifier extends Notifier<ScanEvalState> {
+  List<String> _lastTokens = <String>[];
+
   @override
   ScanEvalState build() =>
       const ScanEvalState(translation: AsyncData<String>(''));
@@ -60,6 +64,7 @@ class ScannerEvaluationNotifier extends Notifier<ScanEvalState> {
         .map((BaybayinDetection d) => d.label.trim().toLowerCase())
         .where((String s) => s.isNotEmpty)
         .toList(growable: false);
+    _lastTokens = tokens;
     final List<String> perms = permuteBaybayin(tokens);
 
     final String candidates = perms.isEmpty
@@ -135,6 +140,16 @@ class ScannerEvaluationNotifier extends Notifier<ScanEvalState> {
       await for (final String chunk in stream) {
         buffer.write(chunk);
         state = state.withTranslation(AsyncData<String>(buffer.toString()));
+      }
+      final String finalText = buffer.toString().trim();
+      if (finalText.isNotEmpty && _lastTokens.isNotEmpty) {
+        ref.read(scanHistoryNotifierProvider.notifier).addResult(
+          ScanResult(
+            tokens: List<String>.of(_lastTokens),
+            translation: finalText,
+            timestamp: DateTime.now(),
+          ),
+        );
       }
     } catch (e) {
       state = state.withTranslation(

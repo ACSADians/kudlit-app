@@ -32,14 +32,16 @@ class ChatMessageList extends StatelessWidget {
 
     return ListView.builder(
       controller: scroll,
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
       itemCount: visible.length + (waitingForToken ? 1 : 0),
       itemBuilder: (_, int i) {
         if (i == visible.length) return const TypingBubble();
         final ChatMsg msg = visible[i];
-        return msg.isButty
-            ? ButtyBubble(text: msg.text)
-            : UserBubble(text: msg.text);
+        if (!msg.isButty) return UserBubble(text: msg.text);
+        // The last Butty bubble is "streaming" while we are still responding —
+        // it shows a blinking cursor until the stream closes.
+        final bool isStreaming = responding && i == visible.length - 1;
+        return ButtyBubble(text: msg.text, isStreaming: isStreaming);
       },
     );
   }

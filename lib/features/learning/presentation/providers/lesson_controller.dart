@@ -12,8 +12,10 @@ import 'package:kudlit_ph/features/home/presentation/providers/profile_managemen
 import 'package:kudlit_ph/features/learning/domain/entities/gemma_prompts.dart';
 import 'package:kudlit_ph/features/learning/domain/entities/lesson.dart';
 import 'package:kudlit_ph/features/learning/domain/entities/lesson_mode.dart';
+import 'package:kudlit_ph/features/learning/domain/entities/lesson_progress.dart';
 import 'package:kudlit_ph/features/learning/domain/entities/lesson_step.dart';
 import 'package:kudlit_ph/features/learning/domain/usecases/load_lesson.dart';
+import 'package:kudlit_ph/features/learning/presentation/providers/lesson_progress_provider.dart';
 import 'package:kudlit_ph/features/learning/presentation/providers/lesson_repository_provider.dart';
 import 'package:kudlit_ph/features/learning/presentation/providers/lesson_state.dart';
 import 'package:kudlit_ph/features/translator/domain/entities/chat_message.dart';
@@ -39,15 +41,24 @@ class LessonController extends _$LessonController {
         _failureToException(failure),
         StackTrace.current,
       ),
-      (Lesson lesson) => AsyncData<LessonState?>(
-        LessonState(
-          lesson: lesson,
-          currentStepIndex: 0,
-          attemptStatus: AttemptStatus.idle,
-          buttyMessage: _introFor(lesson.steps.first),
-          completed: false,
-        ),
-      ),
+      (Lesson lesson) {
+        final LessonProgress? saved = ref
+            .read(lessonProgressNotifierProvider.notifier)
+            .forLesson(lessonId);
+        final int startIndex =
+            (saved != null && !saved.completed && lesson.steps.isNotEmpty)
+                ? saved.currentStepIndex.clamp(0, lesson.steps.length - 1)
+                : 0;
+        return AsyncData<LessonState?>(
+          LessonState(
+            lesson: lesson,
+            currentStepIndex: startIndex,
+            attemptStatus: AttemptStatus.idle,
+            buttyMessage: _introFor(lesson.steps[startIndex]),
+            completed: false,
+          ),
+        );
+      },
     );
   }
 
@@ -226,6 +237,19 @@ class LessonController extends _$LessonController {
         buttyMessage: 'Lesson complete. Magaling!',
       );
       state = AsyncData<LessonState?>(completed);
+      unawaited(
+        ref.read(lessonProgressNotifierProvider.notifier).saveProgress(
+          LessonProgress(
+            lessonId: completed.lesson.id,
+            currentStepIndex: completed.lesson.steps.length,
+            totalSteps: completed.lesson.steps.length,
+            completed: true,
+            score: completed.score,
+            lastModified: DateTime.now(),
+            completedAt: DateTime.now(),
+          ),
+        ),
+      );
       unawaited(_saveLessonProgress(completed));
       return;
     }
@@ -237,6 +261,18 @@ class LessonController extends _$LessonController {
         buttyMessage: _introFor(nextStep),
       ),
     );
+    unawaited(
+      ref.read(lessonProgressNotifierProvider.notifier).saveProgress(
+        LessonProgress(
+          lessonId: current.lesson.id,
+          currentStepIndex: nextIndex,
+          totalSteps: current.lesson.steps.length,
+          completed: false,
+          score: 0,
+          lastModified: DateTime.now(),
+        ),
+      ),
+    );
   }
 
   void resetAttempt() {
@@ -246,6 +282,32 @@ class LessonController extends _$LessonController {
       current.copyWith(
         attemptStatus: AttemptStatus.idle,
         buttyMessage: _introFor(current.currentStep),
+      ),
+    );
+  }
+
+  void restart() {
+    final LessonState? current = state.value;
+    if (current == null) return;
+    unawaited(
+      ref.read(lessonProgressNotifierProvider.notifier).saveProgress(
+        LessonProgress(
+          lessonId: current.lesson.id,
+          currentStepIndex: 0,
+          totalSteps: current.lesson.steps.length,
+          completed: false,
+          score: 0,
+          lastModified: DateTime.now(),
+        ),
+      ),
+    );
+    state = AsyncData<LessonState?>(
+      LessonState(
+        lesson: current.lesson,
+        currentStepIndex: 0,
+        attemptStatus: AttemptStatus.idle,
+        buttyMessage: _introFor(current.lesson.steps.first),
+        completed: false,
       ),
     );
   }
