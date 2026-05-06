@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 class ButtyCardTop extends StatelessWidget {
   const ButtyCardTop({super.key});
@@ -23,7 +24,14 @@ class ButtyCardTop extends StatelessWidget {
                   fit: BoxFit.cover,
                 ),
               ),
-            ),
+            )
+                .animate(onPlay: (AnimationController c) => c.repeat(reverse: true))
+                .scaleXY(
+                  begin: 1.0,
+                  end: 1.04,
+                  duration: 1800.ms,
+                  curve: Curves.easeInOut,
+                ),
             Positioned(
               bottom: 1,
               right: 1,

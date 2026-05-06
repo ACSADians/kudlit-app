@@ -112,7 +112,7 @@ class _ScanTabState extends ConsumerState<ScanTab> {
             28,
             0,
             28,
-            MediaQuery.paddingOf(context).bottom + 96,
+            MediaQuery.paddingOf(context).bottom + 116,
           ),
           content: Row(
             children: <Widget>[

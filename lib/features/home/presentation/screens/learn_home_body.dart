@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:kudlit_ph/features/home/presentation/providers/streak_provider.dart';
@@ -143,16 +144,34 @@ class LearnHomeBody extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              ButtyTalkCard(onTap: onChatWithButty),
-              const SizedBox(height: 14),
+              ButtyTalkCard(onTap: onChatWithButty)
+                  .animate()
+                  .fadeIn(duration: 350.ms)
+                  .slideY(
+                    begin: 0.05,
+                    end: 0,
+                    duration: 350.ms,
+                    curve: Curves.easeOutCubic,
+                  ),
+              const SizedBox(height: 16),
               _QuickActionsRow(
                 streakCount: streakCount,
                 hasCompletedAny: hasCompletedAny,
                 onOpenGallery: onOpenGallery,
                 onStartQuiz: onStartQuiz,
-              ),
-              const SizedBox(height: 18),
-              const LearnSectionLabel(text: 'Lessons'),
+              )
+                  .animate(delay: 60.ms)
+                  .fadeIn(duration: 350.ms)
+                  .slideY(
+                    begin: 0.05,
+                    end: 0,
+                    duration: 350.ms,
+                    curve: Curves.easeOutCubic,
+                  ),
+              const SizedBox(height: 20),
+              const LearnSectionLabel(text: 'Lessons')
+                  .animate(delay: 110.ms)
+                  .fadeIn(duration: 300.ms),
               const SizedBox(height: 10),
               for (int i = 0; i < _lessons.length; i++) ...<Widget>[
                 LessonCard(
@@ -168,8 +187,16 @@ class LearnHomeBody extends ConsumerWidget {
                       : 'Complete ${_lessons[i - 1].title} first',
                   progress: progressMap[_lessons[i].id],
                   onStart: () => onStartLesson(_lessons[i].id),
-                ),
-                if (i != _lessons.length - 1) const SizedBox(height: 8),
+                )
+                    .animate(delay: (140 + i * 80).ms)
+                    .fadeIn(duration: 350.ms)
+                    .slideY(
+                      begin: 0.06,
+                      end: 0,
+                      duration: 350.ms,
+                      curve: Curves.easeOutCubic,
+                    ),
+                if (i != _lessons.length - 1) const SizedBox(height: 10),
               ],
             ],
           ),
@@ -328,7 +355,11 @@ class _StreakChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Text('\u{1F525}', style: const TextStyle(fontSize: 13)),
+          Icon(
+            Icons.local_fire_department_rounded,
+            size: 15,
+            color: const Color(0xFFF5A623),
+          ),
           const SizedBox(width: 4),
           Text(
             '$count',

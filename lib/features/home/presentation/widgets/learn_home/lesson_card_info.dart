@@ -33,7 +33,7 @@ class LessonCardInfo extends StatelessWidget {
             style: TextStyle(
               fontSize: 9,
               fontWeight: FontWeight.w700,
-              color: cs.onSurface.withAlpha(80),
+              color: cs.primary.withAlpha(140),
               letterSpacing: 1.4,
             ),
           ),
