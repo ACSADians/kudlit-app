@@ -233,41 +233,48 @@ class _BackgroundPicker extends StatelessWidget {
         itemBuilder: (_, int i) {
           final _BgOption opt = _kBgOptions[i];
           final bool selected = i == selectedBg;
-          return Tooltip(
-            message: opt.name,
-            child: Material(
-              color: Colors.transparent,
-              shape: const CircleBorder(),
-              child: InkWell(
-                customBorder: const CircleBorder(),
-                onTap: () => onSelected(i),
-                child: Container(
-                  width: 48,
-                  height: 48,
-                  alignment: Alignment.center,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 150),
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        colors: <Color>[opt.start, opt.end],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
+          return Semantics(
+            button: true,
+            selected: selected,
+            label: '${opt.name} background${selected ? ', selected' : ''}',
+            excludeSemantics: true,
+            child: Tooltip(
+              message: opt.name,
+              excludeFromSemantics: true,
+              child: Material(
+                color: Colors.transparent,
+                shape: const CircleBorder(),
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: () => onSelected(i),
+                  child: Container(
+                    width: 48,
+                    height: 48,
+                    alignment: Alignment.center,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          colors: <Color>[opt.start, opt.end],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        border: Border.all(
+                          color: selected ? cs.primary : cs.outlineVariant,
+                          width: selected ? 3 : 1,
+                        ),
+                        boxShadow: selected
+                            ? <BoxShadow>[
+                                BoxShadow(
+                                  color: cs.primary.withAlpha(80),
+                                  blurRadius: 6,
+                                ),
+                              ]
+                            : null,
                       ),
-                      border: Border.all(
-                        color: selected ? cs.primary : cs.outlineVariant,
-                        width: selected ? 3 : 1,
-                      ),
-                      boxShadow: selected
-                          ? <BoxShadow>[
-                              BoxShadow(
-                                color: cs.primary.withAlpha(80),
-                                blurRadius: 6,
-                              ),
-                            ]
-                          : null,
                     ),
                   ),
                 ),
@@ -345,7 +352,6 @@ class _ExportCard extends StatelessWidget {
               fontSize: width < 300 ? 16 : 18,
               fontWeight: FontWeight.w600,
               color: textColor,
-              letterSpacing: -0.2,
             ),
           ),
           const SizedBox(height: 16),

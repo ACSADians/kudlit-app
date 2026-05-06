@@ -33,4 +33,37 @@ void main() {
     expect(cardRect.width, lessThanOrEqualTo(288));
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('web camera status announces title and recovery message', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle semantics = tester.ensureSemantics();
+    await tester.binding.setSurfaceSize(const Size(320, 480));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: WebStatusMessage(
+              cs: ThemeData.dark().colorScheme,
+              status: WebScannerStatus.permissionNeeded,
+              showCompact: false,
+              message:
+                  'Camera permission is blocked. Allow camera access in the browser, then reload.',
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(
+      find.bySemanticsLabel(
+        'Allow camera. Camera permission is blocked. Allow camera access in the browser, then reload.',
+      ),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+    semantics.dispose();
+  });
 }

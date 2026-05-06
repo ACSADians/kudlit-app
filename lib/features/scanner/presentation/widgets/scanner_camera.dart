@@ -544,8 +544,13 @@ class WebStatusMessage extends StatelessWidget {
         final double maxWidth = availableWidth.clamp(200.0, 240.0);
         final bool narrow = maxWidth < 300;
 
+        final String semanticLabel = message == null
+            ? status.label
+            : '${status.label}. $message';
+
         return Semantics(
-          label: message ?? status.label,
+          label: semanticLabel,
+          excludeSemantics: true,
           child: ConstrainedBox(
             constraints: BoxConstraints(maxWidth: maxWidth),
             child: Container(
@@ -604,7 +609,7 @@ class WebStatusMessage extends StatelessWidget {
                       style: TextStyle(
                         fontSize: showCompact || narrow ? 12.5 : 13,
                         height: 1.35,
-                        color: cs.onSurface.withAlpha(165),
+                        color: cs.onSurface.withAlpha(190),
                       ),
                     ),
                 ],

@@ -92,36 +92,47 @@ class _ScoreBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool perfect = score == total;
     final double size = compact ? 94 : 112;
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: perfect ? cs.primaryContainer : cs.secondaryContainer,
-        shape: BoxShape.circle,
-      ),
-      alignment: Alignment.center,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Text(
-            '$score',
-            style: TextStyle(
-              fontSize: compact ? 40 : 46,
-              fontWeight: FontWeight.w900,
-              height: 1,
-              color: perfect ? cs.onPrimaryContainer : cs.onSecondaryContainer,
-            ),
+    return Semantics(
+      container: true,
+      label: 'Quiz score $score out of $total',
+      child: ExcludeSemantics(
+        child: Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            color: perfect ? cs.primaryContainer : cs.secondaryContainer,
+            shape: BoxShape.circle,
           ),
-          Text(
-            '/ $total',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: (perfect ? cs.onPrimaryContainer : cs.onSecondaryContainer)
-                  .withValues(alpha: 0.7),
-            ),
+          alignment: Alignment.center,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Text(
+                '$score',
+                style: TextStyle(
+                  fontSize: compact ? 40 : 46,
+                  fontWeight: FontWeight.w900,
+                  height: 1,
+                  color: perfect
+                      ? cs.onPrimaryContainer
+                      : cs.onSecondaryContainer,
+                ),
+              ),
+              Text(
+                '/ $total',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color:
+                      (perfect
+                              ? cs.onPrimaryContainer
+                              : cs.onSecondaryContainer)
+                          .withValues(alpha: 0.82),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

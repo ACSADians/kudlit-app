@@ -45,4 +45,28 @@ void main() {
     expect(find.text('Export image'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('export background choices expose selected semantics', (
+    tester,
+  ) async {
+    final SemanticsHandle semantics = tester.ensureSemantics();
+    await tester.binding.setSurfaceSize(const Size(320, 593));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: BaybayinExportSheet(baybayin: 'ᜊᜌ᜔', latin: 'Bay'),
+        ),
+      ),
+    );
+
+    expect(find.bySemanticsLabel('Space background, selected'), findsOneWidget);
+
+    final Rect firstSwatch = tester.getRect(find.byType(InkWell).first);
+    expect(firstSwatch.width, greaterThanOrEqualTo(44));
+    expect(firstSwatch.height, greaterThanOrEqualTo(44));
+    expect(tester.takeException(), isNull);
+    semantics.dispose();
+  });
 }

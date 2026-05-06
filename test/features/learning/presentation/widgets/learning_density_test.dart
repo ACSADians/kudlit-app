@@ -82,6 +82,7 @@ void main() {
   });
 
   testWidgets('quiz result actions keep compact tap targets', (tester) async {
+    final SemanticsHandle semantics = tester.ensureSemantics();
     await tester.binding.setSurfaceSize(const Size(320, 360));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -98,9 +99,11 @@ void main() {
       ),
     );
 
+    expect(find.bySemanticsLabel('Quiz score 1 out of 1'), findsOneWidget);
     expect(find.text('Try Again'), findsOneWidget);
     expect(find.text('Done'), findsOneWidget);
     expect(tester.takeException(), isNull);
+    semantics.dispose();
   });
 }
 
