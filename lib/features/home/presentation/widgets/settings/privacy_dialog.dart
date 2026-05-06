@@ -24,10 +24,11 @@ class _PrivacyDialogState extends State<PrivacyDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text('Privacy'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          SwitchListTile(
+      content: SingleChildScrollView(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 360),
+          child: SwitchListTile(
+            contentPadding: EdgeInsets.zero,
             title: const Text('Share Analytics Data'),
             subtitle: const Text(
               'Help improve Kudlit by sharing anonymous usage data.',
@@ -35,7 +36,7 @@ class _PrivacyDialogState extends State<PrivacyDialog> {
             value: _consent,
             onChanged: (bool val) => setState(() => _consent = val),
           ),
-        ],
+        ),
       ),
       actions: <Widget>[
         TextButton(

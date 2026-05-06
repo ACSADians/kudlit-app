@@ -76,22 +76,18 @@ class _BaybayinExportSheetState extends State<BaybayinExportSheet> {
     setState(() => _exporting = true);
     try {
       final RenderRepaintBoundary boundary =
-          _cardKey.currentContext!.findRenderObject()!
-              as RenderRepaintBoundary;
+          _cardKey.currentContext!.findRenderObject()! as RenderRepaintBoundary;
       final ui.Image image = await boundary.toImage(pixelRatio: 3.0);
-      final ByteData? byteData =
-          await image.toByteData(format: ui.ImageByteFormat.png);
+      final ByteData? byteData = await image.toByteData(
+        format: ui.ImageByteFormat.png,
+      );
       image.dispose();
       if (byteData == null) return;
       final Uint8List bytes = byteData.buffer.asUint8List();
       await SharePlus.instance.share(
         ShareParams(
           files: <XFile>[
-            XFile.fromData(
-              bytes,
-              name: 'baybayin.png',
-              mimeType: 'image/png',
-            ),
+            XFile.fromData(bytes, name: 'baybayin.png', mimeType: 'image/png'),
           ],
         ),
       );
@@ -104,114 +100,181 @@ class _BaybayinExportSheetState extends State<BaybayinExportSheet> {
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
     final _BgOption bg = _kBgOptions[_selectedBg];
-    // Cap the sheet at 90% of screen height so controls are always reachable.
-    final double maxHeight = MediaQuery.sizeOf(context).height * 0.90;
+    final Size viewport = MediaQuery.sizeOf(context);
+    final bool compactLandscape =
+        viewport.width > viewport.height && viewport.height < 430;
+    final double maxHeight = viewport.height * (compactLandscape ? 0.96 : 0.9);
+    final double horizontalPadding = viewport.width < 380 ? 16 : 24;
+    final double cardWidth = (viewport.width - (horizontalPadding * 2)).clamp(
+      260.0,
+      _kCardWidth,
+    );
 
     return ConstrainedBox(
       constraints: BoxConstraints(maxHeight: maxHeight),
-      child: Container(
+      child: DecoratedBox(
         decoration: BoxDecoration(
           color: cs.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
         ),
-        padding: EdgeInsets.fromLTRB(
-          24,
-          12,
-          24,
-          MediaQuery.paddingOf(context).bottom + 24,
-        ),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-          Container(
-            width: 36,
-            height: 4,
-            decoration: BoxDecoration(
-              color: cs.onSurface.withAlpha(60),
-              borderRadius: BorderRadius.circular(2),
+        child: SafeArea(
+          top: false,
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(
+              horizontalPadding,
+              10,
+              horizontalPadding,
+              16,
             ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Export as image',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 20),
-          Center(
-            child: RepaintBoundary(
-              key: _cardKey,
-              child: _ExportCard(
-                baybayin: widget.baybayin,
-                latin: widget.latin,
-                bg: bg,
-                buttyAsset: _buttyAsset,
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
-          SizedBox(
-            height: 44,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: _kBgOptions.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 10),
-              itemBuilder: (_, int i) {
-                final _BgOption opt = _kBgOptions[i];
-                final bool selected = i == _selectedBg;
-                return GestureDetector(
-                  onTap: () => setState(() => _selectedBg = i),
-                  child: Tooltip(
-                    message: opt.name,
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 150),
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: LinearGradient(
-                          colors: <Color>[opt.start, opt.end],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        border: Border.all(
-                          color: selected ? cs.primary : Colors.transparent,
-                          width: 3,
-                        ),
-                        boxShadow: selected
-                            ? <BoxShadow>[
-                                BoxShadow(
-                                  color: cs.primary.withAlpha(80),
-                                  blurRadius: 6,
-                                ),
-                              ]
-                            : null,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: cs.onSurface.withAlpha(60),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: Text(
+                        'Export as image',
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w800),
                       ),
                     ),
+                    Text(
+                      'PNG',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        color: cs.onSurface.withAlpha(140),
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Flexible(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        RepaintBoundary(
+                          key: _cardKey,
+                          child: _ExportCard(
+                            width: cardWidth,
+                            baybayin: widget.baybayin,
+                            latin: widget.latin,
+                            bg: bg,
+                            buttyAsset: _buttyAsset,
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        _BackgroundPicker(
+                          selectedBg: _selectedBg,
+                          onSelected: (int i) =>
+                              setState(() => _selectedBg = i),
+                          cs: cs,
+                        ),
+                      ],
+                    ),
                   ),
-                );
-              },
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: _exporting ? null : _export,
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size.fromHeight(48),
+                    ),
+                    icon: _exporting
+                        ? const SizedBox.square(
+                            dimension: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.ios_share_rounded),
+                    label: Text(_exporting ? 'Preparing...' : 'Export image'),
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 20),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: _exporting ? null : _export,
-              icon: _exporting
-                  ? const SizedBox.square(
-                      dimension: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.ios_share_rounded),
-              label: Text(_exporting ? 'Preparing…' : 'Export image'),
-            ),
-          ),
-        ],
-      ),
         ),
+      ),
+    );
+  }
+}
+
+class _BackgroundPicker extends StatelessWidget {
+  const _BackgroundPicker({
+    required this.selectedBg,
+    required this.onSelected,
+    required this.cs,
+  });
+
+  final int selectedBg;
+  final ValueChanged<int> onSelected;
+  final ColorScheme cs;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 48,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: _kBgOptions.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        itemBuilder: (_, int i) {
+          final _BgOption opt = _kBgOptions[i];
+          final bool selected = i == selectedBg;
+          return Tooltip(
+            message: opt.name,
+            child: Material(
+              color: Colors.transparent,
+              shape: const CircleBorder(),
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: () => onSelected(i),
+                child: Container(
+                  width: 48,
+                  height: 48,
+                  alignment: Alignment.center,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        colors: <Color>[opt.start, opt.end],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      border: Border.all(
+                        color: selected ? cs.primary : cs.outlineVariant,
+                        width: selected ? 3 : 1,
+                      ),
+                      boxShadow: selected
+                          ? <BoxShadow>[
+                              BoxShadow(
+                                color: cs.primary.withAlpha(80),
+                                blurRadius: 6,
+                              ),
+                            ]
+                          : null,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -219,12 +282,14 @@ class _BaybayinExportSheetState extends State<BaybayinExportSheet> {
 
 class _ExportCard extends StatelessWidget {
   const _ExportCard({
+    required this.width,
     required this.baybayin,
     required this.latin,
     required this.bg,
     required this.buttyAsset,
   });
 
+  final double width;
   final String baybayin;
   final String latin;
   final _BgOption bg;
@@ -232,14 +297,13 @@ class _ExportCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color textColor =
-        bg.isLight ? const Color(0xFF1A1A1A) : Colors.white;
+    final Color textColor = bg.isLight ? const Color(0xFF1A1A1A) : Colors.white;
     final Color subtleColor = bg.isLight
         ? const Color(0xFF1A1A1A).withAlpha(130)
         : Colors.white.withAlpha(150);
 
     return Container(
-      width: _kCardWidth,
+      width: width,
       // No fixed height — card grows to fit however much Baybayin is needed.
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -249,18 +313,24 @@ class _ExportCard extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(16),
       ),
-      padding: const EdgeInsets.fromLTRB(28, 28, 28, 20),
+      padding: EdgeInsets.fromLTRB(
+        width < 300 ? 22 : 28,
+        26,
+        width < 300 ? 22 : 28,
+        20,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           Text(
             baybayin,
             textAlign: TextAlign.center,
+            softWrap: true,
             style: TextStyle(
               fontFamily: 'Baybayin Simple TAWBID',
-              fontSize: 44,
+              fontSize: width < 300 ? 38 : 44,
               color: textColor,
-              letterSpacing: 8,
+              letterSpacing: width < 300 ? 6 : 8,
               height: 1.3,
             ),
           ),
@@ -270,8 +340,9 @@ class _ExportCard extends StatelessWidget {
           Text(
             latin,
             textAlign: TextAlign.center,
+            softWrap: true,
             style: TextStyle(
-              fontSize: 18,
+              fontSize: width < 300 ? 16 : 18,
               fontWeight: FontWeight.w600,
               color: textColor,
               letterSpacing: -0.2,
