@@ -318,9 +318,17 @@ class _GlyphCell extends StatelessWidget {
         side: BorderSide(color: cs.outlineVariant),
       ),
       clipBehavior: Clip.hardEdge,
-      child: InkWell(
-        onTap: () => _onTap(context),
-        child: _GlyphCellContent(entry: entry, hasStroke: hasStroke, cs: cs),
+      child: Semantics(
+        button: true,
+        label:
+            '${entry.label} glyph. '
+            '${entry.group == 'Kudlit' ? 'Kudlit marks' : entry.group}. '
+            '${hasStroke ? 'Stroke order available.' : 'Stroke order not recorded.'}',
+        excludeSemantics: true,
+        child: InkWell(
+          onTap: () => _onTap(context),
+          child: _GlyphCellContent(entry: entry, hasStroke: hasStroke, cs: cs),
+        ),
       ),
     );
   }

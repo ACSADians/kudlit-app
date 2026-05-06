@@ -96,7 +96,11 @@ class _StrokeOrderSheetState extends State<StrokeOrderSheet>
               strokeCount: widget.data.strokes.length,
             ),
             const SizedBox(height: 16),
-            _StrokeCanvas(controller: _ctrl, data: widget.data),
+            _StrokeCanvas(
+              controller: _ctrl,
+              data: widget.data,
+              label: widget.label,
+            ),
             const SizedBox(height: 12),
             _StrokeControls(
               playing: _playing,
@@ -191,41 +195,55 @@ class _StrokeSheetTitle extends StatelessWidget {
 }
 
 class _StrokeCanvas extends StatelessWidget {
-  const _StrokeCanvas({required this.controller, required this.data});
+  const _StrokeCanvas({
+    required this.controller,
+    required this.data,
+    required this.label,
+  });
 
   final AnimationController controller;
   final StrokeOrderData data;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 320, maxHeight: 320),
-      child: AspectRatio(
-        aspectRatio: 1,
-        child: AnimatedBuilder(
-          animation: controller,
-          builder: (BuildContext context, Widget? _) {
-            final double progress = controller.value * data.strokes.length;
-            return Container(
-              decoration: BoxDecoration(
-                color: cs.surfaceContainerLowest,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: cs.outlineVariant),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: CustomPaint(
-                  painter: _StrokeOrderPainter(
-                    strokes: data.strokes,
-                    progress: progress,
-                    completedColor: cs.primary,
-                    activeColor: cs.tertiary,
+    return Semantics(
+      container: true,
+      image: true,
+      label:
+          'Stroke order animation for $label, '
+          '${data.strokes.length} stroke${data.strokes.length == 1 ? '' : 's'}',
+      child: ExcludeSemantics(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 320, maxHeight: 320),
+          child: AspectRatio(
+            aspectRatio: 1,
+            child: AnimatedBuilder(
+              animation: controller,
+              builder: (BuildContext context, Widget? _) {
+                final double progress = controller.value * data.strokes.length;
+                return Container(
+                  decoration: BoxDecoration(
+                    color: cs.surfaceContainerLowest,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: cs.outlineVariant),
                   ),
-                ),
-              ),
-            );
-          },
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: CustomPaint(
+                      painter: _StrokeOrderPainter(
+                        strokes: data.strokes,
+                        progress: progress,
+                        completedColor: cs.primary,
+                        activeColor: cs.tertiary,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
         ),
       ),
     );
