@@ -198,8 +198,15 @@ class _ScanTabState extends ConsumerState<ScanTab> {
       scanTabControllerProvider.notifier,
     );
     final ScanTabState scanState = ref.watch(scanTabControllerProvider);
+    final Size viewport = MediaQuery.sizeOf(context);
     final double safeBottom = MediaQuery.paddingOf(context).bottom;
-    final double controlsBottom = safeBottom + 20;
+    final bool compactLandscape =
+        viewport.width > viewport.height && viewport.height < 430;
+    final double sideGutter = viewport.width < 380 ? 10 : 12;
+    final double topGutter = compactLandscape ? 6 : 10;
+    final double controlsBottom = safeBottom + (compactLandscape ? 8 : 20);
+    final double controlsHeight = compactLandscape ? 82 : 96;
+    final double panelBottom = controlsBottom + controlsHeight;
     final List<BaybayinDetection> detections = ref.watch(
       scannerNotifierProvider,
     );
@@ -242,11 +249,11 @@ class _ScanTabState extends ConsumerState<ScanTab> {
         ),
         Positioned(
           top: 0,
-          left: 12,
+          left: sideGutter,
           child: SafeArea(
             bottom: false,
             child: Padding(
-              padding: const EdgeInsets.only(top: 10),
+              padding: EdgeInsets.only(top: topGutter),
               child: _ScanUtilityBar(
                 flashOn: scanState.flashOn,
                 onGalleryTap: () => controller.pickImageFromGallery(),
@@ -261,11 +268,11 @@ class _ScanTabState extends ConsumerState<ScanTab> {
           ),
         Positioned(
           top: 0,
-          right: 12,
+          right: sideGutter,
           child: SafeArea(
             bottom: false,
             child: Padding(
-              padding: const EdgeInsets.only(top: 10),
+              padding: EdgeInsets.only(top: topGutter),
               child: IgnorePointer(
                 ignoring: !_showStatusChip,
                 child: AnimatedOpacity(
@@ -278,14 +285,14 @@ class _ScanTabState extends ConsumerState<ScanTab> {
             ),
           ),
         ),
-        const Positioned(
-          top: 44,
-          right: 12,
+        Positioned(
+          top: compactLandscape ? 36 : 44,
+          right: sideGutter,
           child: SafeArea(
             bottom: false,
             child: Padding(
-              padding: EdgeInsets.only(top: 10),
-              child: YoloModelDropdown(scope: YoloModelScope.camera),
+              padding: EdgeInsets.only(top: topGutter),
+              child: const YoloModelDropdown(scope: YoloModelScope.camera),
             ),
           ),
         ),
@@ -307,13 +314,14 @@ class _ScanTabState extends ConsumerState<ScanTab> {
             rotateLabel: kIsWeb && _webSwitchCamera == null
                 ? 'Camera switch unavailable'
                 : 'Switch camera',
+            compact: compactLandscape,
           ),
         ),
         if (scanState.scanNotice != null)
           Positioned(
             left: 14,
             right: 14,
-            bottom: controlsBottom + 96,
+            bottom: panelBottom,
             child: _ScanNoticePanel(
               notice: scanState.scanNotice!,
               onTryAgain: _noticeTryAgainAction(controller, scanState),
@@ -325,7 +333,7 @@ class _ScanTabState extends ConsumerState<ScanTab> {
           Positioned(
             left: 14,
             right: 14,
-            bottom: controlsBottom + 96,
+            bottom: panelBottom,
             child: _ScanResultPanel(
               detections: scanState.snapshot,
               onDismiss: controller.dismissResult,
@@ -335,7 +343,7 @@ class _ScanTabState extends ConsumerState<ScanTab> {
           Positioned(
             left: 14,
             right: 14,
-            bottom: controlsBottom + 96,
+            bottom: panelBottom,
             child: _AggregatedWinnerBanner(winner: scanState.aggregatedWinner!),
           ),
       ],
@@ -462,34 +470,40 @@ class _ScanControls extends StatelessWidget {
     required this.shutterLabel,
     required this.rotateLabel,
     this.onRotateCamera,
+    this.compact = false,
   });
 
   final VoidCallback? onShutter;
   final String shutterLabel;
   final VoidCallback? onRotateCamera;
   final String rotateLabel;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 96,
+      height: compact ? 82 : 96,
       child: Stack(
         alignment: Alignment.center,
         children: <Widget>[
           Align(
             alignment: Alignment.centerLeft,
             child: Padding(
-              padding: const EdgeInsetsDirectional.only(start: 28),
+              padding: EdgeInsetsDirectional.only(start: compact ? 18 : 28),
               child: _ControlIcon(
                 icon: Icons.cameraswitch_rounded,
                 label: rotateLabel,
                 onTap: onRotateCamera,
-                size: 54,
+                size: compact ? 48 : 54,
                 prominent: true,
               ),
             ),
           ),
-          _ShutterButton(onTap: onShutter, label: shutterLabel),
+          _ShutterButton(
+            onTap: onShutter,
+            label: shutterLabel,
+            compact: compact,
+          ),
         ],
       ),
     );
@@ -609,13 +623,20 @@ class _ControlIcon extends StatelessWidget {
 }
 
 class _ShutterButton extends StatelessWidget {
-  const _ShutterButton({required this.onTap, required this.label});
+  const _ShutterButton({
+    required this.onTap,
+    required this.label,
+    required this.compact,
+  });
 
   final VoidCallback? onTap;
   final String label;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
+    final double outerSize = compact ? 64 : 72;
+    final double innerSize = compact ? 50 : 56;
     return Tooltip(
       message: label,
       child: Semantics(
@@ -625,8 +646,8 @@ class _ShutterButton extends StatelessWidget {
         child: GestureDetector(
           onTap: onTap,
           child: Container(
-            width: 72,
-            height: 72,
+            width: outerSize,
+            height: outerSize,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: const Color(0xFF0E1425).withAlpha(100),
@@ -637,8 +658,8 @@ class _ShutterButton extends StatelessWidget {
             ),
             child: Center(
               child: Container(
-                width: 56,
-                height: 56,
+                width: innerSize,
+                height: innerSize,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: Colors.white.withAlpha(onTap == null ? 130 : 255),
@@ -1234,27 +1255,25 @@ class _ResultActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+    return Wrap(
+      spacing: 6,
+      runSpacing: 6,
       children: <Widget>[
         _ActionChip(
           icon: Icons.copy_rounded,
           label: 'Copy reading',
           onTap: onCopy,
         ),
-        const SizedBox(width: 6),
         _ActionChip(
           icon: Icons.share_rounded,
           label: 'Share reading',
           onTap: onShare,
         ),
-        const SizedBox(width: 6),
         _ActionChip(
           icon: Icons.bookmark_add_outlined,
           label: 'Save reading',
           onTap: onSave,
         ),
-        const SizedBox(width: 6),
         _ActionChip(
           icon: Icons.close_rounded,
           label: 'Close result',
@@ -1291,14 +1310,14 @@ class _ActionChip extends StatelessWidget {
           child: GestureDetector(
             onTap: onTap,
             child: Container(
-              width: 36,
-              height: 36,
+              width: 44,
+              height: 44,
               decoration: BoxDecoration(
                 color: cs.surfaceContainer,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: cs.outline),
               ),
-              child: Icon(icon, size: 15, color: cs.onSurface.withAlpha(150)),
+              child: Icon(icon, size: 17, color: cs.onSurface.withAlpha(150)),
             ),
           ),
         ),

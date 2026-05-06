@@ -45,6 +45,9 @@ class _CardContent extends StatelessWidget {
             children: <Widget>[
               Text(
                 modelName,
+                softWrap: true,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   color: KudlitColors.blue900,
                   fontSize: 15,
