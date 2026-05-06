@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kudlit_ph/features/home/presentation/providers/app_preferences_provider.dart';
 import 'package:kudlit_ph/features/home/presentation/providers/translate_page_controller.dart';
 import 'package:kudlit_ph/features/home/presentation/utils/safe_ai_output.dart';
+import 'package:kudlit_ph/features/learning/domain/entities/gemma_prompts.dart';
 import 'package:kudlit_ph/features/translator/presentation/providers/translator_providers.dart';
 
 @immutable
@@ -86,8 +87,11 @@ class TranslateSketchpadController extends Notifier<TranslateSketchpadState> {
     }
 
     final String prompt =
-        'Evaluate this Baybayin sketch for target "${state.target.trim()}". '
-        'Start with encouragement, then one concrete stroke tip.';
+        'You are a Baybayin handwriting coach. '
+        'The target character is "${state.target.trim()}". '
+        'Wrap your private reasoning in <think>...</think> tags. '
+        'After </think>, give 1-2 sentences of direct plain-text feedback. '
+        'No markdown. No greetings or affirmations. Just identify what is off and what to fix.';
 
     final AiPreference mode =
         ref.read(appPreferencesNotifierProvider).value?.aiPreference ??
@@ -118,14 +122,18 @@ class TranslateSketchpadController extends Notifier<TranslateSketchpadState> {
               .read(localGemmaDatasourceProvider)
               .analyzeImage(imageBytes, prompt: prompt)) {
         buffer.write(chunk);
-        final String displayResponse = cleanAssistantOutput(buffer.toString());
+        final String cleaned = cleanAssistantOutput(buffer.toString());
+        final String displayResponse =
+            GemmaPrompts.parseThinkBlock(cleaned).answer;
         state = state.copyWith(
           aiBusy: true,
           aiResponse: displayResponse,
           aiSource: TranslateAiResultSource.offline,
         );
       }
-      final String displayResponse = cleanAssistantOutput(buffer.toString());
+      final String cleaned = cleanAssistantOutput(buffer.toString());
+      final String displayResponse =
+          GemmaPrompts.parseThinkBlock(cleaned).answer;
       state = state.copyWith(
         aiBusy: false,
         aiResponse: displayResponse,
@@ -157,14 +165,18 @@ class TranslateSketchpadController extends Notifier<TranslateSketchpadState> {
     try {
       await for (final String chunk in stream) {
         buffer.write(chunk);
-        final String displayResponse = cleanAssistantOutput(buffer.toString());
+        final String cleaned = cleanAssistantOutput(buffer.toString());
+        final String displayResponse =
+            GemmaPrompts.parseThinkBlock(cleaned).answer;
         state = state.copyWith(
           aiBusy: true,
           aiResponse: displayResponse,
           aiSource: source,
         );
       }
-      final String displayResponse = cleanAssistantOutput(buffer.toString());
+      final String cleaned = cleanAssistantOutput(buffer.toString());
+      final String displayResponse =
+          GemmaPrompts.parseThinkBlock(cleaned).answer;
       state = state.copyWith(
         aiBusy: false,
         aiResponse: displayResponse,
