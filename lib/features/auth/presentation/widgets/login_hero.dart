@@ -11,6 +11,7 @@ class LoginHero extends StatelessWidget {
     this.bubbleText = 'Kumusta! I\'m Butty. Let\'s learn Baybayin together!',
     this.showBackButton = false,
     this.showLanguageToggle = true,
+    this.showButtyArea = true,
     super.key,
   });
 
@@ -18,6 +19,7 @@ class LoginHero extends StatelessWidget {
   final String bubbleText;
   final bool showBackButton;
   final bool showLanguageToggle;
+  final bool showButtyArea;
 
   @override
   Widget build(BuildContext context) {
@@ -32,6 +34,7 @@ class LoginHero extends StatelessWidget {
             bubbleText: bubbleText,
             showBackButton: showBackButton,
             showLanguageToggle: showLanguageToggle,
+            showButtyArea: showButtyArea,
           ),
         ),
       ],
