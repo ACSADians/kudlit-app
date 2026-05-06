@@ -26,9 +26,7 @@ class FilledOutput extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text(
+        Text(
             baybayin,
             textAlign: TextAlign.center,
             style: TextStyle(
@@ -39,7 +37,6 @@ class FilledOutput extends StatelessWidget {
               height: 1.2,
             ),
           ),
-        ),
         const SizedBox(height: 16),
         Container(width: 40, height: 1.5, color: cs.outline),
         const SizedBox(height: 14),

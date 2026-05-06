@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:kudlit_ph/features/home/presentation/providers/translate_page_controller.dart';
 import 'package:kudlit_ph/features/home/presentation/providers/translate_text_controller.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/translate/direction_toggle.dart';
-import 'package:kudlit_ph/features/home/presentation/widgets/translate/output_stage.dart';
+import 'package:kudlit_ph/features/home/presentation/widgets/translate/empty_output.dart';
+import 'package:kudlit_ph/features/home/presentation/widgets/translate/filled_output.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/translate/translate_feedback_card.dart';
 
 class TranslateTextModePanel extends StatelessWidget {
@@ -34,77 +35,117 @@ class TranslateTextModePanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+    return Column(
+      children: <Widget>[
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+            child: Center(
+              child: state.hasInput
+                  ? Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        FilledOutput(
+                          baybayin: state.baybayinText,
+                          latin: state.latinText,
+                          copyLabel: 'Copy',
+                          shareLabel: 'Share',
+                          onCopy: onCopy,
+                          onShare: onShare,
+                        ),
+                        if (state.aiResponse.trim().isNotEmpty) ...<Widget>[
+                          const SizedBox(height: 16),
+                          TranslateFeedbackCard(
+                            title: 'AI feedback',
+                            body: state.aiResponse,
+                            sourceLabel: state.aiSource?.label,
+                          ),
+                        ],
+                      ],
+                    )
+                  : const EmptyOutput(),
+            ),
+          ),
+        ),
+        _BottomInputArea(
+          state: state,
+          inputEnabled: inputEnabled,
+          disabledReason: disabledReason,
+          onDirectionChanged: onDirectionChanged,
+          onInputChanged: onInputChanged,
+          onClear: onClear,
+          onExplain: onExplain,
+          onCheckInput: onCheckInput,
+        ),
+      ],
+    );
+  }
+}
+
+class _BottomInputArea extends StatelessWidget {
+  const _BottomInputArea({
+    required this.state,
+    required this.inputEnabled,
+    required this.disabledReason,
+    required this.onDirectionChanged,
+    required this.onInputChanged,
+    required this.onClear,
+    required this.onExplain,
+    required this.onCheckInput,
+  });
+
+  final TranslateTextState state;
+  final bool inputEnabled;
+  final String? disabledReason;
+  final ValueChanged<bool> onDirectionChanged;
+  final ValueChanged<String> onInputChanged;
+  final VoidCallback onClear;
+  final VoidCallback onExplain;
+  final VoidCallback onCheckInput;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    return Container(
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: cs.outline.withAlpha(80))),
+      ),
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 160),
-            child: OutputStage(
-              baybayinText: state.baybayinText,
-              latinText: state.latinText,
-              hasInput: state.hasInput,
-              copyLabel: 'Copy',
-              shareLabel: 'Share',
-              onCopy: onCopy,
-              onShare: onShare,
-            ),
-          ),
-          const SizedBox(height: 8),
-          _TextActionsRow(
-            busy: state.aiBusy,
-            enabled: inputEnabled && state.hasInput,
-            onExplain: onExplain,
-            onCheckInput: onCheckInput,
-          ),
-          if (disabledReason != null) ...<Widget>[
-            const SizedBox(height: 8),
-            Text(
-              disabledReason!,
-              style: TextStyle(
-                fontSize: 12,
-                color: Theme.of(context).colorScheme.onSurface.withAlpha(170),
-              ),
-            ),
-          ],
-          const SizedBox(height: 10),
           DirectionToggle(
             latinToBaybayin: state.latinToBaybayin,
             onToggle: onDirectionChanged,
           ),
-          _DirectionHelper(latinToBaybayin: state.latinToBaybayin),
           const SizedBox(height: 8),
-          _TextInputField(
+          _InputField(
             text: state.inputText,
             enabled: inputEnabled && !state.aiBusy,
-            onChanged: onInputChanged,
-            onClear: onClear,
             hintText: state.latinToBaybayin
                 ? 'Type in Filipino...'
                 : 'Type Baybayin Unicode...',
+            onChanged: onInputChanged,
+            onClear: onClear,
           ),
           if (state.hasInput) ...<Widget>[
-            const SizedBox(height: 10),
-            TranslateFeedbackCard(
-              title: 'Result',
-              body: state.latinToBaybayin
-                  ? 'Baybayin output is shown above.'
-                  : 'Filipino reading is shown above.',
-              warning: state.feedbackMessages.isEmpty
-                  ? null
-                  : state.feedbackMessages.join(' '),
-              tryThis: state.latinToBaybayin
-                  ? 'Use simple Filipino syllables for cleaner Baybayin output.'
-                  : 'Paste Baybayin Unicode characters, not a screenshot or image.',
+            const SizedBox(height: 8),
+            _TextActionsRow(
+              busy: state.aiBusy,
+              enabled: inputEnabled && state.hasInput,
+              onExplain: onExplain,
+              onCheckInput: onCheckInput,
             ),
           ],
-          if (state.aiResponse.trim().isNotEmpty) ...<Widget>[
-            const SizedBox(height: 10),
-            TranslateFeedbackCard(
-              title: 'AI feedback',
-              body: state.aiResponse,
-              sourceLabel: state.aiSource?.label,
+          if (disabledReason != null) ...<Widget>[
+            const SizedBox(height: 6),
+            Text(
+              disabledReason!,
+              style: TextStyle(
+                fontSize: 12,
+                color: cs.onSurface.withAlpha(160),
+              ),
             ),
           ],
         ],
@@ -113,30 +154,8 @@ class TranslateTextModePanel extends StatelessWidget {
   }
 }
 
-class _DirectionHelper extends StatelessWidget {
-  const _DirectionHelper({required this.latinToBaybayin});
-
-  final bool latinToBaybayin;
-
-  @override
-  Widget build(BuildContext context) {
-    final ColorScheme cs = Theme.of(context).colorScheme;
-    return Text(
-      latinToBaybayin
-          ? 'Type Filipino text and Kudlit will transliterate it into Baybayin.'
-          : 'Reverse mode expects Baybayin Unicode text. Upload images from Scan instead.',
-      textAlign: TextAlign.center,
-      style: TextStyle(
-        fontSize: 12,
-        height: 1.35,
-        color: cs.onSurface.withAlpha(155),
-      ),
-    );
-  }
-}
-
-class _TextInputField extends StatefulWidget {
-  const _TextInputField({
+class _InputField extends StatefulWidget {
+  const _InputField({
     required this.text,
     required this.enabled,
     required this.hintText,
@@ -151,10 +170,10 @@ class _TextInputField extends StatefulWidget {
   final VoidCallback onClear;
 
   @override
-  State<_TextInputField> createState() => _TextInputFieldState();
+  State<_InputField> createState() => _InputFieldState();
 }
 
-class _TextInputFieldState extends State<_TextInputField> {
+class _InputFieldState extends State<_InputField> {
   final TextEditingController _controller = TextEditingController();
 
   @override
@@ -165,11 +184,9 @@ class _TextInputFieldState extends State<_TextInputField> {
   }
 
   @override
-  void didUpdateWidget(covariant _TextInputField oldWidget) {
+  void didUpdateWidget(covariant _InputField oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (_controller.text == widget.text) {
-      return;
-    }
+    if (_controller.text == widget.text) return;
     _controller.value = TextEditingValue(
       text: widget.text,
       selection: TextSelection.collapsed(offset: widget.text.length),
@@ -185,45 +202,52 @@ class _TextInputFieldState extends State<_TextInputField> {
   @override
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
-    return Container(
-      constraints: const BoxConstraints(minHeight: 44),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: cs.outline),
-      ),
-      child: Row(
-        children: <Widget>[
-          Expanded(
-            child: TextField(
-              controller: _controller,
-              enabled: widget.enabled,
-              onChanged: widget.onChanged,
-              decoration: InputDecoration(
-                hintText: widget.hintText,
-                border: InputBorder.none,
-                isDense: true,
-                hintStyle: TextStyle(
-                  color: cs.onSurface.withAlpha(120),
-                  fontSize: 14,
+    return TextField(
+      controller: _controller,
+      enabled: widget.enabled,
+      onChanged: widget.onChanged,
+      decoration: InputDecoration(
+        hintText: widget.hintText,
+        filled: true,
+        fillColor: cs.surfaceContainerLow,
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 12,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: cs.outline),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: cs.outline),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: cs.primary, width: 1.5),
+        ),
+        disabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: cs.outline.withAlpha(100)),
+        ),
+        hintStyle: TextStyle(
+          color: cs.onSurface.withAlpha(120),
+          fontSize: 14,
+        ),
+        suffixIcon: _controller.text.isNotEmpty
+            ? IconButton(
+                icon: Icon(
+                  Icons.close_rounded,
+                  size: 18,
+                  color: cs.onSurface.withAlpha(130),
                 ),
-              ),
-            ),
-          ),
-          if (_controller.text.isNotEmpty)
-            GestureDetector(
-              onTap: () {
-                _controller.clear();
-                widget.onClear();
-              },
-              child: Icon(
-                Icons.close_rounded,
-                size: 18,
-                color: cs.onSurface.withAlpha(130),
-              ),
-            ),
-        ],
+                onPressed: () {
+                  _controller.clear();
+                  widget.onClear();
+                },
+              )
+            : null,
       ),
     );
   }

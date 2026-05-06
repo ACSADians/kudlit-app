@@ -59,7 +59,6 @@ class TranslateScreen extends ConsumerWidget {
             TranslateHeader(
               aiMode: mode,
               workspaceMode: pageState.mode,
-              offlineStatus: offlineStatus,
               onAiModeChanged: (AiPreference nextMode) {
                 unawaited(
                   ref
