@@ -9,6 +9,7 @@ import 'package:kudlit_ph/features/home/presentation/providers/translate_page_co
 import 'package:kudlit_ph/features/home/presentation/providers/translate_sketchpad_controller.dart';
 import 'package:kudlit_ph/features/home/presentation/providers/translate_text_controller.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/floating_tab_nav.dart';
+import 'package:kudlit_ph/features/home/presentation/widgets/translate/export_sheet.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/translate/translate_header.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/translate/translate_sketchpad_mode_panel.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/translate/translate_text_mode_panel.dart';
@@ -148,21 +149,19 @@ class TranslateScreen extends ConsumerWidget {
     BuildContext context,
     TranslateTextState state,
   ) async {
-    final String output = _textOutput(state);
-    if (output.trim().isEmpty) {
+    if (!state.hasInput) {
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Nothing to share yet.')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Nothing to share yet.')),
+        );
       }
       return;
     }
-    await Clipboard.setData(ClipboardData(text: output));
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Share sheet is not available yet. Copied output.'),
-        ),
+      await BaybayinExportSheet.show(
+        context,
+        baybayin: state.baybayinText,
+        latin: state.latinText,
       );
     }
   }
