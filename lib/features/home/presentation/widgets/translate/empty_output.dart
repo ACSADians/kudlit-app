@@ -9,12 +9,22 @@ class EmptyOutput extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        Icon(
-          Icons.text_fields_rounded,
-          size: 36,
-          color: cs.onSurface.withAlpha(60),
+        Container(
+          width: 96,
+          height: 96,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: cs.primaryContainer,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: Image.asset(
+              'assets/brand/ButtyPaint.webp',
+              fit: BoxFit.contain,
+            ),
+          ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 14),
         Text(
           'Type or speak below\nto see Baybayin',
           textAlign: TextAlign.center,

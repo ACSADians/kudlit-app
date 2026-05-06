@@ -66,7 +66,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final EdgeInsets safePadding = MediaQuery.paddingOf(context);
-    final double navBottom = safePadding.bottom + 20;
+    final double navBottom = safePadding.bottom + 56;
     final double navRight = safePadding.right + 18;
 
     return Scaffold(

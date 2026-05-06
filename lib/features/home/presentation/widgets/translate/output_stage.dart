@@ -25,20 +25,31 @@ class OutputStage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 28),
-        child: hasInput
-            ? FilledOutput(
-                baybayin: baybayinText,
-                latin: latinText,
-                copyLabel: copyLabel,
-                shareLabel: shareLabel,
-                onCopy: onCopy,
-                onShare: onShare,
-              )
-            : const EmptyOutput(),
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: cs.shadow,
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
+      child: hasInput
+          ? FilledOutput(
+              baybayin: baybayinText,
+              latin: latinText,
+              copyLabel: copyLabel,
+              shareLabel: shareLabel,
+              onCopy: onCopy,
+              onShare: onShare,
+            )
+          : const EmptyOutput(),
     );
   }
 }

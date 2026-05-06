@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:kudlit_ph/features/home/presentation/providers/app_preferences_provider.dart';
 import 'package:kudlit_ph/features/home/presentation/providers/translate_page_controller.dart';
 import 'package:kudlit_ph/features/home/presentation/providers/translate_text_controller.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/translate/direction_toggle.dart';
@@ -12,6 +14,8 @@ class TranslateTextModePanel extends StatelessWidget {
     required this.state,
     required this.inputEnabled,
     required this.disabledReason,
+    required this.aiMode,
+    required this.offlineStatus,
     required this.onDirectionChanged,
     required this.onInputChanged,
     required this.onClear,
@@ -24,6 +28,8 @@ class TranslateTextModePanel extends StatelessWidget {
   final TranslateTextState state;
   final bool inputEnabled;
   final String? disabledReason;
+  final AiPreference aiMode;
+  final AsyncValue<TranslateOfflineStatus> offlineStatus;
   final ValueChanged<bool> onDirectionChanged;
   final ValueChanged<String> onInputChanged;
   final VoidCallback onClear;
@@ -34,146 +40,104 @@ class TranslateTextModePanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 160),
-            child: OutputStage(
-              baybayinText: state.baybayinText,
-              latinText: state.latinText,
-              hasInput: state.hasInput,
-              copyLabel: 'Copy',
-              shareLabel: 'Share',
-              onCopy: onCopy,
-              onShare: onShare,
+    return Column(
+      children: <Widget>[
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                ConstrainedBox(
+                  constraints: const BoxConstraints(minHeight: 160),
+                  child: OutputStage(
+                    baybayinText: state.baybayinText,
+                    latinText: state.latinText,
+                    hasInput: state.hasInput,
+                    copyLabel: 'Copy',
+                    shareLabel: 'Share',
+                    onCopy: onCopy,
+                    onShare: onShare,
+                  ),
+                ),
+                if (state.aiResponse.trim().isNotEmpty) ...<Widget>[
+                  const SizedBox(height: 10),
+                  TranslateFeedbackCard(
+                    title: 'AI feedback',
+                    body: state.aiResponse,
+                    sourceLabel: state.aiSource?.label,
+                  ),
+                ],
+              ],
             ),
           ),
-          const SizedBox(height: 8),
-          _TextActionsRow(
-            busy: state.aiBusy,
-            enabled: inputEnabled && state.hasInput,
-            onExplain: onExplain,
-            onCheckInput: onCheckInput,
-          ),
-          if (disabledReason != null) ...<Widget>[
-            const SizedBox(height: 8),
-            Text(
-              disabledReason!,
-              style: TextStyle(
-                fontSize: 12,
-                color: Theme.of(context).colorScheme.onSurface.withAlpha(170),
-              ),
-            ),
-          ],
-          const SizedBox(height: 10),
-          DirectionToggle(
-            latinToBaybayin: state.latinToBaybayin,
-            onToggle: onDirectionChanged,
-          ),
-          _DirectionHelper(latinToBaybayin: state.latinToBaybayin),
-          const SizedBox(height: 8),
-          _TextInputField(
-            text: state.inputText,
-            enabled: inputEnabled && !state.aiBusy,
-            onChanged: onInputChanged,
-            onClear: onClear,
-            hintText: state.latinToBaybayin
-                ? 'Type in Filipino...'
-                : 'Type Baybayin Unicode...',
-          ),
-          if (state.hasInput) ...<Widget>[
-            const SizedBox(height: 10),
-            TranslateFeedbackCard(
-              title: 'Result',
-              body: state.latinToBaybayin
-                  ? 'Baybayin output is shown above.'
-                  : 'Filipino reading is shown above.',
-              warning: state.feedbackMessages.isEmpty
-                  ? null
-                  : state.feedbackMessages.join(' '),
-              tryThis: state.latinToBaybayin
-                  ? 'Use simple Filipino syllables for cleaner Baybayin output.'
-                  : 'Paste Baybayin Unicode characters, not a screenshot or image.',
-            ),
-          ],
-          if (state.aiResponse.trim().isNotEmpty) ...<Widget>[
-            const SizedBox(height: 10),
-            TranslateFeedbackCard(
-              title: 'AI feedback',
-              body: state.aiResponse,
-              sourceLabel: state.aiSource?.label,
-            ),
-          ],
-        ],
-      ),
+        ),
+        _TranslateInputBar(
+          state: state,
+          aiMode: aiMode,
+          offlineStatus: offlineStatus,
+          inputEnabled: inputEnabled,
+          disabledReason: disabledReason,
+          onDirectionChanged: onDirectionChanged,
+          onInputChanged: onInputChanged,
+          onClear: onClear,
+          onExplain: onExplain,
+          onCheckInput: onCheckInput,
+        ),
+      ],
     );
   }
 }
 
-class _DirectionHelper extends StatelessWidget {
-  const _DirectionHelper({required this.latinToBaybayin});
+// ─── Sticky Input Bar ────────────────────────────────────────────────────────
 
-  final bool latinToBaybayin;
-
-  @override
-  Widget build(BuildContext context) {
-    final ColorScheme cs = Theme.of(context).colorScheme;
-    return Text(
-      latinToBaybayin
-          ? 'Type Filipino text and Kudlit will transliterate it into Baybayin.'
-          : 'Reverse mode expects Baybayin Unicode text. Upload images from Scan instead.',
-      textAlign: TextAlign.center,
-      style: TextStyle(
-        fontSize: 12,
-        height: 1.35,
-        color: cs.onSurface.withAlpha(155),
-      ),
-    );
-  }
-}
-
-class _TextInputField extends StatefulWidget {
-  const _TextInputField({
-    required this.text,
-    required this.enabled,
-    required this.hintText,
-    required this.onChanged,
+class _TranslateInputBar extends StatefulWidget {
+  const _TranslateInputBar({
+    required this.state,
+    required this.aiMode,
+    required this.offlineStatus,
+    required this.inputEnabled,
+    required this.disabledReason,
+    required this.onDirectionChanged,
+    required this.onInputChanged,
     required this.onClear,
+    required this.onExplain,
+    required this.onCheckInput,
   });
 
-  final String text;
-  final bool enabled;
-  final String hintText;
-  final ValueChanged<String> onChanged;
+  final TranslateTextState state;
+  final AiPreference aiMode;
+  final AsyncValue<TranslateOfflineStatus> offlineStatus;
+  final bool inputEnabled;
+  final String? disabledReason;
+  final ValueChanged<bool> onDirectionChanged;
+  final ValueChanged<String> onInputChanged;
   final VoidCallback onClear;
+  final VoidCallback onExplain;
+  final VoidCallback onCheckInput;
 
   @override
-  State<_TextInputField> createState() => _TextInputFieldState();
+  State<_TranslateInputBar> createState() => _TranslateInputBarState();
 }
 
-class _TextInputFieldState extends State<_TextInputField> {
+class _TranslateInputBarState extends State<_TranslateInputBar> {
   final TextEditingController _controller = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _controller.text = widget.text;
-    _controller.addListener(() => setState(() {}));
+    _controller.text = widget.state.inputText;
   }
 
   @override
-  void didUpdateWidget(covariant _TextInputField oldWidget) {
+  void didUpdateWidget(covariant _TranslateInputBar oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (_controller.text == widget.text) {
-      return;
+    if (_controller.text != widget.state.inputText) {
+      _controller.value = TextEditingValue(
+        text: widget.state.inputText,
+        selection: TextSelection.collapsed(offset: widget.state.inputText.length),
+      );
     }
-    _controller.value = TextEditingValue(
-      text: widget.text,
-      selection: TextSelection.collapsed(offset: widget.text.length),
-    );
   }
 
   @override
@@ -185,92 +149,228 @@ class _TextInputFieldState extends State<_TextInputField> {
   @override
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
+    final bool checking =
+        widget.aiMode == AiPreference.local && widget.offlineStatus.isLoading;
+    final TranslateOfflineStatus? status = widget.offlineStatus.value;
+
     return Container(
-      constraints: const BoxConstraints(minHeight: 44),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
         color: cs.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: cs.outline),
+        border: Border(top: BorderSide(color: cs.outlineVariant)),
       ),
-      child: Row(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Expanded(
-            child: TextField(
-              controller: _controller,
-              enabled: widget.enabled,
-              onChanged: widget.onChanged,
-              decoration: InputDecoration(
-                hintText: widget.hintText,
-                border: InputBorder.none,
-                isDense: true,
-                hintStyle: TextStyle(
-                  color: cs.onSurface.withAlpha(120),
-                  fontSize: 14,
-                ),
-              ),
+          // Direction toggle
+          DirectionToggle(
+            latinToBaybayin: widget.state.latinToBaybayin,
+            onToggle: widget.onDirectionChanged,
+          ),
+          const SizedBox(height: 8),
+          // Row 2: Input container
+          Container(
+            decoration: BoxDecoration(
+              color: cs.surfaceContainerLowest,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: cs.outline),
+            ),
+            padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
+            child: ValueListenableBuilder<TextEditingValue>(
+              valueListenable: _controller,
+              builder: (
+                BuildContext ctx,
+                TextEditingValue value,
+                Widget? child,
+              ) {
+                final bool hasText = value.text.isNotEmpty;
+                final bool actionsEnabled =
+                    widget.inputEnabled && hasText && !widget.state.aiBusy;
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: <Widget>[
+                        Expanded(
+                          child: TextField(
+                            controller: _controller,
+                            enabled: widget.inputEnabled && !widget.state.aiBusy,
+                            onChanged: widget.onInputChanged,
+                            maxLines: null,
+                            keyboardType: TextInputType.multiline,
+                            decoration: InputDecoration(
+                              hintText: widget.state.latinToBaybayin
+                                  ? 'Type in Filipino...'
+                                  : 'Paste Baybayin Unicode...',
+                              border: InputBorder.none,
+                              contentPadding:
+                                  const EdgeInsets.symmetric(vertical: 4),
+                              hintStyle: TextStyle(
+                                fontSize: 14,
+                                color: cs.onSurface.withAlpha(110),
+                              ),
+                            ),
+                          ),
+                        ),
+                        if (hasText)
+                          GestureDetector(
+                            onTap: () {
+                              _controller.clear();
+                              widget.onClear();
+                            },
+                            child: Padding(
+                              padding:
+                                  const EdgeInsets.only(left: 8, bottom: 2),
+                              child: Icon(
+                                Icons.close_rounded,
+                                size: 18,
+                                color: cs.onSurface.withAlpha(130),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    if (hasText) ...<Widget>[
+                      const SizedBox(height: 8),
+                      Row(
+                        children: <Widget>[
+                          _InputActionChip(
+                            label: widget.state.aiBusy ? 'Working…' : 'Explain',
+                            icon: Icons.auto_awesome_rounded,
+                            enabled: actionsEnabled,
+                            onTap: widget.onExplain,
+                          ),
+                          const SizedBox(width: 6),
+                          _InputActionChip(
+                            label: 'Check',
+                            icon: Icons.spellcheck_rounded,
+                            enabled: actionsEnabled,
+                            onTap: widget.onCheckInput,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                );
+              },
             ),
           ),
-          if (_controller.text.isNotEmpty)
-            GestureDetector(
-              onTap: () {
-                _controller.clear();
-                widget.onClear();
-              },
-              child: Icon(
-                Icons.close_rounded,
-                size: 18,
-                color: cs.onSurface.withAlpha(130),
-              ),
-            ),
+          // Row 3: Status hint
+          const SizedBox(height: 6),
+          _AiStatusHint(
+            checking: checking,
+            mode: widget.aiMode,
+            status: status,
+            disabledReason: widget.disabledReason,
+          ),
+          const SizedBox(height: 8),
         ],
       ),
     );
   }
 }
 
-class _TextActionsRow extends StatelessWidget {
-  const _TextActionsRow({
-    required this.busy,
-    required this.enabled,
-    required this.onExplain,
-    required this.onCheckInput,
+// ─── AI Status Hint ───────────────────────────────────────────────────────────
+
+class _AiStatusHint extends StatelessWidget {
+  const _AiStatusHint({
+    required this.checking,
+    required this.mode,
+    required this.status,
+    required this.disabledReason,
   });
 
-  final bool busy;
-  final bool enabled;
-  final VoidCallback onExplain;
-  final VoidCallback onCheckInput;
+  final bool checking;
+  final AiPreference mode;
+  final TranslateOfflineStatus? status;
+  final String? disabledReason;
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    final String hint = disabledReason ?? _defaultHint();
+    return Row(
       children: <Widget>[
-        _ActionButton(
-          label: busy ? 'Working...' : 'Explain',
-          enabled: enabled && !busy,
-          onTap: onExplain,
-        ),
-        _ActionButton(
-          label: 'Check Input',
-          enabled: enabled && !busy,
-          onTap: onCheckInput,
+        _StatusDot(checking: checking, mode: mode, status: status),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            hint,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 11.5,
+              color: cs.onSurface.withAlpha(160),
+            ),
+          ),
         ),
       ],
     );
   }
+
+  String _defaultHint() {
+    if (mode == AiPreference.cloud) return 'Online Gemma is active.';
+    if (checking) return 'Preparing offline Gemma…';
+    if (status?.usable ?? false) {
+      return status?.modelName == null
+          ? 'Offline ready.'
+          : 'Offline ready: ${status!.modelName}.';
+    }
+    if (status?.installed ?? false) {
+      return 'Offline model found, but local runtime is unavailable.';
+    }
+    return status?.detail ?? 'Offline model is unavailable.';
+  }
 }
 
-class _ActionButton extends StatelessWidget {
-  const _ActionButton({
+class _StatusDot extends StatelessWidget {
+  const _StatusDot({
+    required this.checking,
+    required this.mode,
+    required this.status,
+  });
+
+  final bool checking;
+  final AiPreference mode;
+  final TranslateOfflineStatus? status;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    if (checking) {
+      return SizedBox(
+        width: 12,
+        height: 12,
+        child: CircularProgressIndicator(strokeWidth: 1.5, color: cs.primary),
+      );
+    }
+    final Color color = switch (mode) {
+      AiPreference.cloud => cs.primary,
+      AiPreference.local when status?.usable ?? false =>
+        const Color(0xFF46B986),
+      _ => cs.error,
+    };
+    return Container(
+      width: 7,
+      height: 7,
+      decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+    );
+  }
+}
+
+// ─── Input Action Chip ────────────────────────────────────────────────────────
+
+class _InputActionChip extends StatelessWidget {
+  const _InputActionChip({
     required this.label,
+    required this.icon,
     required this.enabled,
     required this.onTap,
   });
 
   final String label;
+  final IconData icon;
   final bool enabled;
   final VoidCallback onTap;
 
@@ -279,19 +379,30 @@ class _ActionButton extends StatelessWidget {
     final ColorScheme cs = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: enabled ? onTap : null,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: enabled ? cs.surfaceContainer : cs.surfaceContainerLowest,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: cs.outline),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: enabled ? cs.onSurface : cs.onSurface.withAlpha(110),
+      child: AnimatedOpacity(
+        opacity: enabled ? 1.0 : 0.4,
+        duration: const Duration(milliseconds: 150),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: cs.surfaceContainer,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: cs.outline),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Icon(icon, size: 13, color: cs.onSurface),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                  color: cs.onSurface,
+                ),
+              ),
+            ],
           ),
         ),
       ),

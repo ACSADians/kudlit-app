@@ -8,7 +8,6 @@ import 'package:kudlit_ph/features/home/presentation/providers/app_preferences_p
 import 'package:kudlit_ph/features/home/presentation/providers/translate_page_controller.dart';
 import 'package:kudlit_ph/features/home/presentation/providers/translate_sketchpad_controller.dart';
 import 'package:kudlit_ph/features/home/presentation/providers/translate_text_controller.dart';
-import 'package:kudlit_ph/features/home/presentation/widgets/floating_tab_nav.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/translate/translate_header.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/translate/translate_sketchpad_mode_panel.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/translate/translate_text_mode_panel.dart';
@@ -57,9 +56,12 @@ class TranslateScreen extends ConsumerWidget {
         child: Column(
           children: <Widget>[
             TranslateHeader(
-              aiMode: mode,
               workspaceMode: pageState.mode,
+              aiMode: mode,
               offlineStatus: offlineStatus,
+              onWorkspaceModeChanged: ref
+                  .read(translatePageControllerProvider.notifier)
+                  .setMode,
               onAiModeChanged: (AiPreference nextMode) {
                 unawaited(
                   ref
@@ -67,9 +69,6 @@ class TranslateScreen extends ConsumerWidget {
                       .setAiPreference(nextMode),
                 );
               },
-              onWorkspaceModeChanged: ref
-                  .read(translatePageControllerProvider.notifier)
-                  .setMode,
             ),
             Expanded(
               child: switch (pageState.mode) {
@@ -77,6 +76,8 @@ class TranslateScreen extends ConsumerWidget {
                   state: textState,
                   inputEnabled: aiActionsEnabled,
                   disabledReason: disabledReason,
+                  aiMode: mode,
+                  offlineStatus: offlineStatus,
                   onDirectionChanged: ref
                       .read(translateTextControllerProvider.notifier)
                       .setDirection,
@@ -111,12 +112,6 @@ class TranslateScreen extends ConsumerWidget {
                       .requestFeedback,
                 ),
               },
-            ),
-            SizedBox(
-              height:
-                  MediaQuery.paddingOf(context).bottom +
-                  kFloatingNavClearance +
-                  8,
             ),
           ],
         ),

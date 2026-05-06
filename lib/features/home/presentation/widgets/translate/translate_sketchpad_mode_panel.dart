@@ -177,10 +177,10 @@ class _TranslateSketchpadModePanelState
     }
     if (widget.state.aiBusy) return 'Feedback is already running.';
     if (widget.state.target.trim().isEmpty) {
-      return 'Enter a target before opening feedback.';
+      return 'Enter a glyph first, then draw!';
     }
     if (_latestStrokes.isEmpty) {
-      return 'Draw first, then request feedback.';
+      return 'Open the sketchpad and draw something first.';
     }
     return null;
   }
@@ -194,59 +194,84 @@ class _SketchpadIntro extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
-    final String preview = target.trim().isEmpty ? 'ba' : target.trim();
+    final String preview = target.trim().isEmpty ? '' : target.trim();
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: cs.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: cs.outline),
+        color: cs.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: cs.shadow,
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: <Widget>[
           Container(
-            width: 56,
-            height: 56,
-            alignment: Alignment.center,
+            width: 72,
+            height: 72,
             decoration: BoxDecoration(
-              color: cs.surface,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: cs.outline),
+              shape: BoxShape.circle,
+              color: cs.primaryContainer,
             ),
-            child: Text(
-              preview,
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontFamily: 'Baybayin Simple TAWBID',
-                fontSize: 28,
-                color: cs.onSurface,
+            child: Padding(
+              padding: const EdgeInsets.all(6),
+              child: Image.asset(
+                'assets/brand/ButtyPencilRun.webp',
+                fit: BoxFit.contain,
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Text(
-                  'Sketch a Target',
+                  'Sketch a Glyph',
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 15,
                     fontWeight: FontWeight.w700,
                     color: cs.onSurface,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Enter the glyph or syllable you want to practice, then draw it in the sheet.',
+                  'Pick a glyph to practice, then draw it. Butty will check your strokes!',
                   style: TextStyle(
                     fontSize: 12.5,
-                    height: 1.35,
+                    height: 1.4,
                     color: cs.onSurface.withAlpha(165),
                   ),
                 ),
+                if (preview.isNotEmpty) ...<Widget>[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: cs.surfaceContainer,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: cs.outline),
+                    ),
+                    child: Text(
+                      preview,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontFamily: 'Baybayin Simple TAWBID',
+                        fontSize: 22,
+                        color: cs.onSurface,
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -285,7 +310,7 @@ class _SketchSummary extends StatelessWidget {
             child: Text(
               hasSketch
                   ? 'Sketch ready: $strokeCount stroke(s), $pointCount points.'
-                  : 'No sketch yet. Open Sketchpad and draw your target.',
+                  : 'No sketch yet — open the pad and draw!',
               style: TextStyle(
                 fontSize: 12.5,
                 color: cs.onSurface.withAlpha(175),
