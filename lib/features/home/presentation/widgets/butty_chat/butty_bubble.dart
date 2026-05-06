@@ -38,20 +38,31 @@ class ButtyBubble extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Flexible(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
-              decoration: BoxDecoration(
-                color: cs.surfaceContainer,
-                borderRadius: const BorderRadius.only(
-                  topRight: Radius.circular(14),
-                  bottomLeft: Radius.circular(14),
-                  bottomRight: Radius.circular(14),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: (MediaQuery.sizeOf(context).width * 0.78).clamp(
+                  220.0,
+                  280.0,
                 ),
-                border: Border.all(color: cs.outline),
               ),
-              child: _BubbleContent(
-                text: displayText,
-                isStreaming: isStreaming,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 13,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: cs.surfaceContainer,
+                  borderRadius: const BorderRadius.only(
+                    topRight: Radius.circular(14),
+                    bottomLeft: Radius.circular(14),
+                    bottomRight: Radius.circular(14),
+                  ),
+                  border: Border.all(color: cs.outline),
+                ),
+                child: _BubbleContent(
+                  text: displayText,
+                  isStreaming: isStreaming,
+                ),
               ),
             ),
           ),

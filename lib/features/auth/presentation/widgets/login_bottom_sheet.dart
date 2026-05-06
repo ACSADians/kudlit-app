@@ -14,21 +14,17 @@ import 'primary_auth_option_button.dart';
 /// and footer links.
 class LoginBottomSheet extends StatelessWidget {
   const LoginBottomSheet({
-    required this.onContinueWithPhone,
     required this.onContinueWithEmail,
     required this.onContinueWithGoogle,
     required this.onCreateAccount,
-    required this.onForgotPassword,
     required this.onContinueAsGuest,
     this.isGoogleLoading = false,
     super.key,
   });
 
-  final VoidCallback onContinueWithPhone;
   final VoidCallback onContinueWithEmail;
   final VoidCallback onContinueWithGoogle;
   final VoidCallback onCreateAccount;
-  final VoidCallback onForgotPassword;
   final VoidCallback onContinueAsGuest;
   final bool isGoogleLoading;
 
@@ -76,9 +72,9 @@ class LoginBottomSheet extends StatelessWidget {
                 const LoginBottomSheetHeadline(),
                 const SizedBox(height: 12),
                 PrimaryAuthOptionButton(
-                  icon: Icons.smartphone_outlined,
-                  label: 'Continue with Phone Number',
-                  onTap: onContinueWithPhone,
+                  icon: Icons.arrow_forward,
+                  label: 'Continue as guest',
+                  onTap: onContinueAsGuest,
                 ),
                 const LoginAuthOrDivider(),
                 LoginSecondaryAuthRow(
@@ -89,11 +85,7 @@ class LoginBottomSheet extends StatelessWidget {
                 const SizedBox(height: 6),
                 const _TermsText(),
                 const SizedBox(height: 4),
-                LoginFooterLinks(
-                  onCreateAccount: onCreateAccount,
-                  onForgotPassword: onForgotPassword,
-                  onContinueAsGuest: onContinueAsGuest,
-                ),
+                LoginFooterLinks(onCreateAccount: onCreateAccount),
                 const SizedBox(height: 1),
                 const _VersionLabel(),
               ],

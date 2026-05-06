@@ -24,7 +24,7 @@ class LessonCardInfo extends StatelessWidget {
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -37,7 +37,7 @@ class LessonCardInfo extends StatelessWidget {
               letterSpacing: 1.4,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
@@ -45,7 +45,7 @@ class LessonCardInfo extends StatelessWidget {
                 child: Text(
                   title,
                   style: TextStyle(
-                    fontSize: 20,
+                    fontSize: 19,
                     fontWeight: FontWeight.w800,
                     color: isLocked
                         ? cs.onSurface.withValues(alpha: 0.62)
@@ -69,7 +69,7 @@ class LessonCardInfo extends StatelessWidget {
             subtitle,
             style: TextStyle(fontSize: 13, color: cs.onSurface.withAlpha(140)),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           Wrap(
             spacing: 8,
             runSpacing: 8,

@@ -58,7 +58,6 @@ class TranslateScreen extends ConsumerWidget {
             TranslateHeader(
               workspaceMode: pageState.mode,
               aiMode: mode,
-              offlineStatus: offlineStatus,
               onWorkspaceModeChanged: ref
                   .read(translatePageControllerProvider.notifier)
                   .setMode,

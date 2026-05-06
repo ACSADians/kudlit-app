@@ -25,7 +25,7 @@ class ReferenceGlyphCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
-    final double size = compact ? 64 : 120;
+    final double size = compact ? 58 : 112;
     return Container(
       width: double.infinity,
       padding: EdgeInsets.symmetric(
@@ -50,7 +50,7 @@ class ReferenceGlyphCard extends StatelessWidget {
                   fontWeight: FontWeight.w800,
                   height: 1,
                   color: cs.onPrimaryContainer,
-                  letterSpacing: -0.5,
+                  letterSpacing: 0,
                 ),
               ),
             )
@@ -89,7 +89,7 @@ class ReferenceGlyphCard extends StatelessWidget {
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
                 color: cs.onPrimaryContainer,
                 fontWeight: FontWeight.w600,
-                letterSpacing: 1.2,
+                letterSpacing: 0,
               ),
             ),
           ],

@@ -33,6 +33,18 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('email sign-in phone option opens phone sign-in screen', (
+    tester,
+  ) async {
+    await pumpLandscape(tester, const SignInScreen());
+
+    await tester.tap(find.text('Continue with Phone Number'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Sign in with phone'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('sign-up screen fits phone landscape', (tester) async {
     await pumpLandscape(tester, const SignUpScreen());
 

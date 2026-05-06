@@ -7,10 +7,11 @@ class ButtyChatCta extends StatelessWidget {
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
     return Row(
+      mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.end,
       children: <Widget>[
         Text(
-          'Start chatting',
+          'Start chat',
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,

@@ -29,8 +29,12 @@ void main() {
     );
   }
 
-  Future<void> pumpLegalRoute(WidgetTester tester, GoRouter router) async {
-    await tester.binding.setSurfaceSize(const Size(390, 844));
+  Future<void> pumpLegalRoute(
+    WidgetTester tester,
+    GoRouter router, {
+    Size surfaceSize = const Size(390, 844),
+  }) async {
+    await tester.binding.setSurfaceSize(surfaceSize);
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
     await tester.pumpWidget(MaterialApp.router(routerConfig: router));
@@ -88,5 +92,17 @@ void main() {
       router.routeInformationProvider.value.uri.path,
       AppConstants.routeTerms,
     );
+  });
+
+  testWidgets('privacy screen wraps hero content on narrow phones', (
+    WidgetTester tester,
+  ) async {
+    final GoRouter router = buildRouter(AppConstants.routePrivacyPolicy);
+
+    await pumpLegalRoute(tester, router, surfaceSize: const Size(320, 593));
+
+    expect(find.text('Privacy Policy'), findsWidgets);
+    expect(find.text('Privacy summary'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }

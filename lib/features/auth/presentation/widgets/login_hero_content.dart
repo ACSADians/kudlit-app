@@ -13,6 +13,7 @@ class LoginHeroContent extends StatelessWidget {
     required this.bubbleText,
     this.showBackButton = false,
     this.showLanguageToggle = true,
+    this.showButtyArea = true,
     super.key,
   });
 
@@ -20,6 +21,7 @@ class LoginHeroContent extends StatelessWidget {
   final String bubbleText;
   final bool showBackButton;
   final bool showLanguageToggle;
+  final bool showButtyArea;
 
   @override
   Widget build(BuildContext context) {
@@ -58,12 +60,15 @@ class LoginHeroContent extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           const LoginHeroWordmark(),
-          Expanded(
-            child: LoginButtyArea(
-              buttyAsset: buttyAsset,
-              bubbleText: bubbleText,
-            ),
-          ),
+          if (showButtyArea)
+            Expanded(
+              child: LoginButtyArea(
+                buttyAsset: buttyAsset,
+                bubbleText: bubbleText,
+              ),
+            )
+          else
+            const Spacer(),
         ],
       ),
     );

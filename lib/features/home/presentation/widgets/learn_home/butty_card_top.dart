@@ -40,26 +40,32 @@ class ButtyCardTop extends StatelessWidget {
           ],
         ),
         const SizedBox(width: 12),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text(
-              'Butty',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                color: cs.onSurface,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                'Butty',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: cs.onSurface,
+                ),
               ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              'AI tutor · always available',
-              style: TextStyle(
-                fontSize: 11,
-                color: cs.onSurface.withAlpha(140),
+              const SizedBox(height: 2),
+              Text(
+                'AI tutor · always available',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: cs.onSurface.withAlpha(140),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ],
     );

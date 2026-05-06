@@ -14,7 +14,7 @@ class LessonProgressBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 720),
@@ -37,7 +37,7 @@ class LessonProgressBar extends StatelessWidget {
                   },
                 ),
               ),
-              const SizedBox(height: 5),
+              const SizedBox(height: 4),
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 220),
                 child: Align(
@@ -45,7 +45,7 @@ class LessonProgressBar extends StatelessWidget {
                   alignment: Alignment.centerLeft,
                   child: Text(
                     label,
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       color: cs.onSurface.withValues(alpha: 0.68),

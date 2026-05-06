@@ -289,86 +289,103 @@ class DrawModeBodyState extends ConsumerState<DrawModeBody> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          _SourceToggle(
-            source: _source,
-            onChanged: (DrawInputSource s) => setState(() => _source = s),
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final bool compact =
+            constraints.maxHeight < 360 ||
+            constraints.maxWidth > constraints.maxHeight;
+        return Padding(
+          padding: EdgeInsets.fromLTRB(16, 0, 16, compact ? 8 : 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              _SourceToggle(
+                source: _source,
+                compact: compact,
+                onChanged: (DrawInputSource s) => setState(() => _source = s),
+              ),
+              SizedBox(height: compact ? 6 : 8),
+              if (_source == DrawInputSource.pen) ...<Widget>[
+                _DrawToolbar(
+                  glyphVisible: _glyphVisible,
+                  compact: compact,
+                  onToggleGlyph: () =>
+                      setState(() => _glyphVisible = !_glyphVisible),
+                  onUndo: _strokes.isEmpty ? null : _undo,
+                  onRedo: _undone.isEmpty ? null : _redo,
+                  onClear: _strokes.isEmpty ? null : _clear,
+                ),
+                SizedBox(height: compact ? 6 : 8),
+              ],
+              Expanded(
+                child: _source == DrawInputSource.pen
+                    ? RepaintBoundary(
+                        key: _canvasKey,
+                        child: _DrawCanvas(
+                          status: widget.attemptStatus,
+                          strokes: _strokes,
+                          current: _current,
+                          onPanStart: _onPanStart,
+                          onPanUpdate: _onPanUpdate,
+                          onPanEnd: _onPanEnd,
+                        ),
+                      )
+                    : _CameraCanvas(
+                        status: widget.attemptStatus,
+                        detectionLabel: _lastCameraLabel,
+                        detectionConfidence: _lastCameraConfidence,
+                        onDetections: _onCameraDetections,
+                      ),
+              ),
+              SizedBox(height: compact ? 8 : 10),
+              _GlyphToggle(
+                glyph: widget.step.glyph,
+                glyphImage: widget.step.glyphImage,
+                label: widget.step.label,
+                hideGlyph: widget.step.hideGlyph,
+                visible: _glyphVisible,
+                onToggle: () => setState(() => _glyphVisible = !_glyphVisible),
+              ),
+              const SizedBox(height: 8),
+              FilledButton.icon(
+                onPressed:
+                    widget.attemptStatus == AttemptStatus.checking ||
+                        widget.attemptStatus == AttemptStatus.correct
+                    ? null
+                    : submitToController,
+                icon: widget.attemptStatus == AttemptStatus.checking
+                    ? const SizedBox.square(
+                        dimension: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.check_rounded, size: 18),
+                label: Text(
+                  widget.attemptStatus == AttemptStatus.checking
+                      ? 'Checking'
+                      : 'Check drawing',
+                ),
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(44),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
-          if (_source == DrawInputSource.pen) ...<Widget>[
-            _DrawToolbar(
-              glyphVisible: _glyphVisible,
-              onToggleGlyph: () =>
-                  setState(() => _glyphVisible = !_glyphVisible),
-              onUndo: _strokes.isEmpty ? null : _undo,
-              onRedo: _undone.isEmpty ? null : _redo,
-              onClear: _strokes.isEmpty ? null : _clear,
-            ),
-            const SizedBox(height: 8),
-          ],
-          Expanded(
-            child: _source == DrawInputSource.pen
-                ? RepaintBoundary(
-                    key: _canvasKey,
-                    child: _DrawCanvas(
-                      status: widget.attemptStatus,
-                      strokes: _strokes,
-                      current: _current,
-                      onPanStart: _onPanStart,
-                      onPanUpdate: _onPanUpdate,
-                      onPanEnd: _onPanEnd,
-                    ),
-                  )
-                : _CameraCanvas(
-                    status: widget.attemptStatus,
-                    detectionLabel: _lastCameraLabel,
-                    detectionConfidence: _lastCameraConfidence,
-                    onDetections: _onCameraDetections,
-                  ),
-          ),
-          const SizedBox(height: 12),
-          _GlyphToggle(
-            glyph: widget.step.glyph,
-            glyphImage: widget.step.glyphImage,
-            label: widget.step.label,
-            hideGlyph: widget.step.hideGlyph,
-            visible: _glyphVisible,
-            onToggle: () => setState(() => _glyphVisible = !_glyphVisible),
-          ),
-          const SizedBox(height: 10),
-          FilledButton.icon(
-            onPressed:
-                widget.attemptStatus == AttemptStatus.checking ||
-                    widget.attemptStatus == AttemptStatus.correct
-                ? null
-                : submitToController,
-            icon: widget.attemptStatus == AttemptStatus.checking
-                ? const SizedBox.square(
-                    dimension: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.check_rounded),
-            label: Text(
-              widget.attemptStatus == AttemptStatus.checking
-                  ? 'Checking drawing'
-                  : 'Check drawing',
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
 
 class _SourceToggle extends StatelessWidget {
-  const _SourceToggle({required this.source, required this.onChanged});
+  const _SourceToggle({
+    required this.source,
+    required this.onChanged,
+    required this.compact,
+  });
 
   final DrawInputSource source;
   final ValueChanged<DrawInputSource> onChanged;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -388,6 +405,10 @@ class _SourceToggle extends StatelessWidget {
       ],
       selected: <DrawInputSource>{source},
       onSelectionChanged: (Set<DrawInputSource> s) => onChanged(s.first),
+      style: SegmentedButton.styleFrom(
+        minimumSize: Size(0, compact ? 42 : 44),
+        visualDensity: VisualDensity.compact,
+      ),
     );
   }
 }
@@ -491,6 +512,7 @@ class _CameraReadout extends StatelessWidget {
 class _DrawToolbar extends StatelessWidget {
   const _DrawToolbar({
     required this.glyphVisible,
+    required this.compact,
     required this.onToggleGlyph,
     required this.onUndo,
     required this.onRedo,
@@ -498,6 +520,7 @@ class _DrawToolbar extends StatelessWidget {
   });
 
   final bool glyphVisible;
+  final bool compact;
   final VoidCallback onToggleGlyph;
   final VoidCallback? onUndo;
   final VoidCallback? onRedo;
@@ -507,7 +530,7 @@ class _DrawToolbar extends StatelessWidget {
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: EdgeInsets.symmetric(horizontal: compact ? 4 : 8, vertical: 2),
       decoration: BoxDecoration(
         color: cs.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(12),
@@ -519,16 +542,19 @@ class _DrawToolbar extends StatelessWidget {
             onPressed: onUndo,
             icon: const Icon(Icons.undo_rounded),
             tooltip: 'Undo',
+            constraints: const BoxConstraints.tightFor(width: 44, height: 44),
           ),
           IconButton(
             onPressed: onRedo,
             icon: const Icon(Icons.redo_rounded),
             tooltip: 'Redo',
+            constraints: const BoxConstraints.tightFor(width: 44, height: 44),
           ),
           IconButton(
             onPressed: onClear,
             icon: const Icon(Icons.delete_outline_rounded),
             tooltip: 'Clear',
+            constraints: const BoxConstraints.tightFor(width: 44, height: 44),
           ),
           IconButton(
             onPressed: onToggleGlyph,
@@ -538,6 +564,7 @@ class _DrawToolbar extends StatelessWidget {
                   : Icons.visibility_rounded,
             ),
             tooltip: glyphVisible ? 'Hide reference' : 'Show reference',
+            constraints: const BoxConstraints.tightFor(width: 44, height: 44),
           ),
         ],
       ),

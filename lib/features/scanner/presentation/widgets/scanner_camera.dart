@@ -486,20 +486,133 @@ class _WebCameraPreviewState extends ConsumerState<_WebCameraPreview> {
           _CameraCover(controller: _controller!)
         else
           const YoloSimOverlay(),
-        Align(
-          alignment: Alignment.center,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 28),
-            child: _WebStatusMessage(
-              cs: cs,
-              status: _status,
-              message: _message,
-              showCompact:
-                  _controller != null && _controller!.value.isInitialized,
-            ),
-          ),
+        LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            final double horizontalPadding = constraints.maxWidth < 320
+                ? 10
+                : constraints.maxWidth < 380
+                ? 14
+                : 28;
+            return Align(
+              alignment: Alignment.centerLeft,
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                child: WebStatusMessage(
+                  cs: cs,
+                  status: _status,
+                  message: _message,
+                  showCompact:
+                      _controller != null && _controller!.value.isInitialized,
+                ),
+              ),
+            );
+          },
         ),
       ],
+    );
+  }
+}
+
+@visibleForTesting
+class WebStatusMessage extends StatelessWidget {
+  const WebStatusMessage({
+    required this.cs,
+    required this.status,
+    required this.showCompact,
+    this.message,
+    super.key,
+  });
+
+  final ColorScheme cs;
+  final WebScannerStatus status;
+  final String? message;
+  final bool showCompact;
+
+  @override
+  Widget build(BuildContext context) {
+    if (showCompact &&
+        (status == WebScannerStatus.ready ||
+            status == WebScannerStatus.modelUnavailable)) {
+      return const SizedBox.shrink();
+    }
+
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final double availableWidth = constraints.hasBoundedWidth
+            ? constraints.maxWidth
+            : 360;
+        final double maxWidth = availableWidth.clamp(200.0, 240.0);
+        final bool narrow = maxWidth < 300;
+
+        return Semantics(
+          label: message ?? status.label,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: maxWidth),
+            child: Container(
+              width: double.infinity,
+              padding: EdgeInsets.symmetric(
+                horizontal: showCompact
+                    ? 12
+                    : narrow
+                    ? 12
+                    : 16,
+                vertical: showCompact
+                    ? 12
+                    : narrow
+                    ? 14
+                    : 16,
+              ),
+              decoration: BoxDecoration(
+                color: cs.surface.withAlpha(showCompact ? 210 : 235),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: cs.outline),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Icon(
+                    status.icon,
+                    size: showCompact
+                        ? 24
+                        : narrow
+                        ? 28
+                        : 32,
+                    color: cs.onSurface.withAlpha(190),
+                  ),
+                  SizedBox(height: showCompact || narrow ? 8 : 10),
+                  Text(
+                    status.label,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: showCompact
+                          ? 14
+                          : narrow
+                          ? 15
+                          : 16,
+                      fontWeight: FontWeight.w700,
+                      color: cs.onSurface,
+                    ),
+                  ),
+                  if (message != null) const SizedBox(height: 6),
+                  if (message != null)
+                    Text(
+                      message!,
+                      textAlign: TextAlign.center,
+                      softWrap: true,
+                      style: TextStyle(
+                        fontSize: showCompact || narrow ? 12.5 : 13,
+                        height: 1.35,
+                        color: cs.onSurface.withAlpha(165),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -536,72 +649,6 @@ class _CameraCover extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-}
-
-class _WebStatusMessage extends StatelessWidget {
-  const _WebStatusMessage({
-    required this.cs,
-    required this.status,
-    required this.showCompact,
-    this.message,
-  });
-
-  final ColorScheme cs;
-  final WebScannerStatus status;
-  final String? message;
-  final bool showCompact;
-
-  @override
-  Widget build(BuildContext context) {
-    if (showCompact &&
-        (status == WebScannerStatus.ready ||
-            status == WebScannerStatus.modelUnavailable)) {
-      return const SizedBox.shrink();
-    }
-    return Semantics(
-      label: message ?? status.label,
-      child: Container(
-        constraints: const BoxConstraints(maxWidth: 360),
-        padding: EdgeInsets.all(showCompact ? 12 : 16),
-        decoration: BoxDecoration(
-          color: cs.surface.withAlpha(showCompact ? 210 : 235),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: cs.outline),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Icon(
-              status.icon,
-              size: showCompact ? 24 : 32,
-              color: cs.onSurface.withAlpha(190),
-            ),
-            SizedBox(height: showCompact ? 8 : 10),
-            Text(
-              status.label,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: showCompact ? 14 : 16,
-                fontWeight: FontWeight.w700,
-                color: cs.onSurface,
-              ),
-            ),
-            if (message != null) const SizedBox(height: 6),
-            if (message != null)
-              Text(
-                message!,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 13,
-                  height: 1.4,
-                  color: cs.onSurface.withAlpha(165),
-                ),
-              ),
-          ],
-        ),
-      ),
     );
   }
 }

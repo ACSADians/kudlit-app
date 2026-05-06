@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:kudlit_ph/features/home/presentation/providers/app_preferences_provider.dart';
 import 'package:kudlit_ph/features/home/presentation/providers/translate_page_controller.dart';
@@ -10,14 +9,12 @@ class TranslateHeader extends StatelessWidget {
     super.key,
     required this.workspaceMode,
     required this.aiMode,
-    required this.offlineStatus,
     required this.onWorkspaceModeChanged,
     required this.onAiModeChanged,
   });
 
   final TranslateWorkspaceMode workspaceMode;
   final AiPreference aiMode;
-  final AsyncValue<TranslateOfflineStatus> offlineStatus;
   final ValueChanged<TranslateWorkspaceMode> onWorkspaceModeChanged;
   final ValueChanged<AiPreference> onAiModeChanged;
 
@@ -25,7 +22,7 @@ class TranslateHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -49,13 +46,14 @@ class TranslateHeader extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: <Widget>[
+              _CompactAiToggle(
+                mode: aiMode,
+                onChanged: onAiModeChanged,
+              ),
+              const SizedBox(width: 8),
               TranslateModeSwitch(
                 mode: workspaceMode,
                 onChanged: onWorkspaceModeChanged,
-              ),
-              _AiModeSwitch(
-                mode: aiMode,
-                onChanged: onAiModeChanged,
               ),
             ],
           ),
@@ -65,8 +63,8 @@ class TranslateHeader extends StatelessWidget {
   }
 }
 
-class _AiModeSwitch extends StatelessWidget {
-  const _AiModeSwitch({required this.mode, required this.onChanged});
+class _CompactAiToggle extends StatelessWidget {
+  const _CompactAiToggle({required this.mode, required this.onChanged});
 
   final AiPreference mode;
   final ValueChanged<AiPreference> onChanged;
@@ -75,7 +73,7 @@ class _AiModeSwitch extends StatelessWidget {
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
     return Container(
-      padding: const EdgeInsets.all(3),
+      padding: const EdgeInsets.all(2),
       decoration: BoxDecoration(
         color: cs.surfaceContainer,
         borderRadius: BorderRadius.circular(999),
@@ -84,12 +82,12 @@ class _AiModeSwitch extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          _AiModePill(
+          _AiPill(
             label: 'Online',
             active: mode == AiPreference.cloud,
             onTap: () => onChanged(AiPreference.cloud),
           ),
-          _AiModePill(
+          _AiPill(
             label: 'Offline',
             active: mode == AiPreference.local,
             onTap: () => onChanged(AiPreference.local),
@@ -100,8 +98,8 @@ class _AiModeSwitch extends StatelessWidget {
   }
 }
 
-class _AiModePill extends StatelessWidget {
-  const _AiModePill({
+class _AiPill extends StatelessWidget {
+  const _AiPill({
     required this.label,
     required this.active,
     required this.onTap,
@@ -118,7 +116,7 @@ class _AiModePill extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
           color: active ? cs.primary : Colors.transparent,
           borderRadius: BorderRadius.circular(999),
@@ -126,7 +124,7 @@ class _AiModePill extends StatelessWidget {
         child: Text(
           label,
           style: TextStyle(
-            fontSize: 10.5,
+            fontSize: 10,
             fontWeight: FontWeight.w700,
             color: active ? cs.onPrimary : cs.onSurface.withAlpha(170),
           ),

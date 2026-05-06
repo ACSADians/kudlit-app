@@ -9,11 +9,7 @@ import 'package:kudlit_ph/features/translator/presentation/providers/translator_
 
 @immutable
 class ButtyOfflineStatus {
-  const ButtyOfflineStatus({
-    required this.usable,
-    this.modelName,
-    this.detail,
-  });
+  const ButtyOfflineStatus({required this.usable, this.modelName, this.detail});
 
   final bool usable;
   final String? modelName;
@@ -74,12 +70,12 @@ class ButtyModelModeSelector extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           _ModePill(
-            label: 'Online',
+            label: showHelperText ? 'Online' : 'Cloud',
             active: currentMode == AiPreference.cloud,
             onTap: () => _setMode(ref, AiPreference.cloud),
           ),
           _ModePill(
-            label: 'Offline',
+            label: showHelperText ? 'Offline' : 'Local',
             active: currentMode == AiPreference.local,
             enabled: offlineReady && !offlineChecking,
             onTap: () => _setMode(ref, AiPreference.local),
@@ -97,10 +93,7 @@ class ButtyModelModeSelector extends ConsumerWidget {
         const SizedBox(height: 6),
         Text(
           helperText,
-          style: TextStyle(
-            fontSize: 10.5,
-            color: cs.onSurface.withAlpha(170),
-          ),
+          style: TextStyle(fontSize: 10.5, color: cs.onSurface.withAlpha(170)),
         ),
       ],
     );
@@ -142,7 +135,9 @@ class _ModePill extends StatelessWidget {
       onTap: enabled ? onTap : null,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        constraints: const BoxConstraints(minHeight: 36),
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
         decoration: BoxDecoration(
           color: bg,
           borderRadius: BorderRadius.circular(999),
