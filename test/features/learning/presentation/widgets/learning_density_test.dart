@@ -13,6 +13,7 @@ import 'package:kudlit_ph/features/learning/presentation/screens/character_galle
 import 'package:kudlit_ph/features/learning/presentation/screens/quiz_screen.dart';
 import 'package:kudlit_ph/features/learning/presentation/widgets/butty_help_sheet.dart';
 import 'package:kudlit_ph/features/learning/presentation/widgets/butty_coach_panel.dart';
+import 'package:kudlit_ph/features/learning/presentation/widgets/glyph_detail_sheet.dart';
 import 'package:kudlit_ph/features/learning/presentation/widgets/lesson_progress_bar.dart';
 import 'package:kudlit_ph/features/learning/presentation/widgets/lesson_top_bar.dart';
 import 'package:kudlit_ph/features/learning/presentation/widgets/modes/reference_mode_body.dart';
@@ -192,6 +193,33 @@ void main() {
       find.bySemanticsLabel('A glyph. Vowels. Stroke order available.'),
       findsOneWidget,
     );
+    expect(tester.takeException(), isNull);
+    semantics.dispose();
+  });
+
+  testWidgets('glyph detail fallback sheet fits compact landscape', (
+    tester,
+  ) async {
+    final SemanticsHandle semantics = tester.ensureSemantics();
+    await tester.binding.setSurfaceSize(const Size(593, 360));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: GlyphDetailSheet(
+            entry: GlyphEntry(glyph: 'ka', label: 'Ka', group: 'Consonants'),
+          ),
+        ),
+      ),
+    );
+
+    expect(
+      find.bySemanticsLabel('Ka glyph details. Stroke order not recorded.'),
+      findsOneWidget,
+    );
+    expect(find.byTooltip('Close glyph details'), findsOneWidget);
+    expect(find.text('Stroke order not yet recorded.'), findsOneWidget);
     expect(tester.takeException(), isNull);
     semantics.dispose();
   });
