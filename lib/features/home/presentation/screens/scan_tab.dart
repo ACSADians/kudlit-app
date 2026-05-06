@@ -334,7 +334,7 @@ class _ScanTabState extends ConsumerState<ScanTab> {
             left: 14,
             right: 14,
             bottom: panelBottom,
-            child: _ScanResultPanel(
+            child: ScannerResultPanel(
               detections: scanState.snapshot,
               onDismiss: controller.dismissResult,
             ),
@@ -918,17 +918,21 @@ class _NoticeButton extends StatelessWidget {
   }
 }
 
-class _ScanResultPanel extends ConsumerStatefulWidget {
-  const _ScanResultPanel({required this.detections, required this.onDismiss});
+class ScannerResultPanel extends ConsumerStatefulWidget {
+  const ScannerResultPanel({
+    super.key,
+    required this.detections,
+    required this.onDismiss,
+  });
 
   final List<BaybayinDetection> detections;
   final VoidCallback onDismiss;
 
   @override
-  ConsumerState<_ScanResultPanel> createState() => _ScanResultPanelState();
+  ConsumerState<ScannerResultPanel> createState() => _ScanResultPanelState();
 }
 
-class _ScanResultPanelState extends ConsumerState<_ScanResultPanel> {
+class _ScanResultPanelState extends ConsumerState<ScannerResultPanel> {
   int _index = 0;
 
   static List<String> _tokensFor(List<BaybayinDetection> dets) {
@@ -954,7 +958,7 @@ class _ScanResultPanelState extends ConsumerState<_ScanResultPanel> {
   List<String> get _permutations => permuteBaybayin(_tokens);
 
   @override
-  void didUpdateWidget(covariant _ScanResultPanel oldWidget) {
+  void didUpdateWidget(covariant ScannerResultPanel oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!_listEquals(_tokensFor(oldWidget.detections), _tokens)) {
       _index = 0;
@@ -983,109 +987,119 @@ class _ScanResultPanelState extends ConsumerState<_ScanResultPanel> {
         : perms[_index.clamp(0, perms.length - 1)];
     final String tokenPreview = tokens.isEmpty ? '' : tokens.join(' · ');
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: cs.outline),
-        boxShadow: const <BoxShadow>[
-          BoxShadow(
-            color: Color(0x59000000),
-            blurRadius: 24,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          const _ResultHandle(),
-          const SizedBox(height: 8),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Expanded(
-                child: _ResultText(
-                  current: current,
-                  tokenPreview: tokenPreview,
-                ),
-              ),
-              const SizedBox(width: 12),
-              _ResultActions(
-                onCopy: perms.isEmpty
-                    ? null
-                    : () async {
-                        await Clipboard.setData(ClipboardData(text: current));
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Copied to clipboard.'),
-                              duration: Duration(seconds: 2),
-                            ),
-                          );
-                        }
-                      },
-                onShare: perms.isEmpty
-                    ? null
-                    : () async {
-                        final ScanEvalState evalState = ref.read(
-                          scannerEvaluationProvider,
-                        );
-                        final String translation =
-                            evalState.translation.value ?? '';
-                        final StringBuffer sb = StringBuffer(
-                          'Scanned Baybayin word: $current',
-                        );
-                        if (translation.isNotEmpty) {
-                          sb
-                            ..write('\n')
-                            ..write(translation);
-                        }
-                        await SharePlus.instance.share(
-                          ShareParams(text: sb.toString()),
-                        );
-                      },
-                onSave: perms.isEmpty
-                    ? null
-                    : () {
-                        final ScanEvalState evalState = ref.read(
-                          scannerEvaluationProvider,
-                        );
-                        final String translation =
-                            evalState.translation.value ?? '';
-                        ref
-                            .read(scanHistoryNotifierProvider.notifier)
-                            .addResult(
-                              ScanResult(
-                                tokens: _tokens,
-                                translation: translation,
-                                timestamp: DateTime.now(),
-                              ),
-                            );
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Saved to history.'),
-                            duration: Duration(seconds: 2),
-                          ),
-                        );
-                      },
-                onDismiss: widget.onDismiss,
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final bool narrow = constraints.maxWidth < 360;
+        final Widget actions = _ResultActions(
+          onCopy: perms.isEmpty
+              ? null
+              : () async {
+                  await Clipboard.setData(ClipboardData(text: current));
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Copied to clipboard.'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  }
+                },
+          onShare: perms.isEmpty
+              ? null
+              : () async {
+                  final ScanEvalState evalState = ref.read(
+                    scannerEvaluationProvider,
+                  );
+                  final String translation = evalState.translation.value ?? '';
+                  final StringBuffer sb = StringBuffer(
+                    'Scanned Baybayin word: $current',
+                  );
+                  if (translation.isNotEmpty) {
+                    sb
+                      ..write('\n')
+                      ..write(translation);
+                  }
+                  await SharePlus.instance.share(
+                    ShareParams(text: sb.toString()),
+                  );
+                },
+          onSave: perms.isEmpty
+              ? null
+              : () {
+                  final ScanEvalState evalState = ref.read(
+                    scannerEvaluationProvider,
+                  );
+                  final String translation = evalState.translation.value ?? '';
+                  ref
+                      .read(scanHistoryNotifierProvider.notifier)
+                      .addResult(
+                        ScanResult(
+                          tokens: _tokens,
+                          translation: translation,
+                          timestamp: DateTime.now(),
+                        ),
+                      );
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Saved to history.'),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                },
+          onDismiss: widget.onDismiss,
+        );
+
+        return Container(
+          padding: EdgeInsets.fromLTRB(14, 10, 14, narrow ? 12 : 14),
+          decoration: BoxDecoration(
+            color: cs.surfaceContainerHigh,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: cs.outline),
+            boxShadow: const <BoxShadow>[
+              BoxShadow(
+                color: Color(0x59000000),
+                blurRadius: 24,
+                offset: Offset(0, 4),
               ),
             ],
           ),
-          if (perms.length > 1) ...<Widget>[
-            const SizedBox(height: 10),
-            _PermutationCycler(
-              index: _index,
-              total: perms.length,
-              onPrev: _prev,
-              onNext: _next,
-            ),
-          ],
-          const _ButtyTranslationArea(),
-        ],
-      ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              const _ResultHandle(),
+              SizedBox(height: narrow ? 7 : 8),
+              if (narrow) ...<Widget>[
+                _ResultText(current: current, tokenPreview: tokenPreview),
+                const SizedBox(height: 10),
+                actions,
+              ] else
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Expanded(
+                      child: _ResultText(
+                        current: current,
+                        tokenPreview: tokenPreview,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    actions,
+                  ],
+                ),
+              if (perms.length > 1) ...<Widget>[
+                const SizedBox(height: 10),
+                _PermutationCycler(
+                  index: _index,
+                  total: perms.length,
+                  onPrev: _prev,
+                  onNext: _next,
+                ),
+              ],
+              const _ButtyTranslationArea(),
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -1117,6 +1131,7 @@ class _ResultText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
+    final bool compact = MediaQuery.sizeOf(context).width < 380;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -1124,11 +1139,12 @@ class _ResultText extends StatelessWidget {
           baybayifyWord(current),
           style: TextStyle(
             fontFamily: 'Baybayin Simple TAWBID',
-            fontSize: 28,
+            fontSize: compact ? 24 : 28,
             color: cs.onSurface,
-            letterSpacing: 6,
+            letterSpacing: compact ? 3 : 5,
             height: 1.1,
           ),
+          softWrap: true,
         ),
         const SizedBox(height: 2),
         Text(
@@ -1137,8 +1153,9 @@ class _ResultText extends StatelessWidget {
             fontSize: 18,
             fontWeight: FontWeight.w700,
             color: cs.onSurface,
-            letterSpacing: -0.15,
+            letterSpacing: 0,
           ),
+          softWrap: true,
         ),
         if (tokenPreview.isNotEmpty) ...<Widget>[
           const SizedBox(height: 2),
@@ -1146,9 +1163,10 @@ class _ResultText extends StatelessWidget {
             tokenPreview,
             style: TextStyle(
               fontSize: 12,
-              color: cs.onSurface.withAlpha(140),
+              color: cs.onSurface.withAlpha(175),
               letterSpacing: 0.2,
             ),
+            softWrap: true,
           ),
         ],
       ],
@@ -1230,8 +1248,8 @@ class _CyclerButton extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(99),
         child: Container(
-          width: 32,
-          height: 32,
+          width: 44,
+          height: 44,
           alignment: Alignment.center,
           child: Icon(icon, size: 20, color: cs.onSurface),
         ),
@@ -1306,18 +1324,26 @@ class _ActionChip extends StatelessWidget {
         button: true,
         enabled: enabled,
         child: Opacity(
-          opacity: enabled ? 1.0 : 0.35,
-          child: GestureDetector(
-            onTap: onTap,
-            child: Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: cs.surfaceContainer,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: cs.outline),
+          opacity: enabled ? 1.0 : 0.55,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(10),
+              onTap: onTap,
+              child: Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: cs.surfaceContainer,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: cs.outline),
+                ),
+                child: Icon(
+                  icon,
+                  size: 18,
+                  color: cs.onSurface.withAlpha(enabled ? 210 : 150),
+                ),
               ),
-              child: Icon(icon, size: 17, color: cs.onSurface.withAlpha(150)),
             ),
           ),
         ),
@@ -1378,21 +1404,27 @@ class _TellMeMoreButton extends StatelessWidget {
     final ColorScheme cs = Theme.of(context).colorScheme;
     return Align(
       alignment: Alignment.centerLeft,
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: cs.primaryContainer.withAlpha(100),
-            borderRadius: BorderRadius.circular(99),
-            border: Border.all(color: cs.primary.withAlpha(80)),
-          ),
-          child: Text(
-            'Tell me more',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: cs.primary,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(99),
+          onTap: onTap,
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 44),
+            alignment: Alignment.center,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: cs.primaryContainer.withAlpha(100),
+              borderRadius: BorderRadius.circular(99),
+              border: Border.all(color: cs.primary.withAlpha(80)),
+            ),
+            child: Text(
+              'Tell me more',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: cs.primary,
+              ),
             ),
           ),
         ),

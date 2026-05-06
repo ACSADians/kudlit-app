@@ -21,36 +21,39 @@ class TranslateHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final bool narrow = constraints.maxWidth < 390;
+        return Padding(
+          padding: EdgeInsets.fromLTRB(16, narrow ? 10 : 12, 16, 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Expanded(
-                child: Text(
-                  'Translate',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    color: cs.onSurface,
-                  ),
+              Text(
+                'Translate',
+                style: TextStyle(
+                  fontSize: narrow ? 19 : 20,
+                  fontWeight: FontWeight.w800,
+                  color: cs.onSurface,
                 ),
               ),
-              _CompactAiToggle(
-                mode: aiMode,
-                onChanged: onAiModeChanged,
-              ),
-              const SizedBox(width: 8),
-              TranslateModeSwitch(
-                mode: workspaceMode,
-                onChanged: onWorkspaceModeChanged,
+              SizedBox(height: narrow ? 8 : 10),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: <Widget>[
+                  _CompactAiToggle(mode: aiMode, onChanged: onAiModeChanged),
+                  TranslateModeSwitch(
+                    mode: workspaceMode,
+                    onChanged: onWorkspaceModeChanged,
+                  ),
+                ],
               ),
             ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -104,25 +107,30 @@ class _AiPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          color: active ? cs.primary : Colors.transparent,
-          borderRadius: BorderRadius.circular(999),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.w700,
-            color: active ? cs.onPrimary : cs.onSurface.withAlpha(170),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          constraints: const BoxConstraints(minHeight: 40),
+          alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+          decoration: BoxDecoration(
+            color: active ? cs.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: active ? cs.onPrimary : cs.onSurface.withAlpha(170),
+            ),
           ),
         ),
       ),
     );
   }
 }
-

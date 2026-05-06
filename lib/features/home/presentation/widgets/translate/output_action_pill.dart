@@ -16,7 +16,7 @@ class OutputActionPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
     final bool enabled = onTap != null;
-    final Color fg = cs.onSurface.withAlpha(enabled ? 180 : 90);
+    final Color fg = cs.onSurface.withAlpha(enabled ? 220 : 115);
     return Tooltip(
       message: label,
       child: Semantics(
@@ -44,7 +44,7 @@ class OutputActionPill extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
-                  Icon(icon, size: 13, color: fg),
+                  Icon(icon, size: 15, color: fg),
                   const SizedBox(width: 6),
                   Text(
                     label,
