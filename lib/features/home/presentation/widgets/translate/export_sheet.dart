@@ -6,9 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:share_plus/share_plus.dart';
 
-// Export card dimensions in logical pixels.
+// Export card width in logical pixels — height is intrinsic (grows with content).
 const double _kCardWidth = 320;
-const double _kCardHeight = 180;
 
 class _BgOption {
   const _BgOption(this.name, this.start, this.end);
@@ -227,7 +226,7 @@ class _ExportCard extends StatelessWidget {
 
     return Container(
       width: _kCardWidth,
-      height: _kCardHeight,
+      // No fixed height — card grows to fit however much Baybayin is needed.
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: <Color>[bg.start, bg.end],
@@ -236,25 +235,24 @@ class _ExportCard extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(16),
       ),
-      padding: const EdgeInsets.fromLTRB(28, 24, 28, 16),
+      padding: const EdgeInsets.fromLTRB(28, 28, 28, 20),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          const Spacer(),
           Text(
             baybayin,
             textAlign: TextAlign.center,
             style: TextStyle(
               fontFamily: 'Baybayin Simple TAWBID',
-              fontSize: 48,
+              fontSize: 44,
               color: textColor,
               letterSpacing: 8,
-              height: 1.2,
+              height: 1.3,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           Container(width: 32, height: 1.5, color: subtleColor),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           Text(
             latin,
             textAlign: TextAlign.center,
@@ -265,7 +263,7 @@ class _ExportCard extends StatelessWidget {
               letterSpacing: -0.2,
             ),
           ),
-          const Spacer(),
+          const SizedBox(height: 16),
           Align(
             alignment: Alignment.bottomRight,
             child: Text(
