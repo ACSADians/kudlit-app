@@ -11,15 +11,14 @@ class ButtyHeaderText extends StatelessWidget {
         const Text(
           'Butty',
           style: TextStyle(
-            fontSize: 17,
+            fontSize: 16,
             fontWeight: FontWeight.w800,
             color: Colors.white,
-            letterSpacing: -0.3,
           ),
         ),
         const SizedBox(height: 2),
         Text(
-          'Ask me anything about Baybayin',
+          'Baybayin tutor',
           style: TextStyle(fontSize: 11.5, color: Colors.white.withAlpha(180)),
         ),
       ],

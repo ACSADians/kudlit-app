@@ -18,12 +18,11 @@ class ButtyPreviewBubble extends StatelessWidget {
         border: Border.all(color: cs.outline),
       ),
       child: Text(
-        'Kumusta! I\'m here to help. Ask me anything about Baybayin,'
-        ' or just talk to me about the script.',
+        'Kumusta! Ask me about Baybayin lessons, glyphs, or writing your name.',
         style: TextStyle(
           fontSize: 13,
           color: cs.onSurface.withAlpha(190),
-          height: 1.45,
+          height: 1.35,
         ),
       ),
     );

@@ -136,7 +136,7 @@ class LearnHomeBody extends ConsumerWidget {
     );
 
     return SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(16, 20, 16, bottomPad + 16),
+      padding: EdgeInsets.fromLTRB(16, 16, 16, bottomPad + 16),
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 720),
@@ -144,14 +144,14 @@ class LearnHomeBody extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               ButtyTalkCard(onTap: onChatWithButty),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
               _QuickActionsRow(
                 streakCount: streakCount,
                 hasCompletedAny: hasCompletedAny,
                 onOpenGallery: onOpenGallery,
                 onStartQuiz: onStartQuiz,
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 18),
               const LearnSectionLabel(text: 'Lessons'),
               const SizedBox(height: 10),
               for (int i = 0; i < _lessons.length; i++) ...<Widget>[
@@ -169,7 +169,7 @@ class LearnHomeBody extends ConsumerWidget {
                   progress: progressMap[_lessons[i].id],
                   onStart: () => onStartLesson(_lessons[i].id),
                 ),
-                if (i != _lessons.length - 1) const SizedBox(height: 10),
+                if (i != _lessons.length - 1) const SizedBox(height: 8),
               ],
             ],
           ),
@@ -205,32 +205,21 @@ class _QuickActionsRow extends StatelessWidget {
               const SizedBox(width: 8),
             ],
             Expanded(
-              child: OutlinedButton.icon(
+              child: _QuickActionButton(
                 onPressed: onOpenGallery,
                 icon: const Icon(Icons.grid_view_rounded, size: 16),
-                label: const Text('All Glyphs'),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  textStyle: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                label: 'Glyphs',
+                cs: cs,
               ),
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: FilledButton.tonalIcon(
+              child: _QuickActionButton(
                 onPressed: hasCompletedAny ? onStartQuiz : null,
                 icon: const Icon(Icons.quiz_rounded, size: 16),
-                label: const Text('Quick Quiz'),
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  textStyle: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                label: 'Quiz',
+                cs: cs,
+                isFilled: true,
               ),
             ),
           ],
@@ -245,6 +234,79 @@ class _QuickActionsRow extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+class _QuickActionButton extends StatelessWidget {
+  const _QuickActionButton({
+    required this.onPressed,
+    required this.icon,
+    required this.label,
+    required this.cs,
+    this.isFilled = false,
+  });
+
+  final VoidCallback? onPressed;
+  final Widget icon;
+  final String label;
+  final ColorScheme cs;
+  final bool isFilled;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool enabled = onPressed != null;
+    final Color foreground = enabled
+        ? cs.primary
+        : cs.onSurface.withValues(alpha: 0.38);
+    final Color background = isFilled
+        ? (enabled ? cs.primaryContainer : cs.surfaceContainerHighest)
+        : Colors.transparent;
+    final BorderSide border = BorderSide(
+      color: enabled ? cs.outline : cs.outline.withValues(alpha: 0.46),
+    );
+
+    return Material(
+      color: background,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+        side: border,
+      ),
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(10),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 44),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+            child: IconTheme(
+              data: IconThemeData(color: foreground, size: 16),
+              child: DefaultTextStyle(
+                style: TextStyle(
+                  color: foreground,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    icon,
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
