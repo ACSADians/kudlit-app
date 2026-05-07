@@ -157,6 +157,41 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets(
+    'app header keeps translate controls and spacing on wide breakpoints',
+    (tester) async {
+      final List<double> widths = <double>[768, 1024, 1366, 1920];
+
+      for (final double width in widths) {
+        await tester.binding.setSurfaceSize(Size(width, 72));
+        await tester.pumpWidget(
+          const ProviderScope(
+            child: MaterialApp(
+              home: Scaffold(body: AppHeader(showTranslateControls: true)),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('Translate'), findsOneWidget);
+        expect(find.text('Online'), findsOneWidget);
+        expect(find.text('Offline'), findsOneWidget);
+
+        final Rect headerRect = tester.getRect(find.byType(AppHeader));
+        final Rect titleRect = tester.getRect(find.text('Translate'));
+        final Rect onlineRect = tester.getRect(find.text('Online'));
+        final Rect offlineRect = tester.getRect(find.text('Offline'));
+
+        expect(headerRect.left, equals(0));
+        expect(headerRect.right, lessThanOrEqualTo(width));
+        expect(titleRect.left, greaterThanOrEqualTo(0));
+        expect(onlineRect.left, greaterThanOrEqualTo(titleRect.right));
+        expect(offlineRect.left, greaterThanOrEqualTo(onlineRect.right));
+        expect(tester.takeException(), isNull);
+      }
+    },
+  );
+
   testWidgets('app header keeps translate controls at wide tablet widths', (
     tester,
   ) async {
