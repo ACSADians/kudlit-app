@@ -18,8 +18,8 @@ function Get-Viewports {
     @{Name = '430x932'; Width = 430; Height = 932; Transition = $true; StrictTiny = $false},
     @{Name = '844x390'; Width = 844; Height = 390; Transition = $true; StrictTiny = $false},
     @{Name = '1024x768'; Width = 1024; Height = 768; Transition = $true; StrictTiny = $false},
-    @{Name = '340x260'; Width = 340; Height = 260; Transition = $false; StrictTiny = $true},
-    @{Name = '320x240'; Width = 320; Height = 240; Transition = $false; StrictTiny = $true}
+    @{Name = '340x260'; Width = 340; Height = 260; Transition = $true; StrictTiny = $true},
+    @{Name = '320x240'; Width = 320; Height = 240; Transition = $true; StrictTiny = $true}
   )
 }
 
