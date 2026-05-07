@@ -45,7 +45,11 @@ class ScannerEvaluationNotifier extends Notifier<ScanEvalState> {
   ScanEvalState build() =>
       const ScanEvalState(translation: AsyncData<String>(''));
 
-  void evaluate(List<BaybayinDetection> detections, Uint8List? imageBytes) {
+  void evaluate(
+    List<BaybayinDetection> detections,
+    Uint8List? imageBytes, {
+    String? aggregatedHint,
+  }) {
     if (detections.isEmpty) {
       state = const ScanEvalState(translation: AsyncData<String>(''));
       return;
@@ -63,9 +67,13 @@ class ScannerEvaluationNotifier extends Notifier<ScanEvalState> {
     _lastTokens = tokens;
     final List<String> perms = permuteBaybayin(tokens);
 
-    final String candidates = perms.isEmpty
-        ? tokens.join(' ')
-        : perms.take(10).join(', ');
+    // When the aggregated winner is available (majority vote from up to 50
+    // live frames), surface it first so the model weights it heavily.
+    final String candidates = aggregatedHint != null
+        ? '$aggregatedHint (highest confidence — majority vote across recent '
+              'frames), '
+              '${perms.isEmpty ? tokens.join(' ') : perms.take(9).join(', ')}'
+        : (perms.isEmpty ? tokens.join(' ') : perms.take(10).join(', '));
 
     state = state.withTranslation(const AsyncLoading<String>());
 

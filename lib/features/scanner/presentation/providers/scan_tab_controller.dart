@@ -271,7 +271,13 @@ class ScanTabController extends Notifier<ScanTabState> {
       snapshot: List<BaybayinDetection>.of(detections),
       clearScanNotice: true,
     );
-    _evaluateSafely(detections, state.selectedImageBytes);
+    _evaluateSafely(
+      detections,
+      // Prefer the frozen camera frame for visual AI analysis; fall back to
+      // a gallery-selected image if one was active.
+      capturedBytes ?? state.selectedImageBytes,
+      aggregatedHint: state.aggregatedWinner,
+    );
   }
 
   void applyLiveDetections(List<BaybayinDetection> detections) {
@@ -281,6 +287,15 @@ class ScanTabController extends Notifier<ScanTabState> {
       return;
     }
     ref.read(scannerNotifierProvider.notifier).update(detections);
+    if (detections.isEmpty) {
+      // Nothing in frame — user moved away. Reset the buffer immediately so
+      // the next scan starts with a clean slate.
+      _resetAggregator();
+      if (state.aggregatedWinner != null) {
+        state = state.copyWith(clearAggregatedWinner: true);
+      }
+      return;
+    }
     _pushAggregatedScan(detections);
   }
 
@@ -327,16 +342,22 @@ class ScanTabController extends Notifier<ScanTabState> {
 
   void _evaluateSafely(
     List<BaybayinDetection> detections,
-    Uint8List? imageBytes,
-  ) {
+    Uint8List? imageBytes, {
+    String? aggregatedHint,
+  }) {
     try {
       ref
           .read(scannerEvaluationProvider.notifier)
-          .evaluate(detections, imageBytes);
+          .evaluate(detections, imageBytes, aggregatedHint: aggregatedHint);
     } catch (_) {
       // OCR result remains usable if optional AI evaluation is unavailable.
     }
   }
+
+  /// Collapses i/e vowel ambiguity to a canonical form so that frames
+  /// producing e.g. "mahalkita" and "mahalketa" (the same Baybayin glyph
+  /// sequence) are counted as identical entries in the frequency map.
+  static String _normalizeVowelAmbiguity(String s) => s.replaceAll('e', 'i');
 
   void _resetAggregator() {
     _aggIdleTimer?.cancel();
@@ -359,7 +380,10 @@ class ScanTabController extends Notifier<ScanTabState> {
         .toList(growable: false);
     final List<String> perms = permuteBaybayin(tokens);
     if (perms.isEmpty) return;
-    final String candidate = perms.first;
+    // Normalize i/e ambiguity so "mahalkita" and "mahalketa" (same Baybayin
+    // glyph sequence) always map to the same freq-map key, preventing the
+    // vote from being split across superficially different romanizations.
+    final String candidate = _normalizeVowelAmbiguity(perms.first);
 
     if (_aggBuffer.length >= _kAggMaxBuffer) {
       final String evicted = _aggBuffer.removeFirst();
@@ -390,6 +414,10 @@ class ScanTabController extends Notifier<ScanTabState> {
     _aggIdleTimer = Timer(_kAggIdleTimeout, () {
       _aggBuffer.clear();
       _aggFreq.clear();
+      // Also dismiss the winner banner so stale text doesn't linger on screen.
+      if (state.aggregatedWinner != null) {
+        state = state.copyWith(clearAggregatedWinner: true);
+      }
     });
   }
 }
