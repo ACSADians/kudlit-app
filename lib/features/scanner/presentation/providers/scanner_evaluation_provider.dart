@@ -45,7 +45,11 @@ class ScannerEvaluationNotifier extends Notifier<ScanEvalState> {
   ScanEvalState build() =>
       const ScanEvalState(translation: AsyncData<String>(''));
 
-  void evaluate(List<BaybayinDetection> detections, Uint8List? imageBytes) {
+  void evaluate(
+    List<BaybayinDetection> detections,
+    Uint8List? imageBytes, {
+    String? aggregatedHint,
+  }) {
     if (detections.isEmpty) {
       state = const ScanEvalState(translation: AsyncData<String>(''));
       return;
@@ -63,24 +67,29 @@ class ScannerEvaluationNotifier extends Notifier<ScanEvalState> {
     _lastTokens = tokens;
     final List<String> perms = permuteBaybayin(tokens);
 
-    final String candidates = perms.isEmpty
-        ? tokens.join(' ')
-        : perms.take(10).join(', ');
-
-    final String systemPrompt = GemmaPrompts.scanTranslatorMode(candidates);
+    // When the aggregated winner is available (majority vote from up to 50
+    // live frames), surface it first so the model weights it heavily.
+    final String candidates = aggregatedHint != null
+        ? '$aggregatedHint (highest confidence — majority vote across recent '
+              'frames), '
+              '${perms.isEmpty ? tokens.join(' ') : perms.take(9).join(', ')}'
+        : (perms.isEmpty ? tokens.join(' ') : perms.take(10).join(', '));
 
     state = state.withTranslation(const AsyncLoading<String>());
 
     final Stream<String> stream;
     if (imageBytes != null) {
+      // Image available — use the visual-inspection variant so the model can
+      // check the actual glyphs against the vocabulary, then predict.
       stream = ref
           .read(aiInferenceRepositoryProvider)
           .analyzeImage(
             imageBytes,
             mimeType: 'image/jpeg',
-            prompt: systemPrompt,
+            prompt: GemmaPrompts.scanTranslatorModeWithImage(candidates),
           );
     } else {
+      // Text-only path — vocabulary + scanner reliability chain-of-thought.
       final String query =
           'Detected glyphs (left to right): ${tokens.join(", ")}. '
           'Which word is this?';
@@ -88,7 +97,7 @@ class ScannerEvaluationNotifier extends Notifier<ScanEvalState> {
         <ChatMessage>[
           ChatMessage(text: query, isUser: true, timestamp: DateTime.now()),
         ],
-        systemInstruction: systemPrompt,
+        systemInstruction: GemmaPrompts.scanTranslatorMode(candidates),
       );
     }
 
@@ -132,16 +141,29 @@ class ScannerEvaluationNotifier extends Notifier<ScanEvalState> {
     try {
       await for (final String chunk in stream) {
         buffer.write(chunk);
-        state = state.withTranslation(AsyncData<String>(buffer.toString()));
+        final String raw = buffer.toString();
+        final ({String think, String answer}) parsed =
+            GemmaPrompts.parseThinkBlock(raw);
+        // While the <think> block is still open the model is reasoning
+        // privately — keep the TypingBubble spinning (AsyncLoading).
+        // Once </think> closes, stream the clean answer to the UI.
+        final AsyncValue<String> next =
+            (parsed.answer.isEmpty && parsed.think.isNotEmpty)
+            ? const AsyncLoading<String>()
+            : AsyncData<String>(parsed.answer);
+        state = state.withTranslation(next);
       }
-      final String finalText = buffer.toString().trim();
-      if (finalText.isNotEmpty && _lastTokens.isNotEmpty) {
+      // Save only the clean answer (no <think> content) to history.
+      final String finalAnswer = GemmaPrompts.parseThinkBlock(
+        buffer.toString(),
+      ).answer.trim();
+      if (finalAnswer.isNotEmpty && _lastTokens.isNotEmpty) {
         ref
             .read(scanHistoryNotifierProvider.notifier)
             .addResult(
               ScanResult(
                 tokens: List<String>.of(_lastTokens),
-                translation: finalText,
+                translation: finalAnswer,
                 timestamp: DateTime.now(),
               ),
             );

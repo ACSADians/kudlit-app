@@ -38,6 +38,59 @@ flutter build web
 dart format lib/ test/
 ```
 
+## Deployment
+
+The repository includes two web deployment paths:
+
+- `build.sh` for Cloudflare Pages. Configure the build command as `bash build.sh` and the output directory as `build/web`.
+- `.github/workflows/deploy-pages.yml` for GitHub Pages. It runs on pushes to `main` and can also be started manually from GitHub Actions.
+
+Both deployment paths expect these repository or platform secrets:
+
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
+- `GEMINI_API_KEY`
+- `HUGGINGFACE_TOKEN` is optional.
+
+After a deployment is live, smoke-check the main web routes:
+
+```bash
+pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/prod-smoke.ps1 -BaseUrl "https://acsadians.github.io/kudlit-app"
+```
+
+### Translate Header UI verification
+
+From `kudlit-app/`, run:
+
+```bash
+pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/verify-translate-header-ui.ps1
+pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/verify-translate-header-ui.ps1 -Tabs "scan,translate,learn,butty" -Widths "768,1024,1366,1920" -SkipTests
+```
+
+The script:
+
+- runs `test/features/home/presentation/widgets/translate_density_test.dart` unless `-SkipTests` is set,
+- captures screenshots under `test-results/ui-verify/` with names like `translate-header-<tab>-<width>.png`,
+- starts a local static preview only if the target URL is not already reachable.
+
+### Translate header UI hardening
+
+```bash
+pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/verify-translate-header-ui.ps1
+```
+
+Capture-only pass (skip `translate_density_test.dart`):
+
+```bash
+pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/verify-translate-header-ui.ps1 -SkipTests
+```
+
+Custom capture width set:
+
+```bash
+pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/verify-translate-header-ui.ps1 -Widths "768,1024,1366,1920,1536"
+```
+
 ## Folder Structure
 
 ```text
