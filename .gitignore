@@ -64,5 +64,12 @@ supabase/.temp/
 # Flutter DevTools (machine-specific)
 devtools_options.yaml
 
+# Local QA artifacts and screenshots
+qa-artifact/
+test-results/
+flutter_*.png
+test-snap-*.png
+web-lan-*.png
+
 # Worktrees
 .worktrees/
