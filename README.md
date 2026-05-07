@@ -38,6 +38,26 @@ flutter build web
 dart format lib/ test/
 ```
 
+## Deployment
+
+The repository includes two web deployment paths:
+
+- `build.sh` for Cloudflare Pages. Configure the build command as `bash build.sh` and the output directory as `build/web`.
+- `.github/workflows/deploy-pages.yml` for GitHub Pages. It runs on pushes to `main` and can also be started manually from GitHub Actions.
+
+Both deployment paths expect these repository or platform secrets:
+
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
+- `GEMINI_API_KEY`
+- `HUGGINGFACE_TOKEN` is optional.
+
+After a deployment is live, smoke-check the main web routes:
+
+```bash
+pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/prod-smoke.ps1 -BaseUrl "https://acsadians.github.io/kudlit-app"
+```
+
 ### Translate Header UI verification
 
 From `kudlit-app/`, run:
