@@ -20,3 +20,6 @@ echo "====================="
 flutter config --enable-web
 flutter pub get
 flutter build web --release
+
+echo "=== Checking bundled assets ==="
+ls build/web/assets/
