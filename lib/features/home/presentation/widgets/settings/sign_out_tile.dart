@@ -45,41 +45,58 @@ class _SignOutTileState extends State<SignOutTile>
   @override
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
+    final BorderRadius radius = BorderRadius.circular(14);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: GestureDetector(
-        onTap: widget.isLoading ? null : widget.onTap,
-        child: Opacity(
-          opacity: widget.isLoading ? 0.6 : 1.0,
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: cs.errorContainer,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: cs.error.withAlpha(widget.isLoading ? 30 : 68),
-              ),
-            ),
-            child: widget.isLoading
-                ? SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: cs.error,
-                      valueColor: AlwaysStoppedAnimation<Color>(cs.error),
-                    ),
-                  )
-                : Text(
-                    'Sign out',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: cs.error,
+      child: Semantics(
+        button: true,
+        enabled: !widget.isLoading,
+        label: widget.isLoading ? 'Sign out, loading' : 'Sign out',
+        child: ExcludeSemantics(
+          child: Opacity(
+            opacity: widget.isLoading ? 0.6 : 1.0,
+            child: Material(
+              color: Colors.transparent,
+              child: Ink(
+                decoration: BoxDecoration(
+                  color: cs.errorContainer,
+                  borderRadius: radius,
+                  border: Border.all(
+                    color: cs.error.withAlpha(widget.isLoading ? 30 : 68),
+                  ),
+                ),
+                child: InkWell(
+                  onTap: widget.isLoading ? null : widget.onTap,
+                  borderRadius: radius,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(minHeight: 52),
+                    child: Center(
+                      child: widget.isLoading
+                          ? SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: cs.error,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  cs.error,
+                                ),
+                              ),
+                            )
+                          : Text(
+                              'Sign out',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: cs.error,
+                              ),
+                            ),
                     ),
                   ),
+                ),
+              ),
+            ),
           ),
         ),
       ),

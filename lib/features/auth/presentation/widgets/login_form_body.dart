@@ -52,7 +52,7 @@ class LoginFormBody extends StatelessWidget {
         Align(
           alignment: Alignment.centerRight,
           child: TextButton(
-            onPressed: () => context.push(AppConstants.routeForgotPassword),
+            onPressed: () => context.go(AppConstants.routeForgotPassword),
             child: const Text(AppConstants.forgotPasswordAction),
           ),
         ),
@@ -80,7 +80,7 @@ class LoginFormBody extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             TextButton(
-              onPressed: () => context.push(AppConstants.routeSignUp),
+              onPressed: () => context.go(AppConstants.routeSignUp),
               child: const Text(AppConstants.createOneAction),
             ),
           ],

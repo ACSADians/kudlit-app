@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:kudlit_ph/features/home/presentation/providers/app_preferences_provider.dart';
-import 'package:kudlit_ph/features/translator/domain/entities/gemma_model_info.dart';import 'package:kudlit_ph/features/translator/presentation/providers/ai_inference_provider.dart';import 'package:kudlit_ph/features/translator/presentation/providers/ai_inference_state.dart';
+import 'package:kudlit_ph/features/translator/domain/entities/gemma_model_info.dart';
+import 'package:kudlit_ph/features/translator/presentation/providers/ai_inference_provider.dart';
+import 'package:kudlit_ph/features/translator/presentation/providers/ai_inference_state.dart';
 
 import 'profile_management_action_button.dart';
 
@@ -15,10 +17,12 @@ class LlmDownloadTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final AiInferenceNotifier notifier =
-        ref.read(aiInferenceNotifierProvider.notifier);
-    final AsyncValue<AiInferenceState> stateAsync =
-        ref.watch(aiInferenceNotifierProvider);
+    final AiInferenceNotifier notifier = ref.read(
+      aiInferenceNotifierProvider.notifier,
+    );
+    final AsyncValue<AiInferenceState> stateAsync = ref.watch(
+      aiInferenceNotifierProvider,
+    );
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -66,17 +70,28 @@ class _LlmStatusRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return switch (state) {
       AiReady(:final AiPreference mode, :final GemmaModelInfo activeModel) =>
-        _ReadyRow(modelName: activeModel.name, cloudMode: mode == AiPreference.cloud),
-      AiLocalModelMissing() =>
-        _ActionRow(
-          badge: const _StatusBadge(label: 'Not downloaded', ok: false),
-          primary: 'Download',
-          onPrimary: onDownload,
+        _ReadyRow(
+          modelName: activeModel.name,
+          cloudMode: mode == AiPreference.cloud,
         ),
-      AiDownloading(:final GemmaModelInfo model, :final int progress) =>
-        _ProgressRow(label: model.name, progress: progress, onCancel: onCancel),
-      AiInferenceError(:final String message) =>
-        _ErrRow(message: message),
+      AiLocalModelMissing(:final String? note) => _ActionRow(
+        badge: const _StatusBadge(label: 'Not downloaded', ok: false),
+        primary: 'Download',
+        onPrimary: onDownload,
+        note: note,
+      ),
+      AiDownloading(
+        :final GemmaModelInfo model,
+        :final int progress,
+        :final String? statusMessage,
+      ) =>
+        _ProgressRow(
+          label: model.name,
+          progress: progress,
+          onCancel: onCancel,
+          statusMessage: statusMessage,
+        ),
+      AiInferenceError(:final String message) => _ErrRow(message: message),
       _ => const _CheckingRow(),
     };
   }
@@ -94,9 +109,7 @@ class _ReadyRow extends StatelessWidget {
       return const _StatusBadge(label: 'Cloud mode — not needed', ok: null);
     }
     return Row(
-      children: <Widget>[
-        _StatusBadge(label: '$modelName installed', ok: true),
-      ],
+      children: <Widget>[_StatusBadge(label: '$modelName installed', ok: true)],
     );
   }
 }
@@ -106,23 +119,39 @@ class _ActionRow extends StatelessWidget {
     required this.badge,
     required this.primary,
     required this.onPrimary,
+    this.note,
   });
 
   final Widget badge;
   final String primary;
   final VoidCallback onPrimary;
+  final String? note;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    final ColorScheme cs = Theme.of(context).colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        badge,
-        const Spacer(),
-        ProfileManagementActionButton(
-          label: primary,
-          isPrimary: true,
-          onTap: onPrimary,
+        Row(
+          children: <Widget>[
+            badge,
+            const Spacer(),
+            ProfileManagementActionButton(
+              label: primary,
+              isPrimary: true,
+              onTap: onPrimary,
+            ),
+          ],
         ),
+        if (note != null) ...<Widget>[
+          const SizedBox(height: 8),
+          Text(
+            note!,
+            style: TextStyle(fontSize: 11, color: cs.onSurface.withAlpha(150)),
+          ),
+        ],
       ],
     );
   }
@@ -133,11 +162,13 @@ class _ProgressRow extends StatelessWidget {
     required this.label,
     required this.progress,
     required this.onCancel,
+    this.statusMessage,
   });
 
   final String label;
   final int progress;
   final VoidCallback onCancel;
+  final String? statusMessage;
 
   @override
   Widget build(BuildContext context) {
@@ -162,6 +193,13 @@ class _ProgressRow extends StatelessWidget {
             ),
           ],
         ),
+        if (statusMessage != null) ...<Widget>[
+          const SizedBox(height: 4),
+          Text(
+            statusMessage!,
+            style: TextStyle(color: cs.onSurface.withAlpha(150), fontSize: 11),
+          ),
+        ],
         const SizedBox(height: 6),
         LinearProgressIndicator(value: progress / 100),
       ],
@@ -190,25 +228,31 @@ class _TileHeader extends StatelessWidget {
       children: <Widget>[
         Icon(icon, size: 18, color: cs.primary),
         const SizedBox(width: 8),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: cs.onSurface,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: cs.onSurface,
+                ),
               ),
-            ),
-            Text(
-              sublabel,
-              style: TextStyle(
-                fontSize: 11,
-                color: cs.onSurface.withAlpha(128),
+              Text(
+                sublabel,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: cs.onSurface.withAlpha(128),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ],
     );
@@ -227,13 +271,13 @@ class _StatusBadge extends StatelessWidget {
     final Color bg = ok == true
         ? Colors.green.shade800.withAlpha(40)
         : ok == false
-            ? Colors.red.shade800.withAlpha(40)
-            : Theme.of(context).colorScheme.surfaceContainerHigh;
+        ? Colors.red.shade800.withAlpha(40)
+        : Theme.of(context).colorScheme.surfaceContainerHigh;
     final Color fg = ok == true
         ? Colors.green.shade300
         : ok == false
-            ? Colors.red.shade300
-            : Theme.of(context).colorScheme.onSurface.withAlpha(150);
+        ? Colors.red.shade300
+        : Theme.of(context).colorScheme.onSurface.withAlpha(150);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -270,7 +314,10 @@ class _ErrRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       'Error: $message',
-      style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.error),
+      style: TextStyle(
+        fontSize: 12,
+        color: Theme.of(context).colorScheme.error,
+      ),
     );
   }
 }

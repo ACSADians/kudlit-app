@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'kudlit_about_dialog.dart';
 import 'row_icon.dart';
 import 'settings_card.dart';
 import 'settings_divider.dart';
@@ -7,8 +8,6 @@ import 'settings_section_label.dart';
 
 class AboutSection extends StatelessWidget {
   const AboutSection({super.key});
-
-  static const String _version = '1.0.0 (1)';
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +19,7 @@ class AboutSection extends StatelessWidget {
           children: <Widget>[
             const _AboutAppTile(),
             const SettingsDivider(),
-            _VersionTile(version: _version),
+            const _VersionTile(version: KudlitAboutDialog.version),
           ],
         ),
       ],
@@ -55,24 +54,7 @@ class _AboutAppTile extends StatelessWidget {
     return _AboutTile(
       icon: Icons.info_outline_rounded,
       title: 'About Kudlit',
-      onTap: () {
-        showAboutDialog(
-          context: context,
-          applicationName: 'Kudlit',
-          applicationVersion: AboutSection._version,
-          applicationIcon: const FlutterLogo(),
-          applicationLegalese: '© 2026 Kudlit Team',
-          children: const <Widget>[
-            Padding(
-              padding: EdgeInsets.only(top: 16),
-              child: Text(
-                'Kudlit is a vision-based Baybayin translator and learning app '
-                'designed to preserve and promote Philippine script using AI.',
-              ),
-            ),
-          ],
-        );
-      },
+      onTap: () => showKudlitAboutDialog(context),
     );
   }
 }

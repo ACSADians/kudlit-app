@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:fpdart/fpdart.dart';
 
 import 'package:kudlit_ph/core/error/exceptions.dart';
@@ -103,6 +105,36 @@ class ProfileManagementRepositoryImpl implements ProfileManagementRepository {
   }
 
   @override
+  Future<Either<Failure, Unit>> updateAvatar({
+    required Uint8List bytes,
+    required String fileName,
+    required String? mimeType,
+  }) async {
+    try {
+      await _remote.updateAvatar(
+        bytes: bytes,
+        fileName: fileName,
+        mimeType: mimeType,
+      );
+
+      final String? userId = _remote.getCurrentUserId();
+      if (userId != null) {
+        try {
+          await _local.clearCachedSummary(userId: userId);
+        } on CacheException {
+          // Best-effort
+        }
+      }
+
+      return const Right(unit);
+    } on ServerException catch (e) {
+      return Left(Failure.unknown(message: e.message));
+    } catch (e) {
+      return Left(Failure.unknown(message: e.toString()));
+    }
+  }
+
+  @override
   Future<Either<Failure, Unit>> savePreferences({
     required ProfilePreferences preferences,
   }) async {
@@ -124,6 +156,26 @@ class ProfileManagementRepositoryImpl implements ProfileManagementRepository {
         }
       }
 
+      return const Right(unit);
+    } on ServerException catch (e) {
+      return Left(Failure.unknown(message: e.message));
+    } catch (e) {
+      return Left(Failure.unknown(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, Unit>> saveLessonProgress({
+    required String lessonId,
+    required bool completed,
+    required int score,
+  }) async {
+    try {
+      await _remote.saveLessonProgress(
+        lessonId: lessonId,
+        completed: completed,
+        score: score,
+      );
       return const Right(unit);
     } on ServerException catch (e) {
       return Left(Failure.unknown(message: e.message));

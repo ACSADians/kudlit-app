@@ -34,6 +34,11 @@ class SignUpForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final Size screenSize = MediaQuery.sizeOf(context);
+    final bool landscape = screenSize.width > screenSize.height;
+    final bool compactKeyboardLayout = landscape;
+    final double submitKeyboardClearance = compactKeyboardLayout ? 48 : 0;
+
     return Form(
       key: formKey,
       child: AutofillGroup(
@@ -45,17 +50,39 @@ class SignUpForm extends StatelessWidget {
               validator: validateEmail,
               textInputAction: TextInputAction.next,
             ),
-            const SizedBox(height: 12),
-            PasswordField(
-              controller: passwordController,
-              validator: validatePassword,
-              textInputAction: TextInputAction.next,
-            ),
-            const SizedBox(height: 12),
-            ConfirmPasswordField(
-              controller: confirmController,
-              validator: validateConfirm,
-            ),
+            SizedBox(height: compactKeyboardLayout ? 8 : 12),
+            if (compactKeyboardLayout)
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Expanded(
+                    child: PasswordField(
+                      controller: passwordController,
+                      validator: validatePassword,
+                      textInputAction: TextInputAction.next,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ConfirmPasswordField(
+                      controller: confirmController,
+                      validator: validateConfirm,
+                    ),
+                  ),
+                ],
+              )
+            else ...<Widget>[
+              PasswordField(
+                controller: passwordController,
+                validator: validatePassword,
+                textInputAction: TextInputAction.next,
+              ),
+              const SizedBox(height: 12),
+              ConfirmPasswordField(
+                controller: confirmController,
+                validator: validateConfirm,
+              ),
+            ],
             if (errorMessage != null) ...<Widget>[
               const SizedBox(height: 12),
               Text(
@@ -66,12 +93,14 @@ class SignUpForm extends StatelessWidget {
                 ),
               ),
             ],
-            const SizedBox(height: 16),
+            SizedBox(height: compactKeyboardLayout ? 12 : 16),
             AuthSubmitButton(
               label: AppConstants.signUpAction,
               isLoading: isLoading,
               onTap: onSubmit,
             ),
+            if (submitKeyboardClearance > 0)
+              SizedBox(height: submitKeyboardClearance),
           ],
         ),
       ),

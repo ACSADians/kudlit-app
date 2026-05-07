@@ -19,6 +19,13 @@ import 'package:kudlit_ph/features/home/presentation/screens/model_setup_screen.
 import 'package:kudlit_ph/features/home/presentation/screens/settings_screen.dart';
 import 'package:kudlit_ph/features/home/presentation/screens/splash_screen.dart';
 import 'package:kudlit_ph/features/learning/presentation/screens/lesson_stage_screen.dart';
+import 'package:kudlit_ph/features/admin/presentation/screens/stroke_recording_screen.dart';
+import 'package:kudlit_ph/features/learning/presentation/screens/character_gallery_screen.dart';
+import 'package:kudlit_ph/features/learning/presentation/screens/quiz_screen.dart';
+import 'package:kudlit_ph/features/home/presentation/screens/butty_data_screen.dart';
+import 'package:kudlit_ph/features/home/presentation/screens/learning_progress_screen.dart';
+import 'package:kudlit_ph/features/home/presentation/screens/translation_history_screen.dart';
+import 'package:kudlit_ph/features/scanner/presentation/screens/scan_history_screen.dart';
 
 part 'app_router.g.dart';
 
@@ -145,6 +152,41 @@ GoRouter appRouter(Ref ref) {
         path: AppConstants.routePrivacyPolicy,
         builder: (BuildContext context, GoRouterState state) =>
             const PrivacyPolicyScreen(),
+      ),
+      GoRoute(
+        path: AppConstants.routeAdminStrokeRecorder,
+        builder: (BuildContext context, GoRouterState state) =>
+            const StrokeRecordingScreen(),
+      ),
+      GoRoute(
+        path: AppConstants.routeCharacterGallery,
+        builder: (BuildContext context, GoRouterState state) =>
+            const CharacterGalleryScreen(),
+      ),
+      GoRoute(
+        path: AppConstants.routeQuiz,
+        builder: (BuildContext context, GoRouterState state) =>
+            const QuizScreen(),
+      ),
+      GoRoute(
+        path: AppConstants.routeScanHistory,
+        builder: (BuildContext context, GoRouterState state) =>
+            const ScanHistoryScreen(),
+      ),
+      GoRoute(
+        path: AppConstants.routeTranslationHistory,
+        builder: (BuildContext context, GoRouterState state) =>
+            const TranslationHistoryScreen(),
+      ),
+      GoRoute(
+        path: AppConstants.routeLearningProgress,
+        builder: (BuildContext context, GoRouterState state) =>
+            const LearningProgressScreen(),
+      ),
+      GoRoute(
+        path: AppConstants.routeButtyData,
+        builder: (BuildContext context, GoRouterState state) =>
+            const ButtyDataScreen(),
       ),
     ],
   );

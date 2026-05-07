@@ -6,7 +6,6 @@ part of 'lesson_repository_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-
 @ProviderFor(lessonDataSource)
 final lessonDataSourceProvider = Provider<LessonDataSource>.internal(
   lessonDataSource,
@@ -23,6 +22,21 @@ final lessonDataSourceProvider = Provider<LessonDataSource>.internal(
 // ignore: unused_element
 typedef LessonDataSourceRef = Ref;
 
+@ProviderFor(assetLessonDataSource)
+final assetLessonDataSourceProvider = Provider<LessonDataSource>.internal(
+  assetLessonDataSource,
+  name: r'assetLessonDataSourceProvider',
+  from: null,
+  argument: null,
+  isAutoDispose: false,
+  dependencies: null,
+  $allTransitiveDependencies: null,
+  retry: null,
+);
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef AssetLessonDataSourceRef = Ref;
 
 @ProviderFor(lessonRepository)
 final lessonRepositoryProvider = Provider<LessonRepository>.internal(
@@ -39,7 +53,6 @@ final lessonRepositoryProvider = Provider<LessonRepository>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef LessonRepositoryRef = Ref;
-
 
 @ProviderFor(loadLessonUseCase)
 final loadLessonUseCaseProvider = Provider<LoadLesson>.internal(

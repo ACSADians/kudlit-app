@@ -25,7 +25,7 @@
     {
       "id": "spell-a",
       "mode": "freeInput",
-      "label": "A",
+      "label": "",
       "glyph": "a",
       "prompt": "Type the romanization of this glyph.",
       "expected": ["a"],

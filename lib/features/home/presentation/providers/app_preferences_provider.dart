@@ -109,7 +109,8 @@ class AppPreferencesNotifier extends _$AppPreferencesNotifier {
       selectedModelId: _prefs.getString(_kSelectedModelKey),
       hasSeenModelPrompt: _prefs.getBool(_kModelPromptSeenKey) ?? false,
       hasDownloadedModels: _prefs.getBool(_kModelsDownloadedKey) ?? false,
-      completedLessons: _prefs
+      completedLessons:
+          _prefs
               .getString(_kCompletedLessonsKey)
               ?.split(',')
               .where((String s) => s.isNotEmpty)

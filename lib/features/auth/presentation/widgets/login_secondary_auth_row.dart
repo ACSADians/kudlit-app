@@ -2,16 +2,18 @@ import 'package:flutter/material.dart';
 
 import 'secondary_auth_option_button.dart';
 
-/// Two-column row of secondary auth options: Email and Google.
+/// Two-column row of secondary auth options: Login and Google.
 class LoginSecondaryAuthRow extends StatelessWidget {
   const LoginSecondaryAuthRow({
     required this.onContinueWithEmail,
     required this.onContinueWithGoogle,
+    this.isGoogleLoading = false,
     super.key,
   });
 
   final VoidCallback onContinueWithEmail;
   final VoidCallback onContinueWithGoogle;
+  final bool isGoogleLoading;
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +22,7 @@ class LoginSecondaryAuthRow extends StatelessWidget {
         Expanded(
           child: SecondaryAuthOptionButton(
             icon: Icons.mail_outline,
-            label: 'Email',
+            label: 'Login',
             onTap: onContinueWithEmail,
           ),
         ),
@@ -29,7 +31,8 @@ class LoginSecondaryAuthRow extends StatelessWidget {
           child: SecondaryAuthOptionButton(
             imagePath: 'assets/brand/google.icon.webp',
             label: 'Google',
-            onTap: onContinueWithGoogle,
+            onTap: isGoogleLoading ? null : onContinueWithGoogle,
+            isLoading: isGoogleLoading,
           ),
         ),
       ],

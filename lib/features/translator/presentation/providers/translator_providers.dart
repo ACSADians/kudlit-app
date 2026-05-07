@@ -9,8 +9,10 @@ import 'package:kudlit_ph/features/auth/presentation/providers/auth_provider.dar
 import 'package:kudlit_ph/features/home/presentation/providers/app_preferences_provider.dart';
 import 'package:kudlit_ph/features/translator/data/datasources/cloud_gemma_datasource.dart';
 import 'package:kudlit_ph/features/translator/data/datasources/local_gemma_datasource.dart';
+import 'package:kudlit_ph/features/home/presentation/providers/profile_management_provider.dart';
 import 'package:kudlit_ph/features/translator/data/datasources/sqlite_chat_datasource.dart';
 import 'package:kudlit_ph/features/translator/data/datasources/supabase_ai_models_datasource.dart';
+import 'package:kudlit_ph/features/translator/data/datasources/supabase_chat_datasource.dart';
 import 'package:kudlit_ph/features/translator/data/datasources/supabase_gemma_models_datasource.dart';
 import 'package:kudlit_ph/features/translator/data/repositories/ai_inference_repository_impl.dart';
 import 'package:kudlit_ph/features/translator/domain/entities/gemma_model_info.dart';
@@ -62,11 +64,18 @@ SqliteChatDatasource sqliteChatDatasource(Ref ref) {
   return ds;
 }
 
+/// Cloud mirror for chat messages. Plain Provider (no codegen) so the file
+/// does not require a regen step.
+final Provider<SupabaseChatDatasource> supabaseChatDatasourceProvider =
+    Provider<SupabaseChatDatasource>((Ref ref) {
+      return SupabaseChatDatasource(ref.watch(supabaseProvider));
+    });
+
 @Riverpod(keepAlive: true)
 AiInferenceRepository aiInferenceRepository(Ref ref) {
-  // Watch preferences so the repo recreates if AI mode changes.
-  ref.watch(appPreferencesNotifierProvider);
-
+  // Do NOT watch preferences here — the preferenceResolver callback reads
+  // them at call-time. Watching would dispose the repo (and close the active
+  // InferenceModel) on any preference change, causing unnecessary reconnects.
   final AiInferenceRepositoryImpl repo = AiInferenceRepositoryImpl(
     modelsDatasource: ref.watch(supabaseGemmaModelsDatasourceProvider),
     localDatasource: ref.watch(localGemmaDatasourceProvider),
@@ -81,6 +90,41 @@ AiInferenceRepository aiInferenceRepository(Ref ref) {
   ref.onDispose(repo.dispose);
   return repo;
 }
+
+/// Single shared readiness probe for the active offline Gemma model.
+///
+/// keepAlive — the result is cached across navigation. Re-runs only when
+/// [selectedModelId] changes; unrelated preference updates are ignored so
+/// the probe (which pre-warms the native model) does not fire on every
+/// settings toggle.
+final FutureProvider<LocalGemmaReadiness> localModelReadinessProvider =
+    FutureProvider<LocalGemmaReadiness>((Ref ref) async {
+  final String? selectedModelId = ref.watch(
+    appPreferencesNotifierProvider.select(
+      (AsyncValue<AppPreferences> v) => v.value?.selectedModelId,
+    ),
+  );
+  final List<GemmaModelInfo> models = await ref.read(
+    availableGemmaModelsProvider.future,
+  );
+  if (models.isEmpty) {
+    return const LocalGemmaReadiness(
+      installed: false,
+      usable: false,
+      detail: 'Offline model is unavailable on this device.',
+    );
+  }
+  GemmaModelInfo active = models[models.length ~/ 2];
+  if (selectedModelId != null) {
+    for (final GemmaModelInfo m in models) {
+      if (m.id == selectedModelId) {
+        active = m;
+        break;
+      }
+    }
+  }
+  return ref.read(localGemmaDatasourceProvider).probeReadiness(active);
+});
 
 @Riverpod(keepAlive: true)
 AnalyzeBaybayinImage analyzeBaybayinImage(Ref ref) {

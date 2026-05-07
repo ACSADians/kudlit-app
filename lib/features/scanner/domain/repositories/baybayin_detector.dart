@@ -18,6 +18,15 @@ abstract class BaybayinDetector {
   /// Toggle the device torch / flash. No-op on web.
   Future<void> toggleTorch({required bool enabled});
 
+  /// Switch between available camera lenses when the platform supports it.
+  Future<void> switchCamera();
+
+  /// Pause live inference (e.g. while a result panel is visible).
+  Future<void> pauseInference();
+
+  /// Resume live inference after a pause.
+  Future<void> resumeInference();
+
   /// Release all resources (camera, model).
   void dispose();
 }

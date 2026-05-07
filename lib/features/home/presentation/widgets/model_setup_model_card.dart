@@ -13,16 +13,24 @@ class ModelSetupModelCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: KudlitColors.blue100,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: KudlitColors.blue300.withAlpha(80)),
+    return Semantics(
+      container: true,
+      label: modelName == null
+          ? 'Loading local AI model information.'
+          : 'Local AI model $modelName. Works offline after download.',
+      child: ExcludeSemantics(
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: KudlitColors.blue100,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: KudlitColors.blue300.withAlpha(80)),
+          ),
+          child: modelName == null
+              ? const _CardSkeleton()
+              : _CardContent(modelName: modelName!),
+        ),
       ),
-      child: modelName == null
-          ? const _CardSkeleton()
-          : _CardContent(modelName: modelName!),
     );
   }
 }
@@ -45,6 +53,9 @@ class _CardContent extends StatelessWidget {
             children: <Widget>[
               Text(
                 modelName,
+                softWrap: true,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   color: KudlitColors.blue900,
                   fontSize: 15,
@@ -88,17 +99,28 @@ class _OfflineBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: const <Widget>[
-        Icon(Icons.offline_bolt_rounded, size: 13, color: KudlitColors.blue800),
-        SizedBox(width: 4),
-        Text(
-          'Works offline after download',
-          style: TextStyle(
+    return const Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Padding(
+          padding: EdgeInsets.only(top: 1),
+          child: Icon(
+            Icons.offline_bolt_rounded,
+            size: 13,
             color: KudlitColors.blue800,
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
+          ),
+        ),
+        SizedBox(width: 4),
+        Flexible(
+          child: Text(
+            'Works offline after download',
+            softWrap: true,
+            style: TextStyle(
+              color: KudlitColors.blue800,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              height: 1.25,
+            ),
           ),
         ),
       ],

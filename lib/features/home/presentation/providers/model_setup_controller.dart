@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -13,10 +14,7 @@ import 'package:kudlit_ph/features/translator/presentation/providers/ai_inferenc
 
 @immutable
 class ModelSetupState {
-  const ModelSetupState({
-    required this.busy,
-    this.errorMessage,
-  });
+  const ModelSetupState({required this.busy, this.errorMessage});
 
   const ModelSetupState.initial() : this(busy: false);
 
@@ -60,10 +58,7 @@ class ModelSetupController extends Notifier<ModelSetupState> {
         .read(aiInferenceNotifierProvider)
         .value;
     if (inferenceState is AiInferenceError) {
-      state = state.copyWith(
-        busy: false,
-        errorMessage: inferenceState.message,
-      );
+      state = state.copyWith(busy: false, errorMessage: inferenceState.message);
       return;
     }
 
@@ -86,6 +81,14 @@ class ModelSetupController extends Notifier<ModelSetupState> {
               version: visionModel.version,
             );
             ref.invalidate(yoloModelPathProvider);
+            // Pre-warm the camera scope path so the scan tab opens instantly.
+            unawaited(
+              ref
+                  .read(
+                    yoloModelPathProvider(YoloModelScope.camera).future,
+                  )
+                  .catchError((_) => ''),
+            );
           }
         }
       } catch (e) {

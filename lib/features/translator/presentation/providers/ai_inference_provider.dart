@@ -1,3 +1,5 @@
+import 'dart:async';
+
 // ignore: unnecessary_import — flutter_riverpod is needed for AsyncNotifier
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -21,8 +23,16 @@ part 'ai_inference_provider.g.dart';
 /// (local `flutter_gemma` or cloud stub) based on `AiPreference`.
 @Riverpod(keepAlive: true)
 class AiInferenceNotifier extends _$AiInferenceNotifier {
+  static const Duration _stallThreshold = Duration(seconds: 20);
+
+  Timer? _stallTimer;
+  GemmaModelInfo? _downloadModel;
+  bool _cancelRequested = false;
+
   @override
   Future<AiInferenceState> build() async {
+    ref.onDispose(_clearDownloadWatchers);
+
     // Don't interrupt an active download triggered from the setup screen.
     final AiInferenceState? prev = state.value;
     if (prev is AiDownloading) return prev;
@@ -106,31 +116,30 @@ class AiInferenceNotifier extends _$AiInferenceNotifier {
       _ => null,
     };
     if (model == null) return;
-
-    state = AsyncData(AiDownloading(model: model, progress: 0));
-
-    final AiInferenceRepository repo = ref.read(aiInferenceRepositoryProvider);
-    final Either<Failure, Unit> result = await repo.downloadLocalModel(
-      model,
-      onProgress: (int progress) {
-        state = AsyncData(AiDownloading(model: model, progress: progress));
-      },
-    );
-
-    state = AsyncData(
-      result.isRight()
-          ? AiReady(mode: AiPreference.local, activeModel: model)
-          : AiInferenceError(
-              _failureMessage(
-                result.getLeft().getOrElse(
-                  () => const Failure.unknown(message: 'download failed'),
-                ),
-              ),
-            ),
-    );
+    await _runDownload(model);
   }
 
   void cancelDownload() {
+    _cancelRequested = true;
+    final GemmaModelInfo? model =
+        _downloadModel ??
+        switch (state.value) {
+          AiDownloading(:final GemmaModelInfo model) => model,
+          AiLocalModelMissing(:final GemmaModelInfo model) => model,
+          _ => null,
+        };
+    if (model != null) {
+      state = AsyncData(
+        AiDownloading(
+          model: model,
+          progress: switch (state.value) {
+            AiDownloading(:final int progress) => progress,
+            _ => 0,
+          },
+          statusMessage: 'Cancel requested. Waiting for downloader cleanup…',
+        ),
+      );
+    }
     ref.read(aiInferenceRepositoryProvider).cancelDownload();
   }
 
@@ -140,27 +149,7 @@ class AiInferenceNotifier extends _$AiInferenceNotifier {
   /// Safe to call fire-and-forget; the `build()` guard preserves
   /// `AiDownloading` state even if prefs change mid-download.
   Future<void> triggerLocalDownload(GemmaModelInfo model) async {
-    state = AsyncData(AiDownloading(model: model, progress: 0));
-
-    final AiInferenceRepository repo = ref.read(aiInferenceRepositoryProvider);
-    final Either<Failure, Unit> result = await repo.downloadLocalModel(
-      model,
-      onProgress: (int progress) {
-        state = AsyncData(AiDownloading(model: model, progress: progress));
-      },
-    );
-
-    state = AsyncData(
-      result.isRight()
-          ? AiReady(mode: AiPreference.local, activeModel: model)
-          : AiInferenceError(
-              _failureMessage(
-                result.getLeft().getOrElse(
-                  () => const Failure.unknown(message: 'download failed'),
-                ),
-              ),
-            ),
-    );
+    await _runDownload(model);
   }
 
   /// Persist a different active model and reload state.
@@ -187,4 +176,101 @@ class AiInferenceNotifier extends _$AiInferenceNotifier {
     UnknownFailure(:final String message) => message,
     _ => 'Unexpected error',
   };
+
+  Future<void> _runDownload(GemmaModelInfo model) async {
+    _cancelRequested = false;
+    _downloadModel = model;
+    _setDownloadingState(
+      model,
+      progress: 0,
+      statusMessage: 'Preparing download…',
+    );
+    _restartStallTimer(model, progress: 0);
+
+    final AiInferenceRepository repo = ref.read(aiInferenceRepositoryProvider);
+    final Either<Failure, Unit> result = await repo.downloadLocalModel(
+      model,
+      onProgress: (int progress) {
+        final String statusMessage = progress >= 100
+            ? 'Finalizing downloaded file…'
+            : 'Downloading in background. Keep this screen open if updates pause.';
+        _setDownloadingState(
+          model,
+          progress: progress,
+          statusMessage: statusMessage,
+        );
+        _restartStallTimer(model, progress: progress);
+      },
+    );
+
+    final bool wasCancelRequested = _cancelRequested;
+    _clearDownloadWatchers();
+
+    if (wasCancelRequested) {
+      state = AsyncData(
+        AiLocalModelMissing(
+          model,
+          note:
+              'Download canceled. You can retry when the connection is stable.',
+        ),
+      );
+      return;
+    }
+
+    state = AsyncData(
+      result.isRight()
+          ? AiReady(mode: AiPreference.local, activeModel: model)
+          : AiInferenceError(
+              _failureMessage(
+                result.getLeft().getOrElse(
+                  () => const Failure.unknown(message: 'download failed'),
+                ),
+              ),
+            ),
+    );
+
+    if (result.isRight()) {
+      // Pre-warm the model so the first inference request doesn't cold-start.
+      // Fire-and-forget — state is already AiReady at this point.
+      unawaited(ref.read(localGemmaDatasourceProvider).ensureModelLoaded());
+      // Refresh status banners that show offline readiness.
+      ref.invalidate(localModelReadinessProvider);
+    }
+  }
+
+  void _restartStallTimer(GemmaModelInfo model, {required int progress}) {
+    _stallTimer?.cancel();
+    _stallTimer = Timer(_stallThreshold, () {
+      final AiInferenceState? current = state.value;
+      if (current is! AiDownloading || current.model.id != model.id) {
+        return;
+      }
+      _setDownloadingState(
+        model,
+        progress: progress,
+        statusMessage:
+            'No new progress yet. Android may be retrying or resuming the download.',
+      );
+    });
+  }
+
+  void _setDownloadingState(
+    GemmaModelInfo model, {
+    required int progress,
+    required String statusMessage,
+  }) {
+    state = AsyncData(
+      AiDownloading(
+        model: model,
+        progress: progress,
+        statusMessage: statusMessage,
+      ),
+    );
+  }
+
+  void _clearDownloadWatchers() {
+    _stallTimer?.cancel();
+    _stallTimer = null;
+    _downloadModel = null;
+  }
 }

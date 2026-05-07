@@ -1,12 +1,16 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 
+import 'package:kudlit_ph/app/constants.dart';
 import 'package:kudlit_ph/core/error/failures.dart';
 import 'package:kudlit_ph/features/home/domain/entities/profile_preferences.dart';
 import 'package:kudlit_ph/features/home/domain/entities/profile_summary.dart';
 import 'package:kudlit_ph/features/home/presentation/providers/profile_management_provider.dart';
 
-import 'edit_name_dialog.dart';
 import 'profile_management_card.dart';
 import 'profile_management_item.dart';
 import 'settings_section_label.dart';
@@ -29,6 +33,23 @@ class ProfileManagementSection extends ConsumerStatefulWidget {
 class _ProfileManagementSectionState
     extends ConsumerState<ProfileManagementSection> {
   final Set<String> _loadingActions = <String>{};
+  late final TextEditingController _displayNameController;
+  late final FocusNode _displayNameFocusNode;
+  bool _isEditingDisplayName = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _displayNameController = TextEditingController();
+    _displayNameFocusNode = FocusNode();
+  }
+
+  @override
+  void dispose() {
+    _displayNameController.dispose();
+    _displayNameFocusNode.dispose();
+    super.dispose();
+  }
 
   List<ProfileManagementItem> _getItems(ProfileSummary? summary) {
     final String? displayName = summary?.displayName;
@@ -66,7 +87,7 @@ class _ProfileManagementSectionState
         primaryActionMessage: 'edit-name',
         secondaryActionId: 'upload-avatar',
         secondaryActionLabel: 'Upload avatar',
-        secondaryActionMessage: 'Avatar update flow is available soon.',
+        secondaryActionMessage: 'upload-avatar',
       ),
       ProfileManagementItem(
         id: 'learning-progress-dashboard',
@@ -105,6 +126,18 @@ class _ProfileManagementSectionState
         secondaryActionMessage: 'Bookmark flow is available soon.',
       ),
       const ProfileManagementItem(
+        id: 'butty-data',
+        icon: Icons.psychology_outlined,
+        title: 'Butty chat & memory',
+        description:
+            'Manage your chat history (synced to Supabase) and the long-term '
+            'facts Butty has learned about you. Memory survives "Start fresh" '
+            'and reinstalls.',
+        primaryActionId: 'open-butty-data',
+        primaryActionLabel: 'Manage data',
+        primaryActionMessage: 'open-butty-data',
+      ),
+      const ProfileManagementItem(
         id: 'accessibility-options',
         icon: Icons.accessibility_new_rounded,
         title: 'Accessibility options',
@@ -140,7 +173,11 @@ class _ProfileManagementSectionState
 
   Future<void> _handleAction(String actionId, String message) async {
     if (message == 'edit-name') {
-      await _showEditNameDialog();
+      _startInlineNameEdit();
+      return;
+    }
+    if (message == 'upload-avatar') {
+      await _uploadAvatar();
       return;
     }
     if (message == 'open-accessibility-setup') {
@@ -149,6 +186,10 @@ class _ProfileManagementSectionState
     }
     if (message == 'open-privacy-settings') {
       await _showPrivacyDialog();
+      return;
+    }
+    if (message == 'open-butty-data') {
+      context.push(AppConstants.routeButtyData);
       return;
     }
 
@@ -160,22 +201,43 @@ class _ProfileManagementSectionState
     setState(() => _loadingActions.remove(actionId));
   }
 
-  Future<void> _showEditNameDialog() async {
+  void _startInlineNameEdit() {
     final summaryOpt = ref.read(profileSummaryNotifierProvider).value;
-    final String initialName =
-        summaryOpt?.toNullable()?.displayName ?? '';
-
-    final String? newName = await showDialog<String>(
-      context: context,
-      builder: (_) => EditNameDialog(initialName: initialName),
+    final String initialName = summaryOpt?.toNullable()?.displayName ?? '';
+    _displayNameController.text = initialName;
+    _displayNameController.selection = TextSelection(
+      baseOffset: 0,
+      extentOffset: _displayNameController.text.length,
     );
+    setState(() => _isEditingDisplayName = true);
+    _displayNameFocusNode.requestFocus();
+  }
 
-    if (newName == null || newName.trim() == initialName || !mounted) return;
+  void _cancelInlineNameEdit() {
+    setState(() => _isEditingDisplayName = false);
+  }
+
+  Future<void> _saveInlineNameEdit() async {
+    final summaryOpt = ref.read(profileSummaryNotifierProvider).value;
+    final String initialName = summaryOpt?.toNullable()?.displayName ?? '';
+    final String newName = _displayNameController.text.trim();
+
+    if (newName.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Display name cannot be empty.')),
+      );
+      return;
+    }
+
+    if (newName == initialName.trim()) {
+      _cancelInlineNameEdit();
+      return;
+    }
 
     setState(() => _loadingActions.add('edit-name'));
     await ref
         .read(profileSummaryNotifierProvider.notifier)
-        .updateDisplayName(newName.trim());
+        .updateDisplayName(newName);
 
     if (!mounted) return;
     setState(() => _loadingActions.remove('edit-name'));
@@ -184,15 +246,59 @@ class _ProfileManagementSectionState
     if (currentState.hasError) {
       _showErrorSnackBar('Failed to update name', currentState.error);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Display name updated.')),
+      setState(() => _isEditingDisplayName = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Display name updated.')));
+    }
+  }
+
+  Future<void> _uploadAvatar() async {
+    if (_loadingActions.contains('upload-avatar')) return;
+
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 88,
       );
+      if (image == null || !mounted) return;
+
+      setState(() => _loadingActions.add('upload-avatar'));
+      final Uint8List bytes = await image.readAsBytes();
+      await ref
+          .read(profileSummaryNotifierProvider.notifier)
+          .updateAvatar(
+            bytes: bytes,
+            fileName: image.name,
+            mimeType: image.mimeType,
+          );
+
+      if (!mounted) return;
+      final currentState = ref.read(profileSummaryNotifierProvider);
+      if (currentState.hasError) {
+        _showErrorSnackBar('Failed to upload avatar', currentState.error);
+      } else {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Avatar updated.')));
+      }
+    } catch (e) {
+      if (!mounted) return;
+      _showErrorSnackBar('Failed to upload avatar', e);
+    } finally {
+      if (mounted && _loadingActions.contains('upload-avatar')) {
+        setState(() => _loadingActions.remove('upload-avatar'));
+      }
     }
   }
 
   Future<void> _showAccessibilityDialog() async {
     final prefsOpt = ref.read(profilePreferencesNotifierProvider).value;
-    final ProfilePreferences current = prefsOpt?.toNullable() ??
+    final ProfilePreferences current =
+        prefsOpt?.toNullable() ??
         const ProfilePreferences(
           highContrast: false,
           reducedMotion: false,
@@ -215,8 +321,7 @@ class _ProfileManagementSectionState
                   SwitchListTile(
                     title: const Text('High Contrast'),
                     value: highContrast,
-                    onChanged: (bool val) =>
-                        setInner(() => highContrast = val),
+                    onChanged: (bool val) => setInner(() => highContrast = val),
                   ),
                   SwitchListTile(
                     title: const Text('Reduced Motion'),
@@ -270,7 +375,8 @@ class _ProfileManagementSectionState
 
   Future<void> _showPrivacyDialog() async {
     final prefsOpt = ref.read(profilePreferencesNotifierProvider).value;
-    final ProfilePreferences current = prefsOpt?.toNullable() ??
+    final ProfilePreferences current =
+        prefsOpt?.toNullable() ??
         const ProfilePreferences(
           highContrast: false,
           reducedMotion: false,
@@ -334,7 +440,9 @@ class _ProfileManagementSectionState
     final currentState = ref.read(profilePreferencesNotifierProvider);
     if (currentState.hasError) {
       _showErrorSnackBar(
-          'Failed to update privacy settings', currentState.error);
+        'Failed to update privacy settings',
+        currentState.error,
+      );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Privacy settings updated.')),
@@ -357,9 +465,9 @@ class _ProfileManagementSectionState
         passwordResetEmailSent: () => 'Email sent',
       );
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$prefix: $message')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('$prefix: $message')));
   }
 
   @override
@@ -375,12 +483,91 @@ class _ProfileManagementSectionState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         const SettingsSectionLabel(text: 'Profile management'),
+        if (_isEditingDisplayName) ...<Widget>[
+          _InlineNameEditor(
+            controller: _displayNameController,
+            focusNode: _displayNameFocusNode,
+            isSaving: _loadingActions.contains('edit-name'),
+            onCancel: _cancelInlineNameEdit,
+            onSave: _saveInlineNameEdit,
+          ),
+          const SizedBox(height: 12),
+        ],
         ProfileManagementCard(
           items: _getItems(summary),
           loadingActions: _loadingActions,
           onAction: _handleAction,
         ),
       ],
+    );
+  }
+}
+
+class _InlineNameEditor extends StatelessWidget {
+  const _InlineNameEditor({
+    required this.controller,
+    required this.focusNode,
+    required this.isSaving,
+    required this.onCancel,
+    required this.onSave,
+  });
+
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final bool isSaving;
+  final VoidCallback onCancel;
+  final VoidCallback onSave;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: <Widget>[
+          Expanded(
+            child: TextField(
+              controller: controller,
+              focusNode: focusNode,
+              enabled: !isSaving,
+              textInputAction: TextInputAction.done,
+              maxLength: 40,
+              onSubmitted: (_) => isSaving ? null : onSave(),
+              decoration: InputDecoration(
+                counterText: '',
+                labelText: 'Display name',
+                isDense: true,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          IconButton(
+            tooltip: 'Save display name',
+            constraints: const BoxConstraints(minHeight: 44, minWidth: 44),
+            onPressed: isSaving ? null : onSave,
+            icon: isSaving
+                ? SizedBox(
+                    height: 18,
+                    width: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: cs.primary,
+                    ),
+                  )
+                : const Icon(Icons.check_rounded),
+          ),
+          IconButton(
+            tooltip: 'Cancel display name edit',
+            constraints: const BoxConstraints(minHeight: 44, minWidth: 44),
+            onPressed: isSaving ? null : onCancel,
+            icon: const Icon(Icons.close_rounded),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kudlit_ph/app/constants.dart';
 import 'package:kudlit_ph/features/auth/presentation/widgets/auth_drag_handle.dart';
 import 'package:kudlit_ph/features/auth/presentation/widgets/auth_screen_shell.dart';
 import 'package:kudlit_ph/features/auth/presentation/widgets/auth_sheet.dart';
@@ -35,6 +36,14 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     });
   }
 
+  String? _validateEmail(String? value) {
+    final String email = value?.trim() ?? '';
+    if (email.isEmpty) return AppConstants.emailRequiredMessage;
+    final bool valid = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email);
+    if (!valid) return AppConstants.invalidEmailMessage;
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     return AuthScreenShell(
@@ -60,6 +69,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
               key: _formKey,
               child: EmailField(
                 controller: _emailController,
+                validator: _validateEmail,
                 textInputAction: TextInputAction.done,
                 onSubmitted: (_) => _submit(),
               ),

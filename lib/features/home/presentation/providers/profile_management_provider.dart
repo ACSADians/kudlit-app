@@ -1,8 +1,11 @@
+import 'dart:typed_data';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'package:kudlit_ph/core/error/failures.dart';
 import 'package:kudlit_ph/core/usecases/usecase.dart';
 import 'package:kudlit_ph/features/home/data/datasources/local_profile_management_datasource.dart';
 import 'package:kudlit_ph/features/home/data/datasources/profile_management_datasource.dart';
@@ -76,6 +79,25 @@ class ProfileSummaryNotifier extends _$ProfileSummaryNotifier {
     return result.fold((l) => const None(), (r) => Some(r));
   }
 
+  /// Clears the local summary cache and re-fetches fresh counts from Supabase.
+  /// Call this after any write that changes profile stats (lesson complete,
+  /// new scan, new translation).
+  Future<void> refresh() async {
+    final String? userId = ref
+        .read(profileManagementDatasourceProvider)
+        .getCurrentUserId();
+    if (userId != null) {
+      try {
+        await ref
+            .read(localProfileManagementDatasourceProvider)
+            .clearCachedSummary(userId: userId);
+      } catch (_) {}
+    }
+    state = const AsyncLoading<Option<ProfileSummary>>();
+    final Option<ProfileSummary> summary = await _fetchSummary();
+    state = AsyncValue<Option<ProfileSummary>>.data(summary);
+  }
+
   Future<void> updateDisplayName(String displayName) async {
     state = AsyncValue.data(state.value ?? const None());
 
@@ -95,6 +117,45 @@ class ProfileSummaryNotifier extends _$ProfileSummaryNotifier {
     final summary = await _fetchSummary();
     state = AsyncValue.data(summary);
   }
+
+  Future<void> updateAvatar({
+    required Uint8List bytes,
+    required String fileName,
+    required String? mimeType,
+  }) async {
+    final Option<ProfileSummary> previousSummary = state.value ?? const None();
+    state = AsyncValue.data(previousSummary);
+
+    final repository = ref.read(profileManagementRepositoryProvider);
+    final result = await repository.updateAvatar(
+      bytes: bytes,
+      fileName: fileName,
+      mimeType: mimeType,
+    );
+
+    if (result.isLeft()) {
+      final Failure failure = result.getLeft().toNullable()!;
+      state = AsyncValue.data(previousSummary);
+      throw Exception(_failureMessage(failure));
+    }
+
+    final summary = await _fetchSummary();
+    state = AsyncValue.data(summary);
+  }
+}
+
+String _failureMessage(Failure failure) {
+  return switch (failure) {
+    NetworkFailure(:final message) => message,
+    UnknownFailure(:final message) => message,
+    InvalidCredentialsFailure() => 'Invalid credentials.',
+    UserNotFoundFailure() => 'User not found.',
+    EmailAlreadyInUseFailure() => 'Email is already in use.',
+    WeakPasswordFailure() => 'Weak password.',
+    TooManyRequestsFailure() => 'Too many requests. Try again later.',
+    SessionExpiredFailure() => 'Session expired. Sign in again.',
+    PasswordResetEmailSentFailure() => 'Password reset email sent.',
+  };
 }
 
 @riverpod

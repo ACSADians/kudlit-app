@@ -4,6 +4,7 @@ import 'package:meta/meta.dart';
 class ProfileSummary {
   const ProfileSummary({
     required this.displayName,
+    required this.avatarUrl,
     required this.completedLessons,
     required this.scanHistoryItems,
     required this.translationHistoryItems,
@@ -11,6 +12,7 @@ class ProfileSummary {
   });
 
   final String? displayName;
+  final String? avatarUrl;
   final int completedLessons;
   final int scanHistoryItems;
   final int translationHistoryItems;

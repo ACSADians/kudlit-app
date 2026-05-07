@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:fpdart/fpdart.dart';
 
 import 'package:kudlit_ph/core/error/failures.dart';
@@ -13,7 +15,19 @@ abstract interface class ProfileManagementRepository {
     required String displayName,
   });
 
+  Future<Either<Failure, Unit>> updateAvatar({
+    required Uint8List bytes,
+    required String fileName,
+    required String? mimeType,
+  });
+
   Future<Either<Failure, Unit>> savePreferences({
     required ProfilePreferences preferences,
+  });
+
+  Future<Either<Failure, Unit>> saveLessonProgress({
+    required String lessonId,
+    required bool completed,
+    required int score,
   });
 }

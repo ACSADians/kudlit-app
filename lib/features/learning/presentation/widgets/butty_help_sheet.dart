@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:kudlit_ph/features/learning/domain/entities/gemma_prompts.dart';
 import 'package:kudlit_ph/features/learning/domain/entities/lesson_step.dart';
 import 'package:kudlit_ph/features/translator/domain/entities/chat_message.dart';
 import 'package:kudlit_ph/features/translator/domain/repositories/ai_inference_repository.dart';
@@ -53,23 +54,6 @@ String _buildSystemPrompt(LessonStep step) {
     'Use your <think> block to decide the best nudge, then give it briefly.',
   );
   return sb.toString();
-}
-
-/// Splits a raw model response into its think-block content and the final
-/// answer. Returns empty strings for absent sections.
-({String think, String answer}) _parseResponse(String raw) {
-  const String openTag = '<think>';
-  const String closeTag = '</think>';
-  final int openIdx = raw.indexOf(openTag);
-  if (openIdx == -1) return (think: '', answer: raw.trim());
-  final int closeIdx = raw.indexOf(closeTag, openIdx);
-  if (closeIdx == -1) {
-    // Think block still open — still in reasoning phase.
-    return (think: raw.substring(openIdx + openTag.length), answer: '');
-  }
-  final String think = raw.substring(openIdx + openTag.length, closeIdx).trim();
-  final String answer = raw.substring(closeIdx + closeTag.length).trim();
-  return (think: think, answer: answer);
 }
 
 class ButtyHelpSheet extends ConsumerStatefulWidget {
@@ -147,9 +131,8 @@ class _ButtyHelpSheetState extends ConsumerState<ButtyHelpSheet> {
         .listen(
           (String token) {
             buffer.write(token);
-            final ({String think, String answer}) parsed = _parseResponse(
-              buffer.toString(),
-            );
+            final ({String think, String answer}) parsed =
+                GemmaPrompts.parseThinkBlock(buffer.toString());
             if (!mounted) return;
             setState(() {
               _streamingText = buffer.toString();
@@ -158,9 +141,8 @@ class _ButtyHelpSheetState extends ConsumerState<ButtyHelpSheet> {
             _scrollToBottom();
           },
           onDone: () {
-            final ({String think, String answer}) parsed = _parseResponse(
-              buffer.toString(),
-            );
+            final ({String think, String answer}) parsed =
+                GemmaPrompts.parseThinkBlock(buffer.toString());
             final String reply = parsed.answer.isEmpty
                 ? buffer.toString()
                 : parsed.answer;
@@ -210,9 +192,11 @@ class _ButtyHelpSheetState extends ConsumerState<ButtyHelpSheet> {
   @override
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
+    final Size viewport = MediaQuery.sizeOf(context);
+    final bool compactHeight = viewport.height < 640;
     return DraggableScrollableSheet(
-      initialChildSize: 0.7,
-      minChildSize: 0.45,
+      initialChildSize: compactHeight ? 0.9 : 0.7,
+      minChildSize: compactHeight ? 0.72 : 0.45,
       maxChildSize: 0.95,
       expand: false,
       builder: (BuildContext context, ScrollController sheetScroll) {
@@ -410,7 +394,12 @@ class _ComposerBar extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           IconButton.filled(
+            tooltip: 'Send question to Butty',
             onPressed: enabled ? onSend : null,
+            style: IconButton.styleFrom(
+              minimumSize: const Size(44, 44),
+              tapTargetSize: MaterialTapTargetSize.padded,
+            ),
             icon: const Icon(Icons.send_rounded),
           ),
         ],
@@ -438,27 +427,33 @@ class _Bubble extends StatelessWidget {
         children: <Widget>[
           if (isButty && message.thinkContent != null)
             _ThinkPanel(content: message.thinkContent!),
-          GestureDetector(
-            onLongPress: () {
-              Clipboard.setData(ClipboardData(text: message.text));
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Copied to clipboard'),
-                  duration: Duration(seconds: 2),
+          Semantics(
+            label: '${isButty ? 'Butty' : 'Your'} message. Long press to copy.',
+            child: GestureDetector(
+              onLongPress: () {
+                Clipboard.setData(ClipboardData(text: message.text));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Copied to clipboard'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              },
+              child: Container(
+                margin: const EdgeInsets.symmetric(vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
                 ),
-              );
-            },
-            child: Container(
-              margin: const EdgeInsets.symmetric(vertical: 4),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              constraints: BoxConstraints(
-                maxWidth: MediaQuery.of(context).size.width * 0.75,
+                constraints: BoxConstraints(
+                  maxWidth: MediaQuery.of(context).size.width * 0.75,
+                ),
+                decoration: BoxDecoration(
+                  color: isButty ? cs.surfaceContainerHigh : cs.primary,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: MarkdownBody(data: message.text),
               ),
-              decoration: BoxDecoration(
-                color: isButty ? cs.surfaceContainerHigh : cs.primary,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: MarkdownBody(data: message.text),
             ),
           ),
         ],

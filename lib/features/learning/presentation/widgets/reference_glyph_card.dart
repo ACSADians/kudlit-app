@@ -5,12 +5,17 @@ class ReferenceGlyphCard extends StatelessWidget {
     super.key,
     required this.glyph,
     required this.label,
+    this.glyphImage,
     this.compact = false,
     this.hideGlyph = false,
   });
 
   final String glyph;
   final String label;
+
+  /// Optional URL for a custom glyph image. When set, this is shown instead
+  /// of rendering [glyph] with the Baybayin font.
+  final String? glyphImage;
   final bool compact;
 
   /// When true, the glyph character is replaced with a "?" placeholder.
@@ -20,7 +25,7 @@ class ReferenceGlyphCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
-    final double size = compact ? 64 : 120;
+    final double size = compact ? 58 : 112;
     return Container(
       width: double.infinity,
       padding: EdgeInsets.symmetric(
@@ -45,27 +50,46 @@ class ReferenceGlyphCard extends StatelessWidget {
                   fontWeight: FontWeight.w800,
                   height: 1,
                   color: cs.onPrimaryContainer,
-                  letterSpacing: -0.5,
+                  letterSpacing: 0,
                 ),
               ),
             )
           else ...<Widget>[
-            Text(
-              glyph,
-              style: TextStyle(
-                fontFamily: 'Baybayin Simple TAWBID',
-                fontSize: size,
-                height: 1,
+            if (glyphImage != null)
+              Image.network(
+                glyphImage!,
+                height: size,
+                width: size,
+                fit: BoxFit.contain,
                 color: cs.onPrimaryContainer,
+                colorBlendMode: BlendMode.srcIn,
+                errorBuilder: (_, _, _) => Text(
+                  glyph,
+                  style: TextStyle(
+                    fontFamily: 'Baybayin Simple TAWBID',
+                    fontSize: size,
+                    height: 1,
+                    color: cs.onPrimaryContainer,
+                  ),
+                ),
+              )
+            else
+              Text(
+                glyph,
+                style: TextStyle(
+                  fontFamily: 'Baybayin Simple TAWBID',
+                  fontSize: size,
+                  height: 1,
+                  color: cs.onPrimaryContainer,
+                ),
               ),
-            ),
             const SizedBox(height: 6),
             Text(
               label,
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
                 color: cs.onPrimaryContainer,
                 fontWeight: FontWeight.w600,
-                letterSpacing: 1.2,
+                letterSpacing: 0,
               ),
             ),
           ],

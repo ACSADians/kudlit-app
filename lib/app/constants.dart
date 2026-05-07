@@ -14,6 +14,13 @@ class AppConstants {
   static const String routeLesson = '/learn/lesson';
   static const String routeTerms = '/terms';
   static const String routePrivacyPolicy = '/privacy-policy';
+  static const String routeAdminStrokeRecorder = '/admin/stroke-recorder';
+  static const String routeCharacterGallery = '/learn/gallery';
+  static const String routeQuiz = '/learn/quiz';
+  static const String routeScanHistory = '/scan-history';
+  static const String routeTranslationHistory = '/translation-history';
+  static const String routeLearningProgress = '/learning-progress';
+  static const String routeButtyData = '/butty-data';
 
   static const String loginTitle = appName;
   static const String loginSubtitle =
@@ -75,6 +82,8 @@ class AppConstants {
   static const String emailRequiredMessage = 'Email is required.';
   static const String invalidEmailMessage = 'Enter a valid email address.';
   static const String passwordRequiredMessage = 'Password is required.';
+  static const String confirmPasswordRequiredMessage =
+      'Confirm password is required.';
   static const String passwordTooShortMessage =
       'Password must be at least 6 characters.';
   static const String passwordsDoNotMatchMessage = 'Passwords do not match.';

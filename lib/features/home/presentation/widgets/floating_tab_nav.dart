@@ -2,9 +2,9 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
-/// Vertical space (px) the floating nav occupies from the screen bottom,
-/// excluding the device's safe-area inset.
-const double kFloatingNavClearance = 56.0;
+/// Vertical space (px) reserved by scrollable screens so the floating nav does
+/// not cover bottom content. Excludes the device's safe-area inset.
+const double kFloatingNavClearance = 112.0;
 
 /// The three primary app tabs.
 enum AppTab { scan, translate, learn, butty }
@@ -36,6 +36,13 @@ class _FloatingTabNavState extends State<FloatingTabNav> {
     setState(() => _expanded = false);
   }
 
+  String get _activeLabel => switch (widget.activeTab) {
+    AppTab.scan => 'Scan',
+    AppTab.translate => 'Translate',
+    AppTab.learn => 'Learn',
+    AppTab.butty => 'Butty',
+  };
+
   @override
   Widget build(BuildContext context) {
     final double screenWidth = MediaQuery.sizeOf(context).width;
@@ -45,13 +52,29 @@ class _FloatingTabNavState extends State<FloatingTabNav> {
       onTapOutside: (_) {
         if (_expanded) setState(() => _expanded = false);
       },
-      child: GestureDetector(
-        onTap: _expanded ? null : _toggle,
-        child: _NavPillSurface(
-          expanded: _expanded,
-          pillWidth: pillWidth,
-          activeTab: widget.activeTab,
-          onSelect: _select,
+      child: Semantics(
+        container: true,
+        explicitChildNodes: _expanded,
+        button: !_expanded,
+        label: _expanded
+            ? 'Home tab navigation expanded'
+            : 'Open home tab navigation, current tab $_activeLabel',
+        hint: _expanded
+            ? 'Choose a tab'
+            : 'Shows Scan, Translate, Learn, and Butty',
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(999),
+          child: InkWell(
+            onTap: _expanded ? null : _toggle,
+            borderRadius: BorderRadius.circular(999),
+            child: _NavPillSurface(
+              expanded: _expanded,
+              pillWidth: pillWidth,
+              activeTab: widget.activeTab,
+              onSelect: _select,
+            ),
+          ),
         ),
       ),
     );
@@ -258,36 +281,52 @@ class _NavPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
     final Color activeFg = cs.onPrimary;
-    final Color inactiveFg = cs.onSurface.withAlpha(180);
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: active ? cs.primary : Colors.transparent,
+    final Color inactiveFg = cs.onSurface.withAlpha(210);
+    return Semantics(
+      container: true,
+      button: true,
+      selected: active,
+      label: '$label tab',
+      child: Tooltip(
+        message: label,
+        excludeFromSemantics: true,
+        child: Material(
+          color: Colors.transparent,
           borderRadius: BorderRadius.circular(999),
-        ),
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Icon(icon, size: 17, color: active ? activeFg : inactiveFg),
-              const SizedBox(height: 3),
-              Text(
-                label,
-                maxLines: 1,
-                softWrap: false,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-                  color: active ? activeFg : inactiveFg,
-                  letterSpacing: 0.2,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(999),
+            child: Container(
+              constraints: const BoxConstraints(minHeight: 54),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: active ? cs.primary : Colors.transparent,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Icon(icon, size: 18, color: active ? activeFg : inactiveFg),
+                    const SizedBox(height: 3),
+                    Text(
+                      label,
+                      maxLines: 1,
+                      softWrap: false,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: active ? FontWeight.w800 : FontWeight.w600,
+                        color: active ? activeFg : inactiveFg,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
+            ),
           ),
         ),
       ),

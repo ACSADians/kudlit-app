@@ -20,27 +20,41 @@ class LessonPreviewCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: cs.surface,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: cs.outline),
-          boxShadow: const <BoxShadow>[
-            BoxShadow(
-              color: Color(0x0F0E1425),
-              blurRadius: 4,
-              offset: Offset(0, 1),
+    final BorderRadius radius = BorderRadius.circular(10);
+
+    return Semantics(
+      container: true,
+      button: onTap != null,
+      enabled: onTap != null,
+      label: '$title. $description',
+      child: ExcludeSemantics(
+        child: Material(
+          color: Colors.transparent,
+          child: Ink(
+            decoration: BoxDecoration(
+              color: cs.surface,
+              borderRadius: radius,
+              border: Border.all(color: cs.outline),
+              boxShadow: const <BoxShadow>[
+                BoxShadow(
+                  color: Color(0x0F0E1425),
+                  blurRadius: 4,
+                  offset: Offset(0, 1),
+                ),
+              ],
             ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            _PreviewImageStrip(imageAsset: imageAsset, tag: tag),
-            _PreviewText(title: title, description: description),
-          ],
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: radius,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  _PreviewImageStrip(imageAsset: imageAsset, tag: tag),
+                  _PreviewText(title: title, description: description),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );

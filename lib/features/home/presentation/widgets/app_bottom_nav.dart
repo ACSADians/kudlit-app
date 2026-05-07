@@ -69,34 +69,45 @@ class _NavItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final Color color = active ? KudlitColors.blue300 : KudlitColors.grey300;
     return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        behavior: HitTestBehavior.opaque,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const SizedBox(height: 4),
-            Icon(active ? def.activeIcon : def.icon, size: 22, color: color),
-            const SizedBox(height: 2),
-            Text(
-              def.label,
-              style: TextStyle(
-                fontSize: 10.5,
-                fontWeight: active ? FontWeight.w700 : FontWeight.w400,
-                color: color,
-              ),
+      child: Semantics(
+        button: true,
+        selected: active,
+        label: '${def.label} tab',
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                const SizedBox(height: 4),
+                Icon(
+                  active ? def.activeIcon : def.icon,
+                  size: 22,
+                  color: color,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  def.label,
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: active ? FontWeight.w700 : FontWeight.w600,
+                    color: color,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: active ? 18 : 0,
+                  height: 3,
+                  decoration: BoxDecoration(
+                    color: KudlitColors.blue300,
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 3),
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: active ? 18 : 0,
-              height: 3,
-              decoration: BoxDecoration(
-                color: KudlitColors.blue300,
-                borderRadius: BorderRadius.circular(99),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

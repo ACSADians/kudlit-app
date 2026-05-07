@@ -10,8 +10,10 @@ import 'package:kudlit_ph/features/translator/domain/entities/ai_model_info.dart
 import 'profile_management_action_button.dart';
 
 /// Tracks whether a given YOLO model id has a cached file on disk.
-final _yoloInstalledProvider =
-    FutureProvider.autoDispose.family<bool, String>((Ref ref, String modelId) async {
+final _yoloInstalledProvider = FutureProvider.autoDispose.family<bool, String>((
+  Ref ref,
+  String modelId,
+) async {
   final String? path = await YoloModelCache.instance.pathFor(modelId);
   return path != null;
 });
@@ -64,8 +66,9 @@ class _VisionDownloadTileState extends ConsumerState<VisionDownloadTile> {
 
   @override
   Widget build(BuildContext context) {
-    final AsyncValue<List<AiModelInfo>> modelsAsync =
-        ref.watch(availableYoloModelsProvider);
+    final AsyncValue<List<AiModelInfo>> modelsAsync = ref.watch(
+      availableYoloModelsProvider,
+    );
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -91,18 +94,12 @@ class _VisionDownloadTileState extends ConsumerState<VisionDownloadTile> {
     final AiModelInfo model = models.first;
 
     if (_downloading) {
-      return _DownloadProgressRow(
-        label: model.name,
-        progress: _progress,
-      );
+      return _DownloadProgressRow(label: model.name, progress: _progress);
     }
     if (_error != null) {
       return _ErrRow(message: _error!);
     }
-    return _VisionStatusRow(
-      model: model,
-      onDownload: () => _download(model),
-    );
+    return _VisionStatusRow(model: model, onDownload: () => _download(model));
   }
 }
 
@@ -185,22 +182,31 @@ class _VisionTileHeader extends StatelessWidget {
       children: <Widget>[
         Icon(Icons.camera_alt_rounded, size: 18, color: cs.primary),
         const SizedBox(width: 8),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text(
-              'KudVis-1-Turbo',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: cs.onSurface,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                'KudVis-1-Turbo',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: cs.onSurface,
+                ),
               ),
-            ),
-            Text(
-              'Baybayin OCR scanner  ·  YOLO TFLite',
-              style: TextStyle(fontSize: 11, color: cs.onSurface.withAlpha(128)),
-            ),
-          ],
+              Text(
+                'Baybayin OCR scanner  ·  YOLO TFLite',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: cs.onSurface.withAlpha(128),
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -218,8 +224,7 @@ class _StatusBadge extends StatelessWidget {
     final Color bg = ok
         ? Colors.green.shade800.withAlpha(40)
         : Colors.red.shade800.withAlpha(40);
-    final Color fg =
-        ok ? Colors.green.shade300 : Colors.red.shade300;
+    final Color fg = ok ? Colors.green.shade300 : Colors.red.shade300;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),

@@ -20,34 +20,74 @@ class HomeToolCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: cs.surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: cs.outline, width: 1.25),
-          boxShadow: const <BoxShadow>[
-            BoxShadow(
-              color: Color(0x1A0E1425),
-              blurRadius: 8,
-              offset: Offset(0, 4),
-              spreadRadius: -2,
+    final BorderRadius radius = BorderRadius.circular(14);
+
+    return Semantics(
+      container: true,
+      button: onTap != null,
+      enabled: onTap != null,
+      label: '$title. $description',
+      child: ExcludeSemantics(
+        child: Material(
+          color: Colors.transparent,
+          child: Ink(
+            decoration: BoxDecoration(
+              color: cs.surface,
+              borderRadius: radius,
+              border: Border.all(color: cs.outline, width: 1.25),
+              boxShadow: const <BoxShadow>[
+                BoxShadow(
+                  color: Color(0x1A0E1425),
+                  blurRadius: 8,
+                  offset: Offset(0, 4),
+                  spreadRadius: -2,
+                ),
+              ],
             ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            _ToolIcon(icon: icon, accentColor: accentColor),
-            const SizedBox(height: 10),
-            _ToolText(title: title, description: description),
-            const SizedBox(height: 10),
-            const _OpenLabel(),
-          ],
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: radius,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: _ToolCardContent(
+                  icon: icon,
+                  title: title,
+                  description: description,
+                  accentColor: accentColor,
+                ),
+              ),
+            ),
+          ),
         ),
       ),
+    );
+  }
+}
+
+class _ToolCardContent extends StatelessWidget {
+  const _ToolCardContent({
+    required this.icon,
+    required this.title,
+    required this.description,
+    required this.accentColor,
+  });
+
+  final IconData icon;
+  final String title;
+  final String description;
+  final Color accentColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        _ToolIcon(icon: icon, accentColor: accentColor),
+        const SizedBox(height: 10),
+        _ToolText(title: title, description: description),
+        const SizedBox(height: 10),
+        const _OpenLabel(),
+      ],
     );
   }
 }

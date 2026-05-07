@@ -9,7 +9,6 @@ import 'package:kudlit_ph/features/auth/presentation/providers/auth_notifier.dar
 
 import '../widgets/login_bottom_sheet.dart';
 import '../widgets/login_hero.dart';
-import 'phone_sign_in_screen.dart';
 import 'sign_in_screen.dart';
 
 /// Login / welcome screen. Shows the Butty hero and auth-method options.
@@ -44,14 +43,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 
-  void _onContinueWithPhone(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (BuildContext ctx) => const PhoneSignInScreen(),
-      ),
-    );
-  }
-
   Future<void> _onContinueWithGoogle(BuildContext context) async {
     if (_isGoogleLoading) return;
     setState(() => _isGoogleLoading = true);
@@ -71,18 +62,36 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     context.go(AppConstants.routeSignUp);
   }
 
-  void _onForgotPassword(BuildContext context) {
-    context.push(AppConstants.routeForgotPassword);
-  }
-
   void _onContinueAsGuest(BuildContext context) {
     context.go(AppConstants.routeHome);
   }
 
   @override
   Widget build(BuildContext context) {
-    final double screenHeight = MediaQuery.sizeOf(context).height;
-    final double heroHeight = screenHeight * 0.52;
+    final Size screenSize = MediaQuery.sizeOf(context);
+    final bool landscape = screenSize.width > screenSize.height;
+    final Widget authSheet = LoginBottomSheet(
+      onContinueWithEmail: () => _onContinueWithEmail(context),
+      onContinueWithGoogle: () => _onContinueWithGoogle(context),
+      onCreateAccount: () => _onCreateAccount(context),
+      onContinueAsGuest: () => _onContinueAsGuest(context),
+      isGoogleLoading: _isGoogleLoading,
+    );
+
+    if (landscape) {
+      return Scaffold(
+        body: Row(
+          children: <Widget>[
+            const Expanded(flex: 4, child: LoginHero()),
+            Expanded(flex: 7, child: SafeArea(left: false, child: authSheet)),
+          ],
+        ),
+      );
+    }
+
+    final double heroFraction = screenSize.height < 700 ? 0.50 : 0.52;
+    final double heroHeight = screenSize.height * heroFraction;
+    final double sheetTop = heroHeight - 22;
 
     return Scaffold(
       body: Stack(
@@ -95,21 +104,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             right: 0,
             top: 0,
             height: heroHeight,
-            child: const LoginHero(),
+            child: const LoginHero(showButtyArea: false),
           ),
           Positioned(
             left: 0,
             right: 0,
-            top: heroHeight - 22,
+            top: sheetTop,
             bottom: 0,
-            child: LoginBottomSheet(
-              onContinueWithPhone: () => _onContinueWithPhone(context),
-              onContinueWithEmail: () => _onContinueWithEmail(context),
-              onContinueWithGoogle: () => _onContinueWithGoogle(context),
-              onCreateAccount: () => _onCreateAccount(context),
-              onForgotPassword: () => _onForgotPassword(context),
-              onContinueAsGuest: () => _onContinueAsGuest(context),
-            ),
+            child: authSheet,
           ),
         ],
       ),

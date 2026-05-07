@@ -1,21 +1,70 @@
 import 'package:flutter/material.dart';
 
+import 'package:kudlit_ph/features/home/presentation/widgets/translate/translate_mode_switch.dart';
+import 'package:kudlit_ph/features/home/presentation/providers/translate_page_controller.dart';
+
 class TranslateHeader extends StatelessWidget {
-  const TranslateHeader({super.key});
+  const TranslateHeader({
+    super.key,
+    required this.workspaceMode,
+    required this.onWorkspaceModeChanged,
+  });
+
+  final TranslateWorkspaceMode workspaceMode;
+  final ValueChanged<TranslateWorkspaceMode> onWorkspaceModeChanged;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 14, 18, 4),
-      child: Text(
-        '',
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w700,
-          color: Theme.of(context).colorScheme.onSurface,
-          letterSpacing: -0.2,
-        ),
-      ),
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final bool narrow = constraints.maxWidth < 420;
+        final bool tabletDensity = constraints.maxWidth >= 768;
+        final bool desktopDensity = constraints.maxWidth >= 1200;
+        final double topPadding = desktopDensity
+            ? 18
+            : tabletDensity
+            ? 16
+            : (narrow ? 10 : 12);
+        final double horizontalPadding = desktopDensity
+            ? 32
+            : tabletDensity
+            ? 24
+            : 16;
+        final double bottomPadding = tabletDensity ? 14 : (narrow ? 8 : 12);
+        final double spacing = desktopDensity
+            ? 16
+            : tabletDensity
+            ? 12
+            : 8;
+        final double runSpacing = tabletDensity ? 10 : 8;
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+            horizontalPadding,
+            topPadding,
+            horizontalPadding,
+            bottomPadding,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Wrap(
+                spacing: spacing,
+                runSpacing: runSpacing,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: <Widget>[
+                  TranslateModeSwitch(
+                    mode: workspaceMode,
+                    onChanged: onWorkspaceModeChanged,
+                    compact: narrow,
+                    tabletDensity: tabletDensity,
+                    desktopDensity: desktopDensity,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

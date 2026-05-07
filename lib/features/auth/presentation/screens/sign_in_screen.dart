@@ -15,7 +15,8 @@ import '../widgets/auth_sheet_headline.dart';
 import '../widgets/login_hero.dart';
 import '../widgets/sign_in_form.dart';
 import '../widgets/sign_up_prompt.dart';
-import 'reset_password_screen.dart';
+import 'forgot_password_screen.dart';
+import 'phone_sign_in_screen.dart';
 import 'sign_up_screen.dart';
 
 /// Email + password sign-in screen.
@@ -87,8 +88,14 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
 
   void _openResetPassword() {
     Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const ResetPasswordScreen()),
+      MaterialPageRoute<void>(builder: (_) => const ForgotPasswordScreen()),
     );
+  }
+
+  void _openPhoneSignIn() {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => const PhoneSignInScreen()));
   }
 
   void _openSignUp() {
@@ -125,6 +132,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
               errorMessage: _errorMessage,
               onSubmit: _submit,
               onForgotPassword: _openResetPassword,
+              onContinueWithPhone: _openPhoneSignIn,
             ),
             const SizedBox(height: 20),
             SignUpPrompt(onCreateAccount: _openSignUp),

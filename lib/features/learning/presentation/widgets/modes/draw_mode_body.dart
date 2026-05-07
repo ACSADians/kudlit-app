@@ -135,23 +135,28 @@ class DrawModeBodyState extends ConsumerState<DrawModeBody> {
               ctrl.submitDetection(top.className.trim().toLowerCase());
               return;
             }
-          } else {
-            debugPrint('[DrawMode] no detections above threshold — marking retry');
-            ctrl.submitDetection('');
-            return;
           }
+          // 0 detections or no valid top — fall through to Gemma visual
+          // analysis so the user gets useful stroke feedback instead of a
+          // silent retry.
+          debugPrint('[DrawMode] no detections — handing off to Gemma');
         } catch (e) {
           debugPrint('[DrawMode] YOLO sketch inference failed: $e');
         }
       }
     }
 
+    // Capture the canvas as PNG for Gemma image analysis (works on web too).
+    final Uint8List? imageBytes = await _captureCanvas();
+
     // Only fall back to stub on web or if capture/model fails (not on 0 detections).
-    debugPrint('[DrawMode] falling back to submitDraw stub (capture or model error)');
+    debugPrint(
+      '[DrawMode] falling back to submitDraw stub (capture or model error)',
+    );
     final List<List<Offset>> snapshot = _strokes
         .map(List<Offset>.from)
         .toList(growable: false);
-    await ctrl.submitDraw(snapshot);
+    await ctrl.submitDraw(snapshot, imageBytes: imageBytes);
   }
 
   /// Renders the strokes onto a white canvas with black ink and returns the
@@ -201,8 +206,9 @@ class DrawModeBodyState extends ConsumerState<DrawModeBody> {
 
       final ui.Picture picture = recorder.endRecording();
       final ui.Image image = await picture.toImage(width, height);
-      final ByteData? data =
-          await image.toByteData(format: ui.ImageByteFormat.png);
+      final ByteData? data = await image.toByteData(
+        format: ui.ImageByteFormat.png,
+      );
       final Uint8List? bytes = data?.buffer.asUint8List();
 
       return bytes;
@@ -213,6 +219,7 @@ class DrawModeBodyState extends ConsumerState<DrawModeBody> {
   }
 
   void _onCameraDetections(List<BaybayinDetection> dets) {
+    _resetRetryIfNeeded();
     if (dets.isEmpty) {
       if (_lastCameraLabel != null) {
         setState(() {
@@ -234,6 +241,7 @@ class DrawModeBodyState extends ConsumerState<DrawModeBody> {
   }
 
   void _onPanStart(DragStartDetails d) {
+    _resetRetryIfNeeded();
     setState(() {
       _current
         ..clear()
@@ -265,6 +273,7 @@ class DrawModeBodyState extends ConsumerState<DrawModeBody> {
   }
 
   void _clear() {
+    _resetRetryIfNeeded();
     setState(() {
       _strokes.clear();
       _undone.clear();
@@ -272,68 +281,111 @@ class DrawModeBodyState extends ConsumerState<DrawModeBody> {
     });
   }
 
+  void _resetRetryIfNeeded() {
+    if (widget.attemptStatus == AttemptStatus.retry) {
+      ref.read(lessonControllerProvider.notifier).resetAttempt();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          _SourceToggle(
-            source: _source,
-            onChanged: (DrawInputSource s) => setState(() => _source = s),
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final bool compact =
+            constraints.maxHeight < 360 ||
+            constraints.maxWidth > constraints.maxHeight;
+        return Padding(
+          padding: EdgeInsets.fromLTRB(16, 0, 16, compact ? 8 : 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              _SourceToggle(
+                source: _source,
+                compact: compact,
+                onChanged: (DrawInputSource s) => setState(() => _source = s),
+              ),
+              SizedBox(height: compact ? 6 : 8),
+              if (_source == DrawInputSource.pen) ...<Widget>[
+                _DrawToolbar(
+                  glyphVisible: _glyphVisible,
+                  compact: compact,
+                  onToggleGlyph: () =>
+                      setState(() => _glyphVisible = !_glyphVisible),
+                  onUndo: _strokes.isEmpty ? null : _undo,
+                  onRedo: _undone.isEmpty ? null : _redo,
+                  onClear: _strokes.isEmpty ? null : _clear,
+                ),
+                SizedBox(height: compact ? 6 : 8),
+              ],
+              Expanded(
+                child: _source == DrawInputSource.pen
+                    ? RepaintBoundary(
+                        key: _canvasKey,
+                        child: _DrawCanvas(
+                          status: widget.attemptStatus,
+                          strokes: _strokes,
+                          current: _current,
+                          onPanStart: _onPanStart,
+                          onPanUpdate: _onPanUpdate,
+                          onPanEnd: _onPanEnd,
+                        ),
+                      )
+                    : _CameraCanvas(
+                        status: widget.attemptStatus,
+                        detectionLabel: _lastCameraLabel,
+                        detectionConfidence: _lastCameraConfidence,
+                        onDetections: _onCameraDetections,
+                      ),
+              ),
+              SizedBox(height: compact ? 8 : 10),
+              _GlyphToggle(
+                glyph: widget.step.glyph,
+                glyphImage: widget.step.glyphImage,
+                label: widget.step.label,
+                hideGlyph: widget.step.hideGlyph,
+                visible: _glyphVisible,
+                onToggle: () => setState(() => _glyphVisible = !_glyphVisible),
+              ),
+              const SizedBox(height: 8),
+              FilledButton.icon(
+                onPressed:
+                    widget.attemptStatus == AttemptStatus.checking ||
+                        widget.attemptStatus == AttemptStatus.correct
+                    ? null
+                    : submitToController,
+                icon: widget.attemptStatus == AttemptStatus.checking
+                    ? const SizedBox.square(
+                        dimension: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.check_rounded, size: 18),
+                label: Text(
+                  widget.attemptStatus == AttemptStatus.checking
+                      ? 'Checking'
+                      : 'Check drawing',
+                ),
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(44),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
-          if (_source == DrawInputSource.pen) ...<Widget>[
-            _DrawToolbar(
-              glyphVisible: _glyphVisible,
-              onToggleGlyph: () =>
-                  setState(() => _glyphVisible = !_glyphVisible),
-              onUndo: _strokes.isEmpty ? null : _undo,
-              onRedo: _undone.isEmpty ? null : _redo,
-              onClear: _strokes.isEmpty ? null : _clear,
-            ),
-            const SizedBox(height: 8),
-          ],
-          Expanded(
-            child: _source == DrawInputSource.pen
-                ? RepaintBoundary(
-                    key: _canvasKey,
-                    child: _DrawCanvas(
-                      status: widget.attemptStatus,
-                      strokes: _strokes,
-                      current: _current,
-                      onPanStart: _onPanStart,
-                      onPanUpdate: _onPanUpdate,
-                      onPanEnd: _onPanEnd,
-                    ),
-                  )
-                : _CameraCanvas(
-                    status: widget.attemptStatus,
-                    detectionLabel: _lastCameraLabel,
-                    detectionConfidence: _lastCameraConfidence,
-                    onDetections: _onCameraDetections,
-                  ),
-          ),
-          const SizedBox(height: 12),
-          _GlyphToggle(
-            glyph: widget.step.glyph,
-            label: widget.step.label,
-            hideGlyph: widget.step.hideGlyph,
-            visible: _glyphVisible,
-            onToggle: () => setState(() => _glyphVisible = !_glyphVisible),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
 
 class _SourceToggle extends StatelessWidget {
-  const _SourceToggle({required this.source, required this.onChanged});
+  const _SourceToggle({
+    required this.source,
+    required this.onChanged,
+    required this.compact,
+  });
 
   final DrawInputSource source;
   final ValueChanged<DrawInputSource> onChanged;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -353,6 +405,10 @@ class _SourceToggle extends StatelessWidget {
       ],
       selected: <DrawInputSource>{source},
       onSelectionChanged: (Set<DrawInputSource> s) => onChanged(s.first),
+      style: SegmentedButton.styleFrom(
+        minimumSize: Size(0, compact ? 42 : 44),
+        visualDensity: VisualDensity.compact,
+      ),
     );
   }
 }
@@ -456,6 +512,7 @@ class _CameraReadout extends StatelessWidget {
 class _DrawToolbar extends StatelessWidget {
   const _DrawToolbar({
     required this.glyphVisible,
+    required this.compact,
     required this.onToggleGlyph,
     required this.onUndo,
     required this.onRedo,
@@ -463,6 +520,7 @@ class _DrawToolbar extends StatelessWidget {
   });
 
   final bool glyphVisible;
+  final bool compact;
   final VoidCallback onToggleGlyph;
   final VoidCallback? onUndo;
   final VoidCallback? onRedo;
@@ -472,7 +530,7 @@ class _DrawToolbar extends StatelessWidget {
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: EdgeInsets.symmetric(horizontal: compact ? 4 : 8, vertical: 2),
       decoration: BoxDecoration(
         color: cs.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(12),
@@ -484,16 +542,19 @@ class _DrawToolbar extends StatelessWidget {
             onPressed: onUndo,
             icon: const Icon(Icons.undo_rounded),
             tooltip: 'Undo',
+            constraints: const BoxConstraints.tightFor(width: 44, height: 44),
           ),
           IconButton(
             onPressed: onRedo,
             icon: const Icon(Icons.redo_rounded),
             tooltip: 'Redo',
+            constraints: const BoxConstraints.tightFor(width: 44, height: 44),
           ),
           IconButton(
             onPressed: onClear,
             icon: const Icon(Icons.delete_outline_rounded),
             tooltip: 'Clear',
+            constraints: const BoxConstraints.tightFor(width: 44, height: 44),
           ),
           IconButton(
             onPressed: onToggleGlyph,
@@ -503,6 +564,7 @@ class _DrawToolbar extends StatelessWidget {
                   : Icons.visibility_rounded,
             ),
             tooltip: glyphVisible ? 'Hide reference' : 'Show reference',
+            constraints: const BoxConstraints.tightFor(width: 44, height: 44),
           ),
         ],
       ),
@@ -560,6 +622,7 @@ class _DrawCanvas extends StatelessWidget {
         onPanStart: onPanStart,
         onPanUpdate: onPanUpdate,
         onPanEnd: onPanEnd,
+        behavior: HitTestBehavior.opaque,
         child: CustomPaint(
           painter: LiveStrokePainter(
             strokes: strokes,
@@ -579,6 +642,7 @@ class _GlyphToggle extends StatelessWidget {
   const _GlyphToggle({
     required this.glyph,
     required this.label,
+    this.glyphImage,
     required this.hideGlyph,
     required this.visible,
     required this.onToggle,
@@ -586,6 +650,7 @@ class _GlyphToggle extends StatelessWidget {
 
   final String glyph;
   final String label;
+  final String? glyphImage;
 
   /// If the step permanently hides the glyph (challenge mode), the toggle
   /// button is not shown — the learner can never reveal the answer.
@@ -600,6 +665,7 @@ class _GlyphToggle extends StatelessWidget {
     if (hideGlyph) {
       return ReferenceGlyphCard(
         glyph: glyph,
+        glyphImage: glyphImage,
         label: label,
         compact: true,
         hideGlyph: true,
@@ -614,24 +680,31 @@ class _GlyphToggle extends StatelessWidget {
         alignment: Alignment.topRight,
         clipBehavior: Clip.none,
         children: <Widget>[
-          ReferenceGlyphCard(glyph: glyph, label: label, compact: true),
+          ReferenceGlyphCard(
+            glyph: glyph,
+            glyphImage: glyphImage,
+            label: label,
+            compact: true,
+          ),
           Positioned(
             top: -6,
             right: -6,
-            child: Tooltip(
-              message: 'Hide reference',
-              child: InkWell(
-                onTap: onToggle,
-                customBorder: const CircleBorder(),
-                child: CircleAvatar(
-                  radius: 14,
-                  backgroundColor: cs.surfaceContainerHighest,
-                  child: Icon(
-                    Icons.visibility_off_rounded,
-                    size: 16,
-                    color: cs.onSurface,
-                  ),
+            child: Material(
+              color: cs.surfaceContainerHighest,
+              shape: const CircleBorder(),
+              child: IconButton(
+                visualDensity: VisualDensity.compact,
+                constraints: const BoxConstraints.tightFor(
+                  width: 36,
+                  height: 36,
                 ),
+                onPressed: onToggle,
+                icon: Icon(
+                  Icons.visibility_off_rounded,
+                  size: 16,
+                  color: cs.onSurface,
+                ),
+                tooltip: 'Hide reference',
               ),
             ),
           ),
@@ -652,4 +725,3 @@ class _GlyphToggle extends StatelessWidget {
     );
   }
 }
-

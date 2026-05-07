@@ -27,7 +27,7 @@ class SqfliteProfileManagementDatasource
   SqfliteProfileManagementDatasource();
 
   static const String _dbName = 'kudlit_profile.db';
-  static const int _dbVersion = 1;
+  static const int _dbVersion = 2;
   static const String _summaryTable = 'profile_summary';
   static const String _preferencesTable = 'profile_preferences';
 
@@ -44,6 +44,7 @@ class SqfliteProfileManagementDatasource
           CREATE TABLE $_summaryTable (
             user_id TEXT PRIMARY KEY,
             display_name TEXT,
+            avatar_url TEXT,
             completed_lessons INTEGER NOT NULL DEFAULT 0,
             scan_history_items INTEGER NOT NULL DEFAULT 0,
             translation_history_items INTEGER NOT NULL DEFAULT 0,
@@ -60,6 +61,13 @@ class SqfliteProfileManagementDatasource
             cached_at INTEGER NOT NULL
           )
         ''');
+      },
+      onUpgrade: (Database db, int oldVersion, int newVersion) async {
+        if (oldVersion < 2) {
+          await db.execute(
+            'ALTER TABLE $_summaryTable ADD COLUMN avatar_url TEXT',
+          );
+        }
       },
     );
     return _db!;
@@ -166,6 +174,7 @@ class SqfliteProfileManagementDatasource
     return <String, Object?>{
       'user_id': userId,
       'display_name': summary.displayName,
+      'avatar_url': summary.avatarUrl,
       'completed_lessons': summary.completedLessons,
       'scan_history_items': summary.scanHistoryItems,
       'translation_history_items': summary.translationHistoryItems,
@@ -177,6 +186,7 @@ class SqfliteProfileManagementDatasource
   ProfileSummaryModel _summaryFromRow(Map<String, Object?> row) {
     return ProfileSummaryModel(
       displayName: row['display_name'] as String?,
+      avatarUrl: row['avatar_url'] as String?,
       completedLessons: row['completed_lessons'] as int,
       scanHistoryItems: row['scan_history_items'] as int,
       translationHistoryItems: row['translation_history_items'] as int,

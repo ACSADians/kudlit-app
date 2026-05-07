@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:kudlit_ph/app/constants.dart';
 
+import 'auth_text_link.dart';
 import 'login_auth_or_divider.dart';
 import 'login_bottom_sheet_headline.dart';
 import 'login_footer_links.dart';
@@ -13,21 +14,19 @@ import 'primary_auth_option_button.dart';
 /// and footer links.
 class LoginBottomSheet extends StatelessWidget {
   const LoginBottomSheet({
-    required this.onContinueWithPhone,
     required this.onContinueWithEmail,
     required this.onContinueWithGoogle,
     required this.onCreateAccount,
-    required this.onForgotPassword,
     required this.onContinueAsGuest,
+    this.isGoogleLoading = false,
     super.key,
   });
 
-  final VoidCallback onContinueWithPhone;
   final VoidCallback onContinueWithEmail;
   final VoidCallback onContinueWithGoogle;
   final VoidCallback onCreateAccount;
-  final VoidCallback onForgotPassword;
   final VoidCallback onContinueAsGuest;
+  final bool isGoogleLoading;
 
   @override
   Widget build(BuildContext context) {
@@ -73,24 +72,21 @@ class LoginBottomSheet extends StatelessWidget {
                 const LoginBottomSheetHeadline(),
                 const SizedBox(height: 12),
                 PrimaryAuthOptionButton(
-                  icon: Icons.smartphone_outlined,
-                  label: 'Continue with Phone Number',
-                  onTap: onContinueWithPhone,
+                  icon: Icons.arrow_forward,
+                  label: 'Continue as guest',
+                  onTap: onContinueAsGuest,
                 ),
                 const LoginAuthOrDivider(),
                 LoginSecondaryAuthRow(
                   onContinueWithEmail: onContinueWithEmail,
                   onContinueWithGoogle: onContinueWithGoogle,
+                  isGoogleLoading: isGoogleLoading,
                 ),
-                const SizedBox(height: 10),
-                LoginFooterLinks(
-                  onCreateAccount: onCreateAccount,
-                  onForgotPassword: onForgotPassword,
-                  onContinueAsGuest: onContinueAsGuest,
-                ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 6),
                 const _TermsText(),
-                const SizedBox(height: 2),
+                const SizedBox(height: 4),
+                LoginFooterLinks(onCreateAccount: onCreateAccount),
+                const SizedBox(height: 1),
                 const _VersionLabel(),
               ],
             ),
@@ -109,42 +105,30 @@ class _TermsText extends StatelessWidget {
     final Color baseColor = Theme.of(
       context,
     ).colorScheme.onSurface.withAlpha(102);
-    final Color linkColor = Theme.of(context).colorScheme.primary;
-    const TextStyle baseStyle = TextStyle(fontSize: 10, height: 1.45);
+    const TextStyle baseStyle = TextStyle(fontSize: 11, height: 1.35);
 
     return Center(
       child: Wrap(
         alignment: WrapAlignment.center,
         crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: 2,
         children: <Widget>[
           Text(
-            'By continuing you agree to our ',
+            'By continuing you agree to our',
+            textAlign: TextAlign.center,
             style: baseStyle.copyWith(color: baseColor),
           ),
-          GestureDetector(
-            onTap: () => context.push(AppConstants.routeTerms),
-            child: Text(
-              'Terms',
-              style: baseStyle.copyWith(
-                color: linkColor,
-                decoration: TextDecoration.underline,
-                decorationColor: linkColor,
-              ),
-            ),
+          AuthTextLink(
+            label: 'Terms',
+            semanticLabel: 'Open terms of service',
+            onTap: () => context.go(AppConstants.routeTerms),
           ),
-          Text(' and ', style: baseStyle.copyWith(color: baseColor)),
-          GestureDetector(
-            onTap: () => context.push(AppConstants.routePrivacyPolicy),
-            child: Text(
-              'Privacy Policy',
-              style: baseStyle.copyWith(
-                color: linkColor,
-                decoration: TextDecoration.underline,
-                decorationColor: linkColor,
-              ),
-            ),
+          Text('and', style: baseStyle.copyWith(color: baseColor)),
+          AuthTextLink(
+            label: 'Privacy Policy',
+            semanticLabel: 'Open privacy policy',
+            onTap: () => context.go(AppConstants.routePrivacyPolicy),
           ),
-          Text('.', style: baseStyle.copyWith(color: baseColor)),
         ],
       ),
     );
