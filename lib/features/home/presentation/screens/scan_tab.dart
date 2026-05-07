@@ -251,9 +251,10 @@ class _ScanTabState extends ConsumerState<ScanTab> {
     final double safeBottom = MediaQuery.paddingOf(context).bottom;
     final bool compactLandscape =
         viewport.width > viewport.height && viewport.height < 430;
+    final bool tinyViewport = viewport.width < 340;
     final double sideGutter = viewport.width < 380 ? 10 : 12;
     final double topGutter = compactLandscape ? 6 : 10;
-    final double controlsBottom = safeBottom + (compactLandscape ? 8 : 20);
+    final double controlsBottom = safeBottom + (compactLandscape ? 8 : 40);
     final double controlsHeight = compactLandscape ? 82 : 96;
     final double panelBottom = controlsBottom + controlsHeight;
     final List<BaybayinDetection> detections = ref.watch(
@@ -283,6 +284,7 @@ class _ScanTabState extends ConsumerState<ScanTab> {
         _ScanCameraStack(
           detections: detections,
           flashOn: scanState.flashOn,
+          scannerPaused: scanState.resultVisible && !kIsWeb,
           onDetections: controller.applyLiveDetections,
           onFlashToggle: kIsWeb ? null : () => controller.toggleFlash(),
           selectedImageBytes: scanState.selectedImageBytes,
@@ -321,6 +323,7 @@ class _ScanTabState extends ConsumerState<ScanTab> {
             child: Padding(
               padding: EdgeInsets.only(top: topGutter),
               child: _ScanUtilityBar(
+                key: const ValueKey('scan-utility-bar'),
                 flashOn: scanState.flashOn,
                 // Hide gallery/flash controls when frozen — retake handles return.
                 onGalleryTap: isFrozen
@@ -329,6 +332,8 @@ class _ScanTabState extends ConsumerState<ScanTab> {
                 onFlashToggle: kIsWeb || isFrozen
                     ? null
                     : () => controller.toggleFlash(),
+                compact: compactLandscape,
+                tiny: tinyViewport,
               ),
             ),
           ),
@@ -350,14 +355,20 @@ class _ScanTabState extends ConsumerState<ScanTab> {
                   opacity: _showStatusChip ? 1 : 0,
                   duration: const Duration(milliseconds: 450),
                   curve: Curves.easeOutCubic,
-                  child: _ScanStatusChip(label: statusLabel, icon: statusIcon),
+                  child: _ScanStatusChip(
+                    key: const ValueKey('scan-status-chip'),
+                    label: statusLabel,
+                    icon: statusIcon,
+                  ),
                 ),
               ),
             ),
           ),
         ),
         Positioned(
-          top: compactLandscape ? 36 : 44,
+          top: compactLandscape
+              ? (tinyViewport ? 28 : 36)
+              : (tinyViewport ? 38 : 44),
           right: sideGutter,
           child: SafeArea(
             bottom: false,
@@ -372,6 +383,7 @@ class _ScanTabState extends ConsumerState<ScanTab> {
           right: 0,
           bottom: controlsBottom,
           child: _ScanControls(
+            key: const ValueKey('scan-controls'),
             frozen: scanState.isShutterFrozen,
             onShutter: scanState.isShutterFrozen
                 // Retake: dismiss frozen frame and go back to live camera.
@@ -390,9 +402,10 @@ class _ScanTabState extends ConsumerState<ScanTab> {
                 ? null
                 : () => _switchCamera(controller),
             rotateLabel: kIsWeb && _webSwitchCamera == null
-                ? 'Camera switch unavailable'
+                ? 'Only one camera available'
                 : 'Switch camera',
             compact: compactLandscape,
+            tiny: tinyViewport,
           ),
         ),
         if (scanState.scanNotice != null)
@@ -401,6 +414,7 @@ class _ScanTabState extends ConsumerState<ScanTab> {
             right: 14,
             bottom: panelBottom,
             child: _ScanNoticePanel(
+              key: const ValueKey('scan-notice-panel'),
               notice: scanState.scanNotice!,
               onTryAgain: _noticeTryAgainAction(controller, scanState),
               onGalleryTap: () => controller.pickImageFromGallery(),
@@ -496,6 +510,7 @@ class _ScanCameraStack extends StatelessWidget {
   const _ScanCameraStack({
     required this.detections,
     required this.flashOn,
+    required this.scannerPaused,
     required this.onDetections,
     required this.onFlashToggle,
     required this.onPermutationsTap,
@@ -509,6 +524,7 @@ class _ScanCameraStack extends StatelessWidget {
 
   final List<BaybayinDetection> detections;
   final bool flashOn;
+  final bool scannerPaused;
   final void Function(List<BaybayinDetection>) onDetections;
   final VoidCallback? onFlashToggle;
   final ValueChanged<WebScannerCapture?>? onWebCaptureChanged;
@@ -538,6 +554,7 @@ class _ScanCameraStack extends StatelessWidget {
             key: cameraRepaintKey,
             child: ScannerCamera(
               flashOn: flashOn,
+              paused: scannerPaused,
               onDetections: onDetections,
               onFlashToggle: onFlashToggle,
               onWebCaptureChanged: onWebCaptureChanged,
@@ -558,12 +575,14 @@ class _ScanCameraStack extends StatelessWidget {
 
 class _ScanControls extends StatelessWidget {
   const _ScanControls({
+    super.key,
     required this.onShutter,
     required this.shutterLabel,
     required this.rotateLabel,
     this.onRotateCamera,
     this.frozen = false,
     this.compact = false,
+    this.tiny = false,
   });
 
   final VoidCallback? onShutter;
@@ -575,9 +594,13 @@ class _ScanControls extends StatelessWidget {
   /// and the shutter transforms into a close/retake indicator.
   final bool frozen;
   final bool compact;
+  final bool tiny;
 
   @override
   Widget build(BuildContext context) {
+    final double rotateOffset = tiny
+        ? (compact ? 12 : 14)
+        : (compact ? 18 : 28);
     return SizedBox(
       height: compact ? 82 : 96,
       child: Stack(
@@ -586,13 +609,14 @@ class _ScanControls extends StatelessWidget {
           Align(
             alignment: Alignment.centerLeft,
             child: Padding(
-              padding: EdgeInsetsDirectional.only(start: compact ? 18 : 28),
+              padding: EdgeInsetsDirectional.only(start: rotateOffset),
               child: frozen
                   ? _ControlIcon(
                       icon: Icons.replay_rounded,
                       label: 'Retake',
                       onTap: onShutter,
                       size: compact ? 48 : 54,
+                      small: tiny,
                       prominent: true,
                     )
                   : _ControlIcon(
@@ -600,6 +624,7 @@ class _ScanControls extends StatelessWidget {
                       label: rotateLabel,
                       onTap: onRotateCamera,
                       size: compact ? 48 : 54,
+                      small: tiny,
                       prominent: true,
                     ),
             ),
@@ -609,6 +634,7 @@ class _ScanControls extends StatelessWidget {
             label: shutterLabel,
             compact: compact,
             frozen: frozen,
+            tiny: tiny,
           ),
         ],
       ),
@@ -618,14 +644,23 @@ class _ScanControls extends StatelessWidget {
 
 class _ScanUtilityBar extends StatelessWidget {
   const _ScanUtilityBar({
+    super.key,
     required this.flashOn,
     required this.onGalleryTap,
     this.onFlashToggle,
+    this.compact = false,
+    this.tiny = false,
   });
 
   final bool flashOn;
   final VoidCallback? onGalleryTap;
   final VoidCallback? onFlashToggle;
+  final bool compact;
+  final bool tiny;
+
+  double get _iconSize => tiny ? (compact ? 48 : 52) : 48;
+  double get _interIconGap => tiny ? 2 : 4;
+  double get _barPadding => tiny ? 3 : 4;
 
   @override
   Widget build(BuildContext context) {
@@ -640,7 +675,7 @@ class _ScanUtilityBar extends StatelessWidget {
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(4),
+        padding: EdgeInsets.all(_barPadding),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
@@ -648,10 +683,11 @@ class _ScanUtilityBar extends StatelessWidget {
               icon: Icons.photo_library_outlined,
               label: 'Open Gallery',
               onTap: onGalleryTap,
-              size: 44,
+              size: _iconSize,
+              small: tiny,
             ),
             if (onFlashToggle != null) ...<Widget>[
-              const SizedBox(width: 4),
+              SizedBox(width: _interIconGap),
               _ControlIcon(
                 icon: flashOn
                     ? Icons.flash_on_rounded
@@ -659,7 +695,8 @@ class _ScanUtilityBar extends StatelessWidget {
                 label: flashOn ? 'Turn Flash Off' : 'Turn Flash On',
                 onTap: onFlashToggle,
                 selected: flashOn,
-                size: 44,
+                size: _iconSize,
+                small: tiny,
               ),
             ],
           ],
@@ -677,6 +714,7 @@ class _ControlIcon extends StatelessWidget {
     this.selected = false,
     this.size = 44,
     this.prominent = false,
+    this.small = false,
   });
 
   final IconData icon;
@@ -685,6 +723,7 @@ class _ControlIcon extends StatelessWidget {
   final bool selected;
   final double size;
   final bool prominent;
+  final bool small;
 
   @override
   Widget build(BuildContext context) {
@@ -716,7 +755,7 @@ class _ControlIcon extends StatelessWidget {
                 height: size,
                 child: Icon(
                   icon,
-                  size: prominent ? 26 : 21,
+                  size: small ? (prominent ? 20 : 16) : (prominent ? 26 : 21),
                   color: foreground.withAlpha(enabled ? 230 : 170),
                 ),
               ),
@@ -734,19 +773,21 @@ class _ShutterButton extends StatelessWidget {
     required this.label,
     required this.compact,
     this.frozen = false,
+    this.tiny = false,
   });
 
   final VoidCallback? onTap;
   final String label;
   final bool compact;
+  final bool tiny;
 
   /// When [frozen] the button renders as a close/retake circle with an ×.
   final bool frozen;
 
   @override
   Widget build(BuildContext context) {
-    final double outerSize = compact ? 64 : 72;
-    final double innerSize = compact ? 50 : 56;
+    final double outerSize = compact ? (tiny ? 58 : 64) : (tiny ? 66 : 72);
+    final double innerSize = compact ? (tiny ? 44 : 50) : (tiny ? 50 : 56);
     return Tooltip(
       message: label,
       child: Semantics(
@@ -797,7 +838,7 @@ class _ShutterButton extends StatelessWidget {
 }
 
 class _ScanStatusChip extends StatelessWidget {
-  const _ScanStatusChip({required this.label, required this.icon});
+  const _ScanStatusChip({super.key, required this.label, required this.icon});
 
   final String label;
   final IconData icon;
@@ -808,8 +849,8 @@ class _ScanStatusChip extends StatelessWidget {
     return Semantics(
       label: 'Scanner state: $label',
       child: Container(
-        constraints: const BoxConstraints(minHeight: 36),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        constraints: const BoxConstraints(minHeight: 48, maxWidth: 224),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
         decoration: BoxDecoration(
           color: cs.surfaceContainerHigh.withAlpha(220),
           borderRadius: BorderRadius.circular(999),
@@ -825,9 +866,12 @@ class _ScanStatusChip extends StatelessWidget {
             const SizedBox(width: 6),
             Text(
               label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 11.5,
                 fontWeight: FontWeight.w700,
+                height: 1.1,
                 color: cs.onSurface.withAlpha(230),
               ),
             ),
@@ -842,6 +886,7 @@ class _ScanStatusChip extends StatelessWidget {
 
 class _ScanNoticePanel extends StatelessWidget {
   const _ScanNoticePanel({
+    super.key,
     required this.notice,
     required this.onGalleryTap,
     required this.onDismiss,
@@ -909,18 +954,22 @@ class _ScanNoticePanel extends StatelessWidget {
                     children: <Widget>[
                       Text(
                         notice.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontSize: 15,
+                          fontSize: 14,
                           fontWeight: FontWeight.w800,
                           color: cs.onSurface,
                         ),
                       ),
-                      const SizedBox(height: 3),
+                      const SizedBox(height: 2),
                       Text(
                         notice.message,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontSize: 12.5,
-                          height: 1.35,
+                          fontSize: 12,
+                          height: 1.2,
                           color: cs.onSurface.withAlpha(170),
                         ),
                       ),
@@ -934,7 +983,7 @@ class _ScanNoticePanel extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             Row(
               children: <Widget>[
                 Expanded(
@@ -991,7 +1040,7 @@ class _NoticeButton extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(10),
           child: Container(
-            height: 44,
+            height: 48,
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: onTap == null ? cs.surfaceContainer : background,
@@ -1368,8 +1417,8 @@ class _CyclerButton extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(99),
         child: Container(
-          width: 44,
-          height: 44,
+          width: 48,
+          height: 48,
           alignment: Alignment.center,
           child: Icon(icon, size: 20, color: cs.onSurface),
         ),
@@ -1451,8 +1500,8 @@ class _ActionChip extends StatelessWidget {
               borderRadius: BorderRadius.circular(10),
               onTap: onTap,
               child: Container(
-                width: 44,
-                height: 44,
+                width: 48,
+                height: 48,
                 decoration: BoxDecoration(
                   color: cs.surfaceContainer,
                   borderRadius: BorderRadius.circular(10),
@@ -1530,7 +1579,7 @@ class _TellMeMoreButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(99),
           onTap: onTap,
           child: Container(
-            constraints: const BoxConstraints(minHeight: 44),
+            constraints: const BoxConstraints(minHeight: 48),
             alignment: Alignment.center,
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(

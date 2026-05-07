@@ -158,7 +158,6 @@ class _UserProfile extends ConsumerWidget {
         final bool compact =
             constraints.maxHeight < 560 ||
             constraints.maxWidth > constraints.maxHeight;
-        final double avatarSize = compact ? 62 : 76;
 
         return SingleChildScrollView(
           padding: EdgeInsets.fromLTRB(
@@ -171,51 +170,16 @@ class _UserProfile extends ConsumerWidget {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 520),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
-                  Container(
-                    width: avatarSize,
-                    height: avatarSize,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: cs.primary, width: 2.5),
-                    ),
-                    child: ClipOval(
-                      child: Image.asset(
-                        'assets/brand/user.profile/butty.thumbsup.webp',
-                        fit: BoxFit.cover,
-                      ),
-                    ),
+                  _ProfileRow(
+                    cs: cs,
+                    displayName: displayName,
+                    email: user.email,
+                    avatarUrl: summary?.avatarUrl,
+                    onTap: () => context.push(AppConstants.routeSettings),
                   ),
                   SizedBox(height: compact ? 10 : 12),
-                  Text(
-                    displayName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: compact ? 17 : 18,
-                      fontWeight: FontWeight.w800,
-                      color: cs.onSurface,
-                      letterSpacing: -0.2,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    user.email,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      color: cs.onSurface.withAlpha(150),
-                    ),
-                  ),
-                  SizedBox(height: compact ? 18 : 24),
-                  if (summary != null) ...<Widget>[
-                    _StatsRow(summary: summary, cs: cs),
-                    SizedBox(height: compact ? 18 : 24),
-                  ],
                   _HistoryShortcut(
                     cs: cs,
                     icon: Icons.document_scanner_outlined,
@@ -242,94 +206,144 @@ class _UserProfile extends ConsumerWidget {
   }
 }
 
-class _StatsRow extends StatelessWidget {
-  const _StatsRow({required this.summary, required this.cs});
+class _ProfileAvatarImage extends StatelessWidget {
+  const _ProfileAvatarImage({required this.avatarUrl, required this.email});
 
-  final ProfileSummary summary;
-  final ColorScheme cs;
+  final String? avatarUrl;
+  final String email;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: cs.outlineVariant),
-      ),
-      child: Row(
-        children: <Widget>[
-          Expanded(
-            child: _StatCell(
-              label: 'Scans',
-              value: '${summary.scanHistoryItems}',
-              cs: cs,
-            ),
-          ),
-          _StatDivider(cs: cs),
-          Expanded(
-            child: _StatCell(
-              label: 'Lessons',
-              value: '${summary.completedLessons}',
-              cs: cs,
-            ),
-          ),
-          _StatDivider(cs: cs),
-          Expanded(
-            child: _StatCell(
-              label: 'Saved',
-              value: '${summary.bookmarkedTranslations}',
-              cs: cs,
-            ),
-          ),
-        ],
-      ),
+    final String? safeAvatarUrl =
+        avatarUrl != null && avatarUrl!.trim().isNotEmpty
+        ? avatarUrl!.trim()
+        : null;
+
+    if (safeAvatarUrl != null) {
+      return Image.network(
+        safeAvatarUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (BuildContext context, Object error, StackTrace? stack) {
+          return _ProfileInitials(email: email);
+        },
+      );
+    }
+
+    return Image.asset(
+      'assets/brand/user.profile/butty.thumbsup.webp',
+      fit: BoxFit.cover,
     );
   }
 }
 
-class _StatCell extends StatelessWidget {
-  const _StatCell({required this.label, required this.value, required this.cs});
+class _ProfileInitials extends StatelessWidget {
+  const _ProfileInitials({required this.email});
 
-  final String label;
-  final String value;
-  final ColorScheme cs;
+  final String email;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: <Widget>[
-        Text(
-          value,
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    return ColoredBox(
+      color: cs.primaryContainer,
+      child: Center(
+        child: Text(
+          email.isNotEmpty ? email[0].toUpperCase() : '?',
           style: TextStyle(
-            fontSize: 22,
+            fontSize: 24,
             fontWeight: FontWeight.w800,
-            color: cs.onSurface,
-            letterSpacing: -0.5,
+            color: cs.onPrimaryContainer,
           ),
         ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 11.5,
-            color: cs.onSurface.withAlpha(140),
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
 
-class _StatDivider extends StatelessWidget {
-  const _StatDivider({required this.cs});
+class _ProfileRow extends StatelessWidget {
+  const _ProfileRow({
+    required this.cs,
+    required this.displayName,
+    required this.email,
+    required this.avatarUrl,
+    required this.onTap,
+  });
 
   final ColorScheme cs;
+  final String displayName;
+  final String email;
+  final String? avatarUrl;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(width: 1, height: 36, color: cs.outlineVariant);
+    return Material(
+      color: cs.surfaceContainerLow,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 64),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: cs.outlineVariant),
+          ),
+          child: Row(
+            children: <Widget>[
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: SizedBox(
+                  width: 36,
+                  height: 36,
+                  child: _ProfileAvatarImage(
+                    avatarUrl: avatarUrl,
+                    email: email,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Text(
+                      displayName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: cs.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      email,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        height: 1.25,
+                        color: cs.onSurface.withAlpha(130),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(
+                Icons.edit_outlined,
+                size: 18,
+                color: cs.onSurface.withAlpha(90),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 

@@ -314,6 +314,9 @@ class ScanTabController extends Notifier<ScanTabState> {
       clearAggregatedWinner: true,
       clearScanNotice: true,
     );
+    if (!kIsWeb) {
+      ref.read(baybayinDetectorProvider).resumeInference();
+    }
   }
 
   void clearSelectedImage() {

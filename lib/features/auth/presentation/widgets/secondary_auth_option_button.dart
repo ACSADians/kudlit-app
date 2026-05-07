@@ -64,7 +64,15 @@ class SecondaryAuthOptionButton extends StatelessWidget {
                         ),
                       )
                     else if (imagePath != null)
-                      Image.asset(imagePath!, width: 16, height: 16)
+                      Image.asset(
+                        imagePath!,
+                        width: 16,
+                        height: 16,
+                        color: enabled
+                            ? cs.primary
+                            : cs.onSurface.withAlpha(120),
+                        colorBlendMode: BlendMode.srcIn,
+                      )
                     else if (icon != null)
                       Icon(icon, color: cs.primary, size: 16),
                     SizedBox(width: gap),

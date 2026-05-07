@@ -51,7 +51,7 @@
 	<true/>
 	<!-- Permission for image_picker to access the gallery -->
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Kudlit needs access to your photo library to pick images containing Baybayin text for scanning.</string>
+	<string>Kudlit needs access to your photo library to choose scanner images and update your profile avatar.</string>
 	<!-- Deep link URL scheme for Supabase auth (password reset, callback) -->
 	<key>CFBundleURLTypes</key>
 	<array>

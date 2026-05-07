@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -61,6 +63,30 @@ typedef WebCaptureResult = (
 typedef WebScannerCapture = Future<WebCaptureResult> Function();
 typedef WebScannerSwitchCamera = Future<void> Function();
 
+@visibleForTesting
+bool isWebCameraSecureContext(Uri uri) {
+  final String host = uri.host.toLowerCase();
+  return uri.scheme == 'https' ||
+      host == 'localhost' ||
+      host == '127.0.0.1' ||
+      host == '::1';
+}
+
+@visibleForTesting
+int preferredWebCameraIndex(List<CameraDescription> cameras) {
+  final int backCamera = cameras.indexWhere(
+    (CameraDescription camera) =>
+        camera.lensDirection == CameraLensDirection.back,
+  );
+  if (backCamera != -1) return backCamera;
+
+  final int externalCamera = cameras.indexWhere(
+    (CameraDescription camera) =>
+        camera.lensDirection == CameraLensDirection.external,
+  );
+  return externalCamera == -1 ? 0 : externalCamera;
+}
+
 enum WebScannerStatus {
   initializing,
   permissionNeeded,
@@ -95,6 +121,7 @@ class ScannerCamera extends ConsumerStatefulWidget {
   const ScannerCamera({
     required this.onDetections,
     this.flashOn = false,
+    this.paused = false,
     this.onFlashToggle,
     this.onWebCaptureChanged,
     this.onWebSwitchCameraChanged,
@@ -104,6 +131,10 @@ class ScannerCamera extends ConsumerStatefulWidget {
 
   /// Called at most once per [_kDetectionInterval] with the latest detections.
   final void Function(List<BaybayinDetection> detections) onDetections;
+
+  /// When true, incoming YOLO results are discarded without dispatching.
+  /// Use this while a result panel is visible to stop feeding the overlay.
+  final bool paused;
 
   /// Whether the torch is currently on. Ignored on web.
   final bool flashOn;
@@ -147,6 +178,7 @@ class _ScannerCameraState extends ConsumerState<ScannerCamera> {
   }
 
   void _onYoloResult(List<YOLOResult> results) {
+    if (widget.paused) return;
     if (_throttle.elapsed < _kDetectionInterval) return;
     _throttle.reset();
 
@@ -278,26 +310,59 @@ class _WebCameraPreviewState extends ConsumerState<_WebCameraPreview> {
   bool _switchingCamera = false;
   WebScannerStatus _status = WebScannerStatus.initializing;
   String? _message;
+  Timer? _qaStatusTimer;
 
   @override
   void initState() {
     super.initState();
+    if (kDebugMode && _shouldRunQaStatusTransition()) {
+      _runQaStatusTransitionDemo();
+      return;
+    }
     _initialize();
   }
 
   @override
   void dispose() {
+    _qaStatusTimer?.cancel();
     widget.onCaptureChanged?.call(null);
     widget.onSwitchCameraChanged?.call(null);
     _controller?.dispose();
     super.dispose();
   }
 
+  bool _shouldRunQaStatusTransition() {
+    return Uri.base.queryParameters['qa_camera_status'] == 'unavail-ready';
+  }
+
+  void _runQaStatusTransitionDemo() {
+    _setStatus(
+      WebScannerStatus.error,
+      message:
+          'Camera unavailable: the webcam stream could not start. Trying fallback camera profile.',
+    );
+    _qaStatusTimer = Timer(const Duration(milliseconds: 900), () {
+      if (!mounted) return;
+      _setStatus(WebScannerStatus.ready, message: 'Webcam ready');
+    });
+  }
+
   Future<void> _initialize() async {
+    widget.onCaptureChanged?.call(null);
+    widget.onSwitchCameraChanged?.call(null);
     _setStatus(
       WebScannerStatus.initializing,
       message: 'Allow browser camera access to scan in web preview.',
     );
+    if (!isWebCameraSecureContext(Uri.base)) {
+      _setStatus(
+        WebScannerStatus.permissionNeeded,
+        message:
+            'Camera needs HTTPS or localhost on web. Open the deployed HTTPS URL, or use Gallery for this LAN preview.',
+      );
+      return;
+    }
+
     try {
       final List<CameraDescription> cameras = await availableCameras();
       if (!mounted) return;
@@ -310,7 +375,7 @@ class _WebCameraPreviewState extends ConsumerState<_WebCameraPreview> {
       }
 
       _cameras = cameras;
-      _activeCameraIndex = _preferredCameraIndex(cameras);
+      _activeCameraIndex = preferredWebCameraIndex(cameras);
       await _initializeCamera(cameras[_activeCameraIndex]);
     } on CameraException catch (e) {
       final bool denied =
@@ -330,15 +395,6 @@ class _WebCameraPreviewState extends ConsumerState<_WebCameraPreview> {
             'Camera preview could not start. Use Gallery to test an image.',
       );
     }
-  }
-
-  int _preferredCameraIndex(List<CameraDescription> cameras) {
-    final int preferred = cameras.indexWhere(
-      (CameraDescription c) =>
-          c.lensDirection == CameraLensDirection.back ||
-          c.lensDirection == CameraLensDirection.external,
-    );
-    return preferred == -1 ? 0 : preferred;
   }
 
   Future<void> _initializeCamera(CameraDescription camera) async {
@@ -390,7 +446,8 @@ class _WebCameraPreviewState extends ConsumerState<_WebCameraPreview> {
       }
       _setStatus(
         WebScannerStatus.error,
-        message: 'Camera switch failed. Try again or use Gallery.',
+        message:
+            'Camera switch failed. The previous camera was kept. Try again or use Gallery.',
       );
     } finally {
       _switchingCamera = false;
@@ -502,10 +559,15 @@ class _WebCameraPreviewState extends ConsumerState<_WebCameraPreview> {
                 : constraints.maxWidth < 380
                 ? 14
                 : 28;
+            final bool centerUnavailable = _status == WebScannerStatus.error;
             return Align(
-              alignment: Alignment.centerLeft,
+              alignment: centerUnavailable
+                  ? Alignment.center
+                  : Alignment.centerLeft,
               child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                padding: EdgeInsets.symmetric(
+                  horizontal: centerUnavailable ? 24 : horizontalPadding,
+                ),
                 child: WebStatusMessage(
                   cs: cs,
                   status: _status,
@@ -597,7 +659,7 @@ class WebStatusMessage extends StatelessWidget {
                   Text(
                     status.label,
                     textAlign: TextAlign.center,
-                    maxLines: 2,
+                    maxLines: showCompact ? 1 : 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: showCompact
@@ -615,9 +677,11 @@ class WebStatusMessage extends StatelessWidget {
                       message!,
                       textAlign: TextAlign.center,
                       softWrap: true,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: showCompact || narrow ? 12.5 : 13,
-                        height: 1.35,
+                        height: 1.2,
                         color: cs.onSurface.withAlpha(190),
                       ),
                     ),
