@@ -186,13 +186,11 @@ void main() {
         isFalse,
         reason: viewportCase.name,
       );
-      if (!viewportCase.strictTinyLandscape) {
-        expect(
-          hasOverlap(utilityRect, noticeRect),
-          isFalse,
-          reason: viewportCase.name,
-        );
-      }
+      expect(
+        hasOverlap(utilityRect, noticeRect),
+        isFalse,
+        reason: viewportCase.name,
+      );
       expect(
         hasOverlap(noticeRect, controlsRect),
         isFalse,
@@ -279,18 +277,16 @@ void main() {
         lessThanOrEqualTo(viewport.width),
         reason: viewportCase.name,
       );
-      if (!viewportCase.strictTinyLandscape) {
-        expect(
-          titleRect.top,
-          greaterThanOrEqualTo(0),
-          reason: viewportCase.name,
-        );
-        expect(
-          titleRect.bottom,
-          lessThanOrEqualTo(viewport.height),
-          reason: viewportCase.name,
-        );
-      }
+      expect(
+        titleRect.top,
+        greaterThanOrEqualTo(0),
+        reason: viewportCase.name,
+      );
+      expect(
+        titleRect.bottom,
+        lessThanOrEqualTo(viewport.height),
+        reason: viewportCase.name,
+      );
       expect(
         messageRect.left,
         greaterThanOrEqualTo(0),
@@ -301,18 +297,16 @@ void main() {
         lessThanOrEqualTo(viewport.width),
         reason: viewportCase.name,
       );
-      if (!viewportCase.strictTinyLandscape) {
-        expect(
-          messageRect.top,
-          greaterThanOrEqualTo(0),
-          reason: viewportCase.name,
-        );
-        expect(
-          messageRect.bottom,
-          lessThanOrEqualTo(viewport.height),
-          reason: viewportCase.name,
-        );
-      }
+      expect(
+        messageRect.top,
+        greaterThanOrEqualTo(0),
+        reason: viewportCase.name,
+      );
+      expect(
+        messageRect.bottom,
+        lessThanOrEqualTo(viewport.height),
+        reason: viewportCase.name,
+      );
 
       if (viewportCase.strictTinyLandscape) {
         expect(

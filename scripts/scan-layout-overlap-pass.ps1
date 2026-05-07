@@ -130,6 +130,7 @@ function Write-ContactSheet {
   [void]$rows.AppendLine('  </div>')
   [void]$rows.AppendLine('</section>')
 
+  $rowsText = $rows.ToString()
   $html = @"
 <!doctype html>
 <html>
@@ -154,7 +155,7 @@ function Write-ContactSheet {
   <body>
     <h1>Scan Layout Overlap Contact Sheet</h1>
     <div class="meta">Generated $(Get-Date). Open to review matrix + transitions. Flag any overlap/clipping by eye before merge.</div>
-$rows
+$rowsText
   </body>
 </html>
 "@
@@ -239,6 +240,7 @@ foreach ($vp in $viewports) {
   Assert-ArtifactFile -Path $outPath -MinBytes $minBytes
 
   $transitions = @()
+  Write-Info "Transition capture enabled for $($vp.Name): $($vp.Transition)"
   if ($vp.Transition) {
     foreach ($phase in @(
       @{Name = 'early'; Delay = 300},
