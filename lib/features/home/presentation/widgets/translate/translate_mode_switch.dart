@@ -24,7 +24,7 @@ class TranslateModeSwitch extends StatelessWidget {
     final double containerPadding = desktopDensity
         ? 5
         : tabletDensity
-        ? 4
+        ? 3
         : 3;
     return Container(
       padding: EdgeInsets.all(containerPadding),
@@ -88,14 +88,14 @@ class _ModePill extends StatelessWidget {
               : (desktopDensity
                     ? 44
                     : tabletDensity
-                    ? 42
+                    ? 40
                     : 40),
           minWidth: compact
               ? 94
               : (desktopDensity
                     ? 132
                     : tabletDensity
-                    ? 118
+                    ? 108
                     : 110),
         ),
         alignment: Alignment.center,
@@ -103,11 +103,11 @@ class _ModePill extends StatelessWidget {
           horizontal: desktopDensity
               ? 16
               : tabletDensity
-              ? 15
+              ? 12
               : 13,
           vertical: compact
               ? (desktopDensity || tabletDensity ? 8 : 7)
-              : (desktopDensity ? 9 : 8),
+              : (desktopDensity ? 9 : 7),
         ),
         decoration: BoxDecoration(
           color: active ? cs.primary : Colors.transparent,
@@ -119,7 +119,7 @@ class _ModePill extends StatelessWidget {
             fontSize: desktopDensity
                 ? 12.8
                 : tabletDensity
-                ? 12.5
+                ? 12
                 : (compact ? 11 : 11.5),
             fontWeight: active ? FontWeight.w700 : FontWeight.w500,
             color: active ? cs.onPrimary : cs.onSurface.withAlpha(170),
