@@ -9,7 +9,7 @@ import 'package:kudlit_ph/features/home/presentation/widgets/settings/ai_models_
 import 'package:kudlit_ph/features/home/presentation/widgets/settings/danger_section.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/settings/personalization_section.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/settings/preferences_section.dart';
-import 'package:kudlit_ph/features/home/presentation/widgets/settings/profile_hero_card.dart';
+import 'package:kudlit_ph/features/home/presentation/widgets/settings/profile_compact_card.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/settings/sign_out_tile.dart';
 
 class SettingsList extends StatelessWidget {
@@ -47,7 +47,7 @@ class SettingsList extends StatelessWidget {
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: horizontalInset),
                   child: u != null
-                      ? ProfileHeroCard(user: u)
+                      ? ProfileCompactCard(user: u)
                       : AccountSection(user: null),
                 ),
                 const SizedBox(height: 18),

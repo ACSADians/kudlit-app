@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 
 import 'package:kudlit_ph/features/home/presentation/providers/translate_sketchpad_controller.dart';
+import 'package:kudlit_ph/features/home/presentation/utils/safe_ai_output.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/learn/live_stroke_painter.dart';
 
 class TranslateSketchpadModePanel extends StatefulWidget {
@@ -221,7 +223,12 @@ class _BottomBar extends StatelessWidget {
       decoration: BoxDecoration(
         border: Border(top: BorderSide(color: cs.outline.withAlpha(80))),
       ),
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+      padding: EdgeInsets.fromLTRB(
+        16,
+        10,
+        16,
+        MediaQuery.paddingOf(context).bottom + 12,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
@@ -390,13 +397,11 @@ class _ButtyFeedback extends StatelessWidget {
               ),
               child: showDots
                   ? const _ThinkingDots()
-                  : Text(
-                      text.trim(),
-                      style: TextStyle(
-                        fontSize: 13.5,
-                        color: cs.onSurface.withAlpha(220),
-                        height: 1.5,
-                      ),
+                  : MarkdownBody(
+                      data: cleanAssistantOutput(text),
+                      shrinkWrap: true,
+                      softLineBreak: true,
+                      styleSheet: _feedbackMarkdownStyle(cs),
                     ),
             ),
           ),
@@ -404,6 +409,43 @@ class _ButtyFeedback extends StatelessWidget {
       ),
     );
   }
+}
+
+MarkdownStyleSheet _feedbackMarkdownStyle(ColorScheme cs) {
+  final TextStyle base = TextStyle(
+    fontSize: 13.5,
+    color: cs.onSurface.withAlpha(220),
+    height: 1.5,
+  );
+  return MarkdownStyleSheet(
+    p: base,
+    h1: base.copyWith(fontSize: 18, fontWeight: FontWeight.w700),
+    h2: base.copyWith(fontSize: 16, fontWeight: FontWeight.w700),
+    h3: base.copyWith(fontSize: 14.5, fontWeight: FontWeight.w700),
+    strong: base.copyWith(fontWeight: FontWeight.w700),
+    em: base.copyWith(fontStyle: FontStyle.italic),
+    listBullet: base,
+    a: base.copyWith(
+      color: cs.primary,
+      decoration: TextDecoration.underline,
+    ),
+    code: base.copyWith(
+      fontFamily: 'monospace',
+      fontSize: 12.5,
+      backgroundColor: cs.surface,
+    ),
+    codeblockDecoration: BoxDecoration(
+      color: cs.surface,
+      borderRadius: BorderRadius.circular(8),
+      border: Border.all(color: cs.outline),
+    ),
+    codeblockPadding: const EdgeInsets.all(10),
+    blockquoteDecoration: BoxDecoration(
+      border: Border(left: BorderSide(color: cs.primary, width: 3)),
+    ),
+    blockquotePadding: const EdgeInsets.only(left: 10),
+    blockSpacing: 6,
+  );
 }
 
 class _ThinkingDots extends StatefulWidget {

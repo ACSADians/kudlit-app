@@ -204,7 +204,7 @@ class _ScanTabState extends ConsumerState<ScanTab> {
         viewport.width > viewport.height && viewport.height < 430;
     final double sideGutter = viewport.width < 380 ? 10 : 12;
     final double topGutter = compactLandscape ? 6 : 10;
-    final double controlsBottom = safeBottom + (compactLandscape ? 8 : 20);
+    final double controlsBottom = safeBottom + (compactLandscape ? 8 : 40);
     final double controlsHeight = compactLandscape ? 82 : 96;
     final double panelBottom = controlsBottom + controlsHeight;
     final List<BaybayinDetection> detections = ref.watch(
