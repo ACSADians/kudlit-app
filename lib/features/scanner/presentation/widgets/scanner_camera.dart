@@ -86,6 +86,7 @@ class ScannerCamera extends ConsumerStatefulWidget {
   const ScannerCamera({
     required this.onDetections,
     this.flashOn = false,
+    this.paused = false,
     this.onFlashToggle,
     this.onWebCaptureChanged,
     this.onWebSwitchCameraChanged,
@@ -95,6 +96,10 @@ class ScannerCamera extends ConsumerStatefulWidget {
 
   /// Called at most once per [_kDetectionInterval] with the latest detections.
   final void Function(List<BaybayinDetection> detections) onDetections;
+
+  /// When true, incoming YOLO results are discarded without dispatching.
+  /// Use this while a result panel is visible to stop feeding the overlay.
+  final bool paused;
 
   /// Whether the torch is currently on. Ignored on web.
   final bool flashOn;
@@ -138,6 +143,7 @@ class _ScannerCameraState extends ConsumerState<ScannerCamera> {
   }
 
   void _onYoloResult(List<YOLOResult> results) {
+    if (widget.paused) return;
     if (_throttle.elapsed < _kDetectionInterval) return;
     _throttle.reset();
 
