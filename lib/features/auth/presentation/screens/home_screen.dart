@@ -72,7 +72,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return Scaffold(
       body: Column(
         children: <Widget>[
-          const AppHeader(),
+          AppHeader(showTranslateControls: _activeTab == AppTab.translate),
           Expanded(
             child: MediaQuery.removePadding(
               context: context,

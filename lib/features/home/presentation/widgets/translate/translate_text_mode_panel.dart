@@ -20,6 +20,7 @@ class TranslateTextModePanel extends StatelessWidget {
     required this.onCheckInput,
     required this.onCopy,
     required this.onShare,
+    this.compactLayout = false,
   });
 
   final TranslateTextState state;
@@ -32,9 +33,61 @@ class TranslateTextModePanel extends StatelessWidget {
   final VoidCallback onCheckInput;
   final VoidCallback onCopy;
   final VoidCallback onShare;
+  final bool compactLayout;
 
   @override
   Widget build(BuildContext context) {
+    if (compactLayout) {
+      return SingleChildScrollView(
+        padding: const EdgeInsets.only(bottom: 4),
+        child: _BottomInputArea(
+          state: state,
+          inputEnabled: inputEnabled,
+          disabledReason: disabledReason,
+          compact: true,
+          onDirectionChanged: onDirectionChanged,
+          onInputChanged: onInputChanged,
+          onClear: onClear,
+          onExplain: onExplain,
+          onCheckInput: onCheckInput,
+        ),
+      );
+    }
+
+    if (!state.hasInput && state.aiResponse.trim().isEmpty) {
+      final bool keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
+      final double previewHeight = keyboardOpen
+          ? 92
+          : MediaQuery.sizeOf(context).height < 700
+          ? 132
+          : 172;
+      return SingleChildScrollView(
+        padding: const EdgeInsets.only(bottom: 4),
+        child: Column(
+          children: <Widget>[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 18, 24, 12),
+              child: SizedBox(
+                height: previewHeight,
+                child: const Center(child: EmptyOutput()),
+              ),
+            ),
+            _BottomInputArea(
+              state: state,
+              inputEnabled: inputEnabled,
+              disabledReason: disabledReason,
+              compact: false,
+              onDirectionChanged: onDirectionChanged,
+              onInputChanged: onInputChanged,
+              onClear: onClear,
+              onExplain: onExplain,
+              onCheckInput: onCheckInput,
+            ),
+          ],
+        ),
+      );
+    }
+
     return Column(
       children: <Widget>[
         Expanded(
@@ -71,6 +124,7 @@ class TranslateTextModePanel extends StatelessWidget {
           state: state,
           inputEnabled: inputEnabled,
           disabledReason: disabledReason,
+          compact: false,
           onDirectionChanged: onDirectionChanged,
           onInputChanged: onInputChanged,
           onClear: onClear,
@@ -87,6 +141,7 @@ class _BottomInputArea extends StatelessWidget {
     required this.state,
     required this.inputEnabled,
     required this.disabledReason,
+    required this.compact,
     required this.onDirectionChanged,
     required this.onInputChanged,
     required this.onClear,
@@ -97,6 +152,7 @@ class _BottomInputArea extends StatelessWidget {
   final TranslateTextState state;
   final bool inputEnabled;
   final String? disabledReason;
+  final bool compact;
   final ValueChanged<bool> onDirectionChanged;
   final ValueChanged<String> onInputChanged;
   final VoidCallback onClear;
@@ -106,15 +162,17 @@ class _BottomInputArea extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
+    final bool keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
+    final bool keyboardCompact = compact || keyboardOpen;
     return Container(
       decoration: BoxDecoration(
         border: Border(top: BorderSide(color: cs.outline.withAlpha(80))),
       ),
       padding: EdgeInsets.fromLTRB(
         16,
-        10,
+        keyboardCompact ? 4 : 10,
         16,
-        MediaQuery.paddingOf(context).bottom + 12,
+        keyboardCompact ? 6 : MediaQuery.paddingOf(context).bottom + 12,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -122,12 +180,14 @@ class _BottomInputArea extends StatelessWidget {
         children: <Widget>[
           DirectionToggle(
             latinToBaybayin: state.latinToBaybayin,
+            compact: keyboardCompact,
             onToggle: onDirectionChanged,
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: keyboardCompact ? 4 : 8),
           _InputField(
             text: state.inputText,
             enabled: inputEnabled && !state.aiBusy,
+            expanded: !keyboardCompact,
             hintText: state.latinToBaybayin
                 ? 'Type in Filipino...'
                 : 'Type Baybayin Unicode...',
@@ -139,6 +199,7 @@ class _BottomInputArea extends StatelessWidget {
             _TextActionsRow(
               busy: state.aiBusy,
               enabled: inputEnabled && state.hasInput,
+              compact: keyboardCompact,
               onExplain: onExplain,
               onCheckInput: onCheckInput,
             ),
@@ -163,6 +224,7 @@ class _InputField extends StatefulWidget {
   const _InputField({
     required this.text,
     required this.enabled,
+    required this.expanded,
     required this.hintText,
     required this.onChanged,
     required this.onClear,
@@ -170,6 +232,7 @@ class _InputField extends StatefulWidget {
 
   final String text;
   final bool enabled;
+  final bool expanded;
   final String hintText;
   final ValueChanged<String> onChanged;
   final VoidCallback onClear;
@@ -208,17 +271,33 @@ class _InputFieldState extends State<_InputField> {
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
     return TextField(
+      key: ValueKey<String>(
+        widget.hintText.contains('Baybayin Unicode')
+            ? 'translate-baybayin-unicode-input'
+            : 'translate-filipino-input',
+      ),
       controller: _controller,
       enabled: widget.enabled,
+      keyboardType: widget.expanded
+          ? TextInputType.multiline
+          : TextInputType.text,
+      textInputAction: widget.expanded
+          ? TextInputAction.newline
+          : TextInputAction.done,
+      minLines: widget.expanded ? 4 : 1,
+      maxLines: widget.expanded ? 7 : 1,
+      textAlignVertical: widget.expanded
+          ? TextAlignVertical.top
+          : TextAlignVertical.center,
       onChanged: widget.onChanged,
       decoration: InputDecoration(
         hintText: widget.hintText,
         filled: true,
         fillColor: cs.surfaceContainerLow,
-        isDense: true,
-        contentPadding: const EdgeInsets.symmetric(
+        isDense: !widget.expanded,
+        contentPadding: EdgeInsets.symmetric(
           horizontal: 14,
-          vertical: 12,
+          vertical: widget.expanded ? 14 : 12,
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
@@ -259,17 +338,43 @@ class _TextActionsRow extends StatelessWidget {
   const _TextActionsRow({
     required this.busy,
     required this.enabled,
+    required this.compact,
     required this.onExplain,
     required this.onCheckInput,
   });
 
   final bool busy;
   final bool enabled;
+  final bool compact;
   final VoidCallback onExplain;
   final VoidCallback onCheckInput;
 
   @override
   Widget build(BuildContext context) {
+    if (compact) {
+      return Row(
+        children: <Widget>[
+          Expanded(
+            child: _ActionButton(
+              label: busy ? 'Working...' : 'Explain',
+              enabled: enabled && !busy,
+              compact: true,
+              onTap: onExplain,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: _ActionButton(
+              label: 'Check Input',
+              enabled: enabled && !busy,
+              compact: true,
+              onTap: onCheckInput,
+            ),
+          ),
+        ],
+      );
+    }
+
     return Wrap(
       spacing: 8,
       runSpacing: 8,
@@ -277,11 +382,13 @@ class _TextActionsRow extends StatelessWidget {
         _ActionButton(
           label: busy ? 'Working...' : 'Explain',
           enabled: enabled && !busy,
+          compact: false,
           onTap: onExplain,
         ),
         _ActionButton(
           label: 'Check Input',
           enabled: enabled && !busy,
+          compact: false,
           onTap: onCheckInput,
         ),
       ],
@@ -293,11 +400,13 @@ class _ActionButton extends StatelessWidget {
   const _ActionButton({
     required this.label,
     required this.enabled,
+    required this.compact,
     required this.onTap,
   });
 
   final String label;
   final bool enabled;
+  final bool compact;
   final VoidCallback onTap;
 
   @override
@@ -309,9 +418,12 @@ class _ActionButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(999),
         onTap: enabled ? onTap : null,
         child: Container(
-          constraints: const BoxConstraints(minHeight: 44),
+          constraints: BoxConstraints(minHeight: compact ? 40 : 44),
           alignment: Alignment.center,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+          padding: EdgeInsets.symmetric(
+            horizontal: compact ? 10 : 12,
+            vertical: compact ? 7 : 9,
+          ),
           decoration: BoxDecoration(
             color: enabled ? cs.surfaceContainer : cs.surfaceContainerLowest,
             borderRadius: BorderRadius.circular(999),
