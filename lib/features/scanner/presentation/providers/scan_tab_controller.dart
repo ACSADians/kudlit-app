@@ -226,6 +226,9 @@ class ScanTabController extends Notifier<ScanTabState> {
         snapshot: const <BaybayinDetection>[],
         clearScanNotice: true,
       );
+      if (!kIsWeb) {
+        ref.read(baybayinDetectorProvider).resumeInference();
+      }
       return;
     }
 
@@ -248,6 +251,9 @@ class ScanTabController extends Notifier<ScanTabState> {
       clearScanNotice: true,
     );
     _evaluateSafely(detections, state.selectedImageBytes);
+    if (!kIsWeb) {
+      ref.read(baybayinDetectorProvider).pauseInference();
+    }
   }
 
   void applyLiveDetections(List<BaybayinDetection> detections) {
@@ -271,6 +277,9 @@ class ScanTabController extends Notifier<ScanTabState> {
       clearAggregatedWinner: true,
       clearScanNotice: true,
     );
+    if (!kIsWeb) {
+      ref.read(baybayinDetectorProvider).resumeInference();
+    }
   }
 
   void clearSelectedImage() {

@@ -8,11 +8,11 @@ import 'package:kudlit_ph/features/home/presentation/providers/app_preferences_p
 import 'package:kudlit_ph/features/home/presentation/providers/translate_page_controller.dart';
 import 'package:kudlit_ph/features/home/presentation/providers/translate_sketchpad_controller.dart';
 import 'package:kudlit_ph/features/home/presentation/providers/translate_text_controller.dart';
-import 'package:kudlit_ph/features/home/presentation/widgets/floating_tab_nav.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/translate/export_sheet.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/translate/translate_header.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/translate/translate_sketchpad_mode_panel.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/translate/translate_text_mode_panel.dart';
+import 'package:kudlit_ph/features/home/presentation/widgets/floating_tab_nav.dart';
 
 class TranslateScreen extends ConsumerWidget {
   const TranslateScreen({super.key});
@@ -105,6 +105,7 @@ class TranslateScreen extends ConsumerWidget {
     return ColoredBox(
       color: Theme.of(context).colorScheme.surface,
       child: SafeArea(
+        bottom: false,
         child: LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
             final bool constrainedKeyboardLayout =
