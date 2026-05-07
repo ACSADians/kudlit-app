@@ -51,7 +51,16 @@ const int _kRequiredConsecutiveHits = 2;
 /// Detection output is throttled to once every [_kDetectionInterval] so the
 /// overlay updates are visible without thrashing the widget tree.
 ///
-typedef WebScannerCapture = Future<List<BaybayinDetection>> Function();
+/// Return type of [WebScannerCapture]: the detected glyphs plus the raw PNG
+/// bytes of the captured frame (for freezing the view after a web snap).
+typedef WebCaptureResult = (
+  List<BaybayinDetection> detections,
+  Uint8List? imageBytes,
+);
+
+/// Called by [ScannerCamera] once the browser camera is ready.
+/// Returns both the detection results and the captured frame bytes.
+typedef WebScannerCapture = Future<WebCaptureResult> Function();
 typedef WebScannerSwitchCamera = Future<void> Function();
 
 @visibleForTesting
@@ -448,14 +457,14 @@ class _WebCameraPreviewState extends ConsumerState<_WebCameraPreview> {
     }
   }
 
-  Future<List<BaybayinDetection>> _captureAndDetect() async {
+  Future<WebCaptureResult> _captureAndDetect() async {
     final CameraController? controller = _controller;
     if (controller == null || !controller.value.isInitialized) {
       _setStatus(
         WebScannerStatus.error,
         message: 'Camera is not ready yet. Try again in a moment.',
       );
-      return const <BaybayinDetection>[];
+      return (const <BaybayinDetection>[], null);
     }
 
     _setStatus(WebScannerStatus.detecting);
@@ -467,7 +476,7 @@ class _WebCameraPreviewState extends ConsumerState<_WebCameraPreview> {
           .detectImage(bytes);
       widget.onDetections(detections);
       _setStatus(WebScannerStatus.ready);
-      return detections;
+      return (detections, bytes);
     } catch (e) {
       final ScanNotice notice = _noticeForCaptureError(e);
       _setStatus(
