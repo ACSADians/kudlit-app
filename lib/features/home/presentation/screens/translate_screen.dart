@@ -56,7 +56,7 @@ class TranslateScreen extends ConsumerWidget {
         screenSize.height < 500 && screenSize.width > screenSize.height;
     final double navClearance = compactLandscape
         ? 10
-        : kFloatingNavClearance + 8;
+        : kFloatingNavClearance - 32;
     Widget textModePanel({required bool compactLayout}) {
       return TranslateTextModePanel(
         state: textState,
