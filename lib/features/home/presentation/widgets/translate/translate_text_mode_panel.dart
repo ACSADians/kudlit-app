@@ -172,7 +172,7 @@ class _BottomInputArea extends StatelessWidget {
         16,
         keyboardCompact ? 4 : 10,
         16,
-        keyboardCompact ? 6 : 12,
+        keyboardCompact ? 6 : MediaQuery.paddingOf(context).bottom + 12,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

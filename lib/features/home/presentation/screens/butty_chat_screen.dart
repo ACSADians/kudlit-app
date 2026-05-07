@@ -10,7 +10,6 @@ import 'package:kudlit_ph/features/home/presentation/widgets/butty_chat/butty_mo
 import 'package:kudlit_ph/features/home/presentation/widgets/butty_chat/chat_input_bar.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/butty_chat/chat_message_list.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/butty_chat/suggested_questions_row.dart';
-import 'package:kudlit_ph/features/home/presentation/widgets/floating_tab_nav.dart';
 
 class ButtyChatScreen extends ConsumerStatefulWidget {
   const ButtyChatScreen({super.key});
@@ -176,12 +175,6 @@ class _ButtyChatScreenState extends ConsumerState<ButtyChatScreen>
             enabled: inputEnabled,
             disabledHint: disabledHint,
             onSend: _onSendTap,
-          ),
-          SizedBox(
-            height:
-                MediaQuery.paddingOf(context).bottom +
-                kFloatingNavClearance +
-                8,
           ),
         ],
       ),

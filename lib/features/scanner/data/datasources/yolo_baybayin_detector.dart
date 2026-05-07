@@ -64,6 +64,12 @@ class YoloBaybayinDetector implements BaybayinDetector {
   Future<void> switchCamera() => _controller.switchCamera();
 
   @override
+  Future<void> pauseInference() => _controller.stop();
+
+  @override
+  Future<void> resumeInference() => _controller.restartCamera();
+
+  @override
   void dispose() {
     debugPrint('[YOLO] YoloBaybayinDetector disposed');
     _streamController.close();
