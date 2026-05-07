@@ -10,6 +10,11 @@ abstract interface class ProfileManagementDatasource {
   Future<ProfileSummaryModel> getSummary();
   Future<ProfilePreferencesModel> getPreferences();
   Future<void> updateDisplayName({required String displayName});
+  Future<void> updateAvatar({
+    required Uint8List bytes,
+    required String fileName,
+    required String? mimeType,
+  });
   Future<void> savePreferences({required ProfilePreferencesModel preferences});
   Future<void> saveLessonProgress({
     required String lessonId,
@@ -54,8 +59,7 @@ class SupabaseProfileManagementDatasource
             .eq('is_bookmarked', true),
       ]);
 
-      final Map<String, dynamic>? profile =
-          results[0] as Map<String, dynamic>?;
+      final Map<String, dynamic>? profile = results[0] as Map<String, dynamic>?;
       final List<dynamic> completedLessons = results[1] as List<dynamic>;
       final List<dynamic> scanHistory = results[2] as List<dynamic>;
       final List<dynamic> translationHistory = results[3] as List<dynamic>;
@@ -63,6 +67,9 @@ class SupabaseProfileManagementDatasource
 
       return ProfileSummaryModel(
         displayName: profile?['display_name'] as String?,
+        avatarUrl:
+            profile?['avatar_url'] as String? ??
+            user.userMetadata?['avatar_url'] as String?,
         completedLessons: completedLessons.length,
         scanHistoryItems: scanHistory.length,
         translationHistoryItems: translationHistory.length,
@@ -126,6 +133,52 @@ class SupabaseProfileManagementDatasource
   }
 
   @override
+  Future<void> updateAvatar({
+    required Uint8List bytes,
+    required String fileName,
+    required String? mimeType,
+  }) async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) {
+      throw const ServerException(message: 'User not authenticated');
+    }
+
+    try {
+      final String extension = _extensionFor(fileName, mimeType);
+      final String path = '${user.id}/avatar.$extension';
+      await _supabase.storage
+          .from('avatars')
+          .uploadBinary(
+            path,
+            bytes,
+            fileOptions: FileOptions(
+              upsert: true,
+              contentType: _contentTypeFor(extension, mimeType),
+            ),
+          );
+      final String publicUrl =
+          '${_supabase.storage.from('avatars').getPublicUrl(path)}'
+          '?v=${DateTime.now().millisecondsSinceEpoch}';
+
+      await _supabase.auth.updateUser(
+        UserAttributes(data: {'avatar_url': publicUrl}),
+      );
+
+      try {
+        await _supabase
+            .from('profiles')
+            .update(<String, dynamic>{'avatar_url': publicUrl})
+            .eq('id', user.id);
+      } on Object {
+        // Auth metadata remains the durable fallback until profile migrations
+        // are applied on every environment.
+      }
+    } catch (e) {
+      throw ServerException(message: e.toString());
+    }
+  }
+
+  @override
   Future<void> savePreferences({
     required ProfilePreferencesModel preferences,
   }) async {
@@ -154,20 +207,35 @@ class SupabaseProfileManagementDatasource
     final user = _supabase.auth.currentUser;
     if (user == null) return; // Guest user — skip silently.
     try {
-      await _supabase.from('learning_progress').upsert(
-        <String, dynamic>{
-          'user_id': user.id,
-          'lesson_id': lessonId,
-          'completed': completed,
-          'score': score,
-          if (completed) 'completed_at': DateTime.now().toIso8601String(),
-          'updated_at': DateTime.now().toIso8601String(),
-        },
-        onConflict: 'user_id,lesson_id',
-      );
+      await _supabase.from('learning_progress').upsert(<String, dynamic>{
+        'user_id': user.id,
+        'lesson_id': lessonId,
+        'completed': completed,
+        'score': score,
+        if (completed) 'completed_at': DateTime.now().toIso8601String(),
+        'updated_at': DateTime.now().toIso8601String(),
+      }, onConflict: 'user_id,lesson_id');
     } catch (e) {
       // Non-fatal — local completion flag is the source of truth for lock/unlock.
       debugPrint('[LessonProgress] saveLessonProgress failed (non-fatal): $e');
     }
+  }
+
+  String _extensionFor(String fileName, String? mimeType) {
+    final String lowerName = fileName.toLowerCase();
+    if (lowerName.endsWith('.png') || mimeType == 'image/png') return 'png';
+    if (lowerName.endsWith('.webp') || mimeType == 'image/webp') return 'webp';
+    if (lowerName.endsWith('.gif') || mimeType == 'image/gif') return 'gif';
+    return 'jpg';
+  }
+
+  String _contentTypeFor(String extension, String? mimeType) {
+    if (mimeType != null && mimeType.startsWith('image/')) return mimeType;
+    return switch (extension) {
+      'png' => 'image/png',
+      'webp' => 'image/webp',
+      'gif' => 'image/gif',
+      _ => 'image/jpeg',
+    };
   }
 }

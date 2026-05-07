@@ -176,6 +176,7 @@ class _UserProfile extends ConsumerWidget {
                     cs: cs,
                     displayName: displayName,
                     email: user.email,
+                    avatarUrl: summary?.avatarUrl,
                     onTap: () => context.push(AppConstants.routeSettings),
                   ),
                   SizedBox(height: compact ? 10 : 12),
@@ -205,17 +206,73 @@ class _UserProfile extends ConsumerWidget {
   }
 }
 
+class _ProfileAvatarImage extends StatelessWidget {
+  const _ProfileAvatarImage({required this.avatarUrl, required this.email});
+
+  final String? avatarUrl;
+  final String email;
+
+  @override
+  Widget build(BuildContext context) {
+    final String? safeAvatarUrl =
+        avatarUrl != null && avatarUrl!.trim().isNotEmpty
+        ? avatarUrl!.trim()
+        : null;
+
+    if (safeAvatarUrl != null) {
+      return Image.network(
+        safeAvatarUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (BuildContext context, Object error, StackTrace? stack) {
+          return _ProfileInitials(email: email);
+        },
+      );
+    }
+
+    return Image.asset(
+      'assets/brand/user.profile/butty.thumbsup.webp',
+      fit: BoxFit.cover,
+    );
+  }
+}
+
+class _ProfileInitials extends StatelessWidget {
+  const _ProfileInitials({required this.email});
+
+  final String email;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    return ColoredBox(
+      color: cs.primaryContainer,
+      child: Center(
+        child: Text(
+          email.isNotEmpty ? email[0].toUpperCase() : '?',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w800,
+            color: cs.onPrimaryContainer,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _ProfileRow extends StatelessWidget {
   const _ProfileRow({
     required this.cs,
     required this.displayName,
     required this.email,
+    required this.avatarUrl,
     required this.onTap,
   });
 
   final ColorScheme cs;
   final String displayName;
   final String email;
+  final String? avatarUrl;
   final VoidCallback onTap;
 
   @override
@@ -235,18 +292,15 @@ class _ProfileRow extends StatelessWidget {
           ),
           child: Row(
             children: <Widget>[
-              Container(
-                width: 36,
-                height: 36,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: cs.primaryContainer,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  Icons.person_rounded,
-                  size: 18,
-                  color: cs.onPrimaryContainer,
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: SizedBox(
+                  width: 36,
+                  height: 36,
+                  child: _ProfileAvatarImage(
+                    avatarUrl: avatarUrl,
+                    email: email,
+                  ),
                 ),
               ),
               const SizedBox(width: 12),

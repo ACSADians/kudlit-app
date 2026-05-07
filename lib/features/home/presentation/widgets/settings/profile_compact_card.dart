@@ -5,44 +5,90 @@ import 'package:kudlit_ph/core/error/failures.dart';
 import 'package:kudlit_ph/features/auth/domain/entities/auth_user.dart';
 import 'package:kudlit_ph/features/home/presentation/providers/profile_management_provider.dart';
 
-import 'edit_name_dialog.dart';
-
 class ProfileCompactCard extends ConsumerStatefulWidget {
   const ProfileCompactCard({super.key, required this.user});
 
   final AuthUser user;
 
   @override
-  ConsumerState<ProfileCompactCard> createState() =>
-      _ProfileCompactCardState();
+  ConsumerState<ProfileCompactCard> createState() => _ProfileCompactCardState();
 }
 
 class _ProfileCompactCardState extends ConsumerState<ProfileCompactCard> {
+  final TextEditingController _nameController = TextEditingController();
+  final FocusNode _nameFocusNode = FocusNode();
+  bool _isEditing = false;
   bool _isSaving = false;
+  String? _nameError;
 
-  Future<void> _openEditNameDialog(String currentName) async {
-    final String? newName = await showDialog<String>(
-      context: context,
-      builder: (_) => EditNameDialog(initialName: currentName),
-    );
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _nameFocusNode.dispose();
+    super.dispose();
+  }
 
-    if (newName == null || newName.trim() == currentName || !mounted) return;
+  void _startEditing(String currentName) {
+    setState(() {
+      _isEditing = true;
+      _nameError = null;
+      _nameController.text = currentName;
+      _nameController.selection = TextSelection(
+        baseOffset: 0,
+        extentOffset: currentName.length,
+      );
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _nameFocusNode.requestFocus();
+    });
+  }
+
+  void _cancelEditing() {
+    if (_isSaving) return;
+    setState(() {
+      _isEditing = false;
+      _nameError = null;
+    });
+  }
+
+  Future<void> _saveName(String currentName) async {
+    final String newName = _nameController.text.trim();
+    if (newName.isEmpty) {
+      setState(() => _nameError = 'Display name cannot be empty.');
+      return;
+    }
+
+    if (newName == currentName || !mounted) {
+      _cancelEditing();
+      return;
+    }
 
     setState(() => _isSaving = true);
-    await ref
-        .read(profileSummaryNotifierProvider.notifier)
-        .updateDisplayName(newName.trim());
+    try {
+      await ref
+          .read(profileSummaryNotifierProvider.notifier)
+          .updateDisplayName(newName);
+    } catch (error) {
+      if (!mounted) return;
+      _showError(error);
+      setState(() => _isSaving = false);
+      return;
+    }
 
     if (!mounted) return;
-    setState(() => _isSaving = false);
+    setState(() {
+      _isSaving = false;
+      _isEditing = false;
+      _nameError = null;
+    });
 
     final AsyncValue<dynamic> s = ref.read(profileSummaryNotifierProvider);
     if (s.hasError) {
       _showError(s.error);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Display name updated.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Display name updated.')));
     }
   }
 
@@ -61,9 +107,9 @@ class _ProfileCompactCardState extends ConsumerState<ProfileCompactCard> {
         passwordResetEmailSent: () => 'Email sent',
       );
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Failed to update name: $message')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Failed to update name: $message')));
   }
 
   @override
@@ -74,21 +120,22 @@ class _ProfileCompactCardState extends ConsumerState<ProfileCompactCard> {
         .value
         ?.toNullable()
         ?.displayName;
-    final String displayName =
-        fetched?.trim().isNotEmpty == true
-            ? fetched!
-            : widget.user.displayName?.trim().isNotEmpty == true
-            ? widget.user.displayName!
-            : widget.user.email.split('@').first;
+    final String displayName = fetched?.trim().isNotEmpty == true
+        ? fetched!
+        : widget.user.displayName?.trim().isNotEmpty == true
+        ? widget.user.displayName!
+        : widget.user.email.split('@').first;
 
     return Material(
       color: cs.surfaceContainerLow,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
-        onTap: _isSaving ? null : () => _openEditNameDialog(displayName),
+        onTap: _isSaving || _isEditing
+            ? null
+            : () => _startEditing(displayName),
         borderRadius: BorderRadius.circular(14),
         child: Container(
-          constraints: const BoxConstraints(minHeight: 64),
+          constraints: BoxConstraints(minHeight: _isEditing ? 84 : 64),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
@@ -112,49 +159,101 @@ class _ProfileCompactCardState extends ConsumerState<ProfileCompactCard> {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    Text(
-                      displayName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: cs.onSurface,
+                child: _isEditing
+                    ? TextField(
+                        controller: _nameController,
+                        focusNode: _nameFocusNode,
+                        enabled: !_isSaving,
+                        textInputAction: TextInputAction.done,
+                        maxLength: 40,
+                        onSubmitted: (_) =>
+                            _isSaving ? null : _saveName(displayName),
+                        decoration: InputDecoration(
+                          counterText: '',
+                          errorText: _nameError,
+                          isDense: true,
+                          hintText: 'Set display name',
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      )
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          Text(
+                            displayName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: cs.onSurface,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            widget.user.email,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              height: 1.25,
+                              color: cs.onSurface.withAlpha(130),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      widget.user.email,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 11.5,
-                        height: 1.25,
-                        color: cs.onSurface.withAlpha(130),
-                      ),
-                    ),
-                  ],
-                ),
               ),
               const SizedBox(width: 8),
-              _isSaving
-                  ? SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: cs.primary,
-                      ),
-                    )
-                  : Icon(
-                      Icons.edit_outlined,
-                      size: 18,
-                      color: cs.onSurface.withAlpha(90),
-                    ),
+              if (_isEditing) ...<Widget>[
+                IconButton(
+                  tooltip: 'Save display name',
+                  constraints: const BoxConstraints(
+                    minHeight: 44,
+                    minWidth: 44,
+                  ),
+                  onPressed: _isSaving ? null : () => _saveName(displayName),
+                  icon: _isSaving
+                      ? SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: cs.primary,
+                          ),
+                        )
+                      : const Icon(Icons.check_rounded),
+                ),
+                IconButton(
+                  tooltip: 'Cancel display name edit',
+                  constraints: const BoxConstraints(
+                    minHeight: 44,
+                    minWidth: 44,
+                  ),
+                  onPressed: _isSaving ? null : _cancelEditing,
+                  icon: const Icon(Icons.close_rounded),
+                ),
+              ] else if (_isSaving)
+                SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: cs.primary,
+                  ),
+                )
+              else
+                Icon(
+                  Icons.edit_outlined,
+                  size: 18,
+                  color: cs.onSurface.withAlpha(90),
+                ),
             ],
           ),
         ),
