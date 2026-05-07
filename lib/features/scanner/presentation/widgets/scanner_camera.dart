@@ -52,6 +52,15 @@ const int _kRequiredConsecutiveHits = 2;
 typedef WebScannerCapture = Future<List<BaybayinDetection>> Function();
 typedef WebScannerSwitchCamera = Future<void> Function();
 
+@visibleForTesting
+bool isWebCameraSecureContext(Uri uri) {
+  final String host = uri.host.toLowerCase();
+  return uri.scheme == 'https' ||
+      host == 'localhost' ||
+      host == '127.0.0.1' ||
+      host == '::1';
+}
+
 enum WebScannerStatus {
   initializing,
   permissionNeeded,
@@ -289,6 +298,15 @@ class _WebCameraPreviewState extends ConsumerState<_WebCameraPreview> {
       WebScannerStatus.initializing,
       message: 'Allow browser camera access to scan in web preview.',
     );
+    if (!isWebCameraSecureContext(Uri.base)) {
+      _setStatus(
+        WebScannerStatus.permissionNeeded,
+        message:
+            'Camera needs HTTPS or localhost on web. Open the deployed HTTPS URL, or use Gallery for this LAN preview.',
+      );
+      return;
+    }
+
     try {
       final List<CameraDescription> cameras = await availableCameras();
       if (!mounted) return;

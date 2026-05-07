@@ -3,6 +3,25 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kudlit_ph/features/scanner/presentation/widgets/scanner_camera.dart';
 
 void main() {
+  test('web camera secure context allows HTTPS and localhost only', () {
+    expect(
+      isWebCameraSecureContext(Uri.parse('https://kudlit.example.com/#/home')),
+      isTrue,
+    );
+    expect(
+      isWebCameraSecureContext(Uri.parse('http://localhost:5173/#/home')),
+      isTrue,
+    );
+    expect(
+      isWebCameraSecureContext(Uri.parse('http://127.0.0.1:5173/#/home')),
+      isTrue,
+    );
+    expect(
+      isWebCameraSecureContext(Uri.parse('http://192.168.68.115:5173/#/home')),
+      isFalse,
+    );
+  });
+
   testWidgets('web camera status card fits narrow scanner viewport', (
     WidgetTester tester,
   ) async {
