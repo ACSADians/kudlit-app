@@ -204,7 +204,7 @@ class _ScanTabState extends ConsumerState<ScanTab> {
         viewport.width > viewport.height && viewport.height < 430;
     final double sideGutter = viewport.width < 380 ? 10 : 12;
     final double topGutter = compactLandscape ? 6 : 10;
-    final double controlsBottom = safeBottom + (compactLandscape ? 8 : 20);
+    final double controlsBottom = safeBottom + (compactLandscape ? 8 : 40);
     final double controlsHeight = compactLandscape ? 82 : 96;
     final double panelBottom = controlsBottom + controlsHeight;
     final List<BaybayinDetection> detections = ref.watch(
@@ -230,6 +230,7 @@ class _ScanTabState extends ConsumerState<ScanTab> {
         _ScanCameraStack(
           detections: detections,
           flashOn: scanState.flashOn,
+          scannerPaused: scanState.resultVisible && !kIsWeb,
           onDetections: controller.applyLiveDetections,
           onFlashToggle: kIsWeb ? null : () => controller.toggleFlash(),
           selectedImageBytes: scanState.selectedImageBytes,
@@ -418,6 +419,7 @@ class _ScanCameraStack extends StatelessWidget {
   const _ScanCameraStack({
     required this.detections,
     required this.flashOn,
+    required this.scannerPaused,
     required this.onDetections,
     required this.onFlashToggle,
     required this.onPermutationsTap,
@@ -429,6 +431,7 @@ class _ScanCameraStack extends StatelessWidget {
 
   final List<BaybayinDetection> detections;
   final bool flashOn;
+  final bool scannerPaused;
   final void Function(List<BaybayinDetection>) onDetections;
   final VoidCallback? onFlashToggle;
   final ValueChanged<WebScannerCapture?>? onWebCaptureChanged;
@@ -447,6 +450,7 @@ class _ScanCameraStack extends StatelessWidget {
         else
           ScannerCamera(
             flashOn: flashOn,
+            paused: scannerPaused,
             onDetections: onDetections,
             onFlashToggle: onFlashToggle,
             onWebCaptureChanged: onWebCaptureChanged,

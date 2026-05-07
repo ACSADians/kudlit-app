@@ -21,7 +21,12 @@ class ChatInputBar extends StatelessWidget {
     final ColorScheme cs = Theme.of(context).colorScheme;
     final bool inputEnabled = enabled && !responding;
     return Container(
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+      padding: EdgeInsets.fromLTRB(
+        12,
+        8,
+        12,
+        MediaQuery.paddingOf(context).bottom + 8,
+      ),
       decoration: BoxDecoration(
         color: cs.surfaceContainerLow,
         border: Border(top: BorderSide(color: cs.outline)),

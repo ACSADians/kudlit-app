@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 
 import 'package:kudlit_ph/features/home/presentation/utils/safe_ai_output.dart';
 
@@ -74,13 +75,11 @@ class TranslateFeedbackCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          Text(
-            displayBody,
-            style: TextStyle(
-              fontSize: 13,
-              height: 1.45,
-              color: cs.onSurface.withAlpha(215),
-            ),
+          MarkdownBody(
+            data: displayBody,
+            shrinkWrap: true,
+            softLineBreak: true,
+            styleSheet: _cardMarkdownStyle(cs),
           ),
           if (warning != null && warning!.trim().isNotEmpty) ...<Widget>[
             const SizedBox(height: 10),
@@ -104,6 +103,43 @@ class TranslateFeedbackCard extends StatelessWidget {
       ),
     );
   }
+}
+
+MarkdownStyleSheet _cardMarkdownStyle(ColorScheme cs) {
+  final TextStyle base = TextStyle(
+    fontSize: 13,
+    height: 1.45,
+    color: cs.onSurface.withAlpha(215),
+  );
+  return MarkdownStyleSheet(
+    p: base,
+    h1: base.copyWith(fontSize: 17, fontWeight: FontWeight.w700),
+    h2: base.copyWith(fontSize: 15, fontWeight: FontWeight.w700),
+    h3: base.copyWith(fontSize: 13.5, fontWeight: FontWeight.w700),
+    strong: base.copyWith(fontWeight: FontWeight.w700),
+    em: base.copyWith(fontStyle: FontStyle.italic),
+    listBullet: base,
+    a: base.copyWith(
+      color: cs.primary,
+      decoration: TextDecoration.underline,
+    ),
+    code: base.copyWith(
+      fontFamily: 'monospace',
+      fontSize: 12,
+      backgroundColor: cs.surfaceContainerHighest,
+    ),
+    codeblockDecoration: BoxDecoration(
+      color: cs.surfaceContainerHighest,
+      borderRadius: BorderRadius.circular(8),
+      border: Border.all(color: cs.outline),
+    ),
+    codeblockPadding: const EdgeInsets.all(10),
+    blockquoteDecoration: BoxDecoration(
+      border: Border(left: BorderSide(color: cs.primary, width: 3)),
+    ),
+    blockquotePadding: const EdgeInsets.only(left: 10),
+    blockSpacing: 6,
+  );
 }
 
 class _FeedbackSlot extends StatelessWidget {

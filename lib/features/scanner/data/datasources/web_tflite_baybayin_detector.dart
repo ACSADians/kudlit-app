@@ -203,6 +203,12 @@ class WebTfliteBaybayinDetector implements BaybayinDetector {
   Future<void> switchCamera() async {}
 
   @override
+  Future<void> pauseInference() async {}
+
+  @override
+  Future<void> resumeInference() async {}
+
+  @override
   void dispose() {
     _detections.close();
   }

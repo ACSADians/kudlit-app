@@ -110,7 +110,12 @@ class _BottomInputArea extends StatelessWidget {
       decoration: BoxDecoration(
         border: Border(top: BorderSide(color: cs.outline.withAlpha(80))),
       ),
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+      padding: EdgeInsets.fromLTRB(
+        16,
+        10,
+        16,
+        MediaQuery.paddingOf(context).bottom + 12,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
