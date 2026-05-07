@@ -143,7 +143,6 @@ void main() {
           'Camera is currently unavailable while the status stream refreshes. Keep the app in the foreground and retry with clear lighting.',
         ),
       );
-
       expect(utilityRect.left, greaterThan(0), reason: viewportCase.name);
       expect(
         utilityRect.top,
@@ -187,13 +186,11 @@ void main() {
         isFalse,
         reason: viewportCase.name,
       );
-      if (!viewportCase.strictTinyLandscape) {
-        expect(
-          hasOverlap(utilityRect, noticeRect),
-          isFalse,
-          reason: viewportCase.name,
-        );
-      }
+      expect(
+        hasOverlap(utilityRect, noticeRect),
+        isFalse,
+        reason: viewportCase.name,
+      );
       expect(
         hasOverlap(noticeRect, controlsRect),
         isFalse,
@@ -280,20 +277,16 @@ void main() {
         lessThanOrEqualTo(viewport.width),
         reason: viewportCase.name,
       );
-      if (!viewportCase.strictTinyLandscape) {
-        expect(
-          titleRect.top,
-          greaterThanOrEqualTo(0),
-          reason: viewportCase.name,
-        );
-      }
-      if (!viewportCase.strictTinyLandscape) {
-        expect(
-          titleRect.bottom,
-          lessThanOrEqualTo(viewport.height),
-          reason: viewportCase.name,
-        );
-      }
+      expect(
+        titleRect.top,
+        greaterThanOrEqualTo(0),
+        reason: viewportCase.name,
+      );
+      expect(
+        titleRect.bottom,
+        lessThanOrEqualTo(viewport.height),
+        reason: viewportCase.name,
+      );
       expect(
         messageRect.left,
         greaterThanOrEqualTo(0),
@@ -302,6 +295,16 @@ void main() {
       expect(
         messageRect.right,
         lessThanOrEqualTo(viewport.width),
+        reason: viewportCase.name,
+      );
+      expect(
+        messageRect.top,
+        greaterThanOrEqualTo(0),
+        reason: viewportCase.name,
+      );
+      expect(
+        messageRect.bottom,
+        lessThanOrEqualTo(viewport.height),
         reason: viewportCase.name,
       );
 
