@@ -15,10 +15,7 @@ import 'package:kudlit_ph/features/translator/presentation/providers/translator_
 
 @immutable
 class ScanEvalState {
-  const ScanEvalState({
-    required this.translation,
-    this.followUp,
-  });
+  const ScanEvalState({required this.translation, this.followUp});
 
   final AsyncValue<String> translation;
   final AsyncValue<String>? followUp;
@@ -55,11 +52,10 @@ class ScannerEvaluationNotifier extends Notifier<ScanEvalState> {
     }
 
     final List<BaybayinDetection> ordered =
-        List<BaybayinDetection>.of(detections)
-          ..sort(
-            (BaybayinDetection a, BaybayinDetection b) =>
-                a.left.compareTo(b.left),
-          );
+        List<BaybayinDetection>.of(detections)..sort(
+          (BaybayinDetection a, BaybayinDetection b) =>
+              a.left.compareTo(b.left),
+        );
     final List<String> tokens = ordered
         .map((BaybayinDetection d) => d.label.trim().toLowerCase())
         .where((String s) => s.isNotEmpty)
@@ -77,27 +73,23 @@ class ScannerEvaluationNotifier extends Notifier<ScanEvalState> {
 
     final Stream<String> stream;
     if (imageBytes != null) {
-      stream = ref.read(aiInferenceRepositoryProvider).analyzeImage(
-        imageBytes,
-        mimeType: 'image/jpeg',
-        prompt: systemPrompt,
-      );
+      stream = ref
+          .read(aiInferenceRepositoryProvider)
+          .analyzeImage(
+            imageBytes,
+            mimeType: 'image/jpeg',
+            prompt: systemPrompt,
+          );
     } else {
       final String query =
           'Detected glyphs (left to right): ${tokens.join(", ")}. '
           'Which word is this?';
-      stream = ref
-          .read(aiInferenceNotifierProvider.notifier)
-          .generateResponse(
-            <ChatMessage>[
-              ChatMessage(
-                text: query,
-                isUser: true,
-                timestamp: DateTime.now(),
-              ),
-            ],
-            systemInstruction: systemPrompt,
-          );
+      stream = ref.read(aiInferenceNotifierProvider.notifier).generateResponse(
+        <ChatMessage>[
+          ChatMessage(text: query, isUser: true, timestamp: DateTime.now()),
+        ],
+        systemInstruction: systemPrompt,
+      );
     }
 
     unawaited(_listenToTranslation(stream));
@@ -117,7 +109,8 @@ class ScannerEvaluationNotifier extends Notifier<ScanEvalState> {
         timestamp: DateTime.now(),
       ),
       ChatMessage(
-        text: "Tell me more about this word — its meaning, how it's used, "
+        text:
+            "Tell me more about this word — its meaning, how it's used, "
             'or something interesting about it.',
         isUser: true,
         timestamp: DateTime.now(),
@@ -143,18 +136,18 @@ class ScannerEvaluationNotifier extends Notifier<ScanEvalState> {
       }
       final String finalText = buffer.toString().trim();
       if (finalText.isNotEmpty && _lastTokens.isNotEmpty) {
-        ref.read(scanHistoryNotifierProvider.notifier).addResult(
-          ScanResult(
-            tokens: List<String>.of(_lastTokens),
-            translation: finalText,
-            timestamp: DateTime.now(),
-          ),
-        );
+        ref
+            .read(scanHistoryNotifierProvider.notifier)
+            .addResult(
+              ScanResult(
+                tokens: List<String>.of(_lastTokens),
+                translation: finalText,
+                timestamp: DateTime.now(),
+              ),
+            );
       }
     } catch (e) {
-      state = state.withTranslation(
-        AsyncError<String>(e, StackTrace.current),
-      );
+      state = state.withTranslation(AsyncError<String>(e, StackTrace.current));
     }
   }
 
@@ -166,9 +159,7 @@ class ScannerEvaluationNotifier extends Notifier<ScanEvalState> {
         state = state.withFollowUp(AsyncData<String>(buffer.toString()));
       }
     } catch (e) {
-      state = state.withFollowUp(
-        AsyncError<String>(e, StackTrace.current),
-      );
+      state = state.withFollowUp(AsyncError<String>(e, StackTrace.current));
     }
   }
 }

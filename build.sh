@@ -13,6 +13,10 @@ GEMINI_API_KEY=${GEMINI_API_KEY}
 HUGGINGFACE_TOKEN=${HUGGINGFACE_TOKEN:-}
 EOF
 
+echo "=== .env contents ==="
+cat .env
+echo "====================="
+
 flutter config --enable-web
 flutter pub get
 flutter build web --release
