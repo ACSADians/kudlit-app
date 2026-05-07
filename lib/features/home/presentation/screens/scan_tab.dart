@@ -324,7 +324,7 @@ class _ScanTabState extends ConsumerState<ScanTab> {
                 ? null
                 : () => _switchCamera(controller),
             rotateLabel: kIsWeb && _webSwitchCamera == null
-                ? 'Camera switch unavailable'
+                ? 'Only one camera available'
                 : 'Switch camera',
             compact: compactLandscape,
             tiny: tinyViewport,
@@ -717,11 +717,7 @@ class _ShutterButton extends StatelessWidget {
 }
 
 class _ScanStatusChip extends StatelessWidget {
-  const _ScanStatusChip({
-    super.key,
-    required this.label,
-    required this.icon,
-  });
+  const _ScanStatusChip({super.key, required this.label, required this.icon});
 
   final String label;
   final IconData icon;

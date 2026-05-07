@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -59,6 +61,21 @@ bool isWebCameraSecureContext(Uri uri) {
       host == 'localhost' ||
       host == '127.0.0.1' ||
       host == '::1';
+}
+
+@visibleForTesting
+int preferredWebCameraIndex(List<CameraDescription> cameras) {
+  final int backCamera = cameras.indexWhere(
+    (CameraDescription camera) =>
+        camera.lensDirection == CameraLensDirection.back,
+  );
+  if (backCamera != -1) return backCamera;
+
+  final int externalCamera = cameras.indexWhere(
+    (CameraDescription camera) =>
+        camera.lensDirection == CameraLensDirection.external,
+  );
+  return externalCamera == -1 ? 0 : externalCamera;
 }
 
 enum WebScannerStatus {
@@ -284,22 +301,46 @@ class _WebCameraPreviewState extends ConsumerState<_WebCameraPreview> {
   bool _switchingCamera = false;
   WebScannerStatus _status = WebScannerStatus.initializing;
   String? _message;
+  Timer? _qaStatusTimer;
 
   @override
   void initState() {
     super.initState();
+    if (kDebugMode && _shouldRunQaStatusTransition()) {
+      _runQaStatusTransitionDemo();
+      return;
+    }
     _initialize();
   }
 
   @override
   void dispose() {
+    _qaStatusTimer?.cancel();
     widget.onCaptureChanged?.call(null);
     widget.onSwitchCameraChanged?.call(null);
     _controller?.dispose();
     super.dispose();
   }
 
+  bool _shouldRunQaStatusTransition() {
+    return Uri.base.queryParameters['qa_camera_status'] == 'unavail-ready';
+  }
+
+  void _runQaStatusTransitionDemo() {
+    _setStatus(
+      WebScannerStatus.error,
+      message:
+          'Camera unavailable: the webcam stream could not start. Trying fallback camera profile.',
+    );
+    _qaStatusTimer = Timer(const Duration(milliseconds: 900), () {
+      if (!mounted) return;
+      _setStatus(WebScannerStatus.ready, message: 'Webcam ready');
+    });
+  }
+
   Future<void> _initialize() async {
+    widget.onCaptureChanged?.call(null);
+    widget.onSwitchCameraChanged?.call(null);
     _setStatus(
       WebScannerStatus.initializing,
       message: 'Allow browser camera access to scan in web preview.',
@@ -325,7 +366,7 @@ class _WebCameraPreviewState extends ConsumerState<_WebCameraPreview> {
       }
 
       _cameras = cameras;
-      _activeCameraIndex = _preferredCameraIndex(cameras);
+      _activeCameraIndex = preferredWebCameraIndex(cameras);
       await _initializeCamera(cameras[_activeCameraIndex]);
     } on CameraException catch (e) {
       final bool denied =
@@ -345,15 +386,6 @@ class _WebCameraPreviewState extends ConsumerState<_WebCameraPreview> {
             'Camera preview could not start. Use Gallery to test an image.',
       );
     }
-  }
-
-  int _preferredCameraIndex(List<CameraDescription> cameras) {
-    final int preferred = cameras.indexWhere(
-      (CameraDescription c) =>
-          c.lensDirection == CameraLensDirection.back ||
-          c.lensDirection == CameraLensDirection.external,
-    );
-    return preferred == -1 ? 0 : preferred;
   }
 
   Future<void> _initializeCamera(CameraDescription camera) async {
@@ -405,7 +437,8 @@ class _WebCameraPreviewState extends ConsumerState<_WebCameraPreview> {
       }
       _setStatus(
         WebScannerStatus.error,
-        message: 'Camera switch failed. Try again or use Gallery.',
+        message:
+            'Camera switch failed. The previous camera was kept. Try again or use Gallery.',
       );
     } finally {
       _switchingCamera = false;

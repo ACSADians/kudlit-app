@@ -1,3 +1,4 @@
+import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kudlit_ph/features/scanner/presentation/widgets/scanner_camera.dart';
@@ -19,6 +20,31 @@ void main() {
     expect(
       isWebCameraSecureContext(Uri.parse('http://192.168.68.115:5173/#/home')),
       isFalse,
+    );
+  });
+
+  test('web camera preference chooses back then external before front', () {
+    const CameraDescription front = CameraDescription(
+      name: 'front',
+      lensDirection: CameraLensDirection.front,
+      sensorOrientation: 0,
+    );
+    const CameraDescription back = CameraDescription(
+      name: 'back',
+      lensDirection: CameraLensDirection.back,
+      sensorOrientation: 90,
+    );
+    const CameraDescription external = CameraDescription(
+      name: 'external',
+      lensDirection: CameraLensDirection.external,
+      sensorOrientation: 0,
+    );
+
+    expect(preferredWebCameraIndex(<CameraDescription>[front]), 0);
+    expect(preferredWebCameraIndex(<CameraDescription>[front, external]), 1);
+    expect(
+      preferredWebCameraIndex(<CameraDescription>[front, external, back]),
+      2,
     );
   });
 
