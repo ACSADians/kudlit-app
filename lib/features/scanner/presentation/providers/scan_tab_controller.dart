@@ -40,6 +40,7 @@ class ScanTabState {
     required this.resultVisible,
     required this.flashOn,
     required this.selectedImageBytes,
+    required this.capturedFrameBytes,
     required this.isLoadingImage,
     required this.detectionsFrozen,
     required this.snapshot,
@@ -52,6 +53,7 @@ class ScanTabState {
         resultVisible: false,
         flashOn: false,
         selectedImageBytes: null,
+        capturedFrameBytes: null,
         isLoadingImage: false,
         detectionsFrozen: false,
         snapshot: const <BaybayinDetection>[],
@@ -62,9 +64,18 @@ class ScanTabState {
   final bool resultVisible;
   final bool flashOn;
   final Uint8List? selectedImageBytes;
+
+  /// Frozen frame captured when the shutter button is pressed on a live camera.
+  /// Distinct from [selectedImageBytes] (gallery pick) — no re-detection is
+  /// run against it; existing live detections are reused as the snapshot.
+  final Uint8List? capturedFrameBytes;
   final bool isLoadingImage;
   final bool detectionsFrozen;
   final List<BaybayinDetection> snapshot;
+
+  /// True when the result panel is showing a shutter-frozen frame
+  /// (as opposed to a gallery image or live aggregated win).
+  bool get isShutterFrozen => capturedFrameBytes != null;
 
   /// Most-frequent reading from the recent live-scan rolling window.
   final String? aggregatedWinner;
@@ -75,6 +86,8 @@ class ScanTabState {
     bool? flashOn,
     Uint8List? selectedImageBytes,
     bool clearSelectedImage = false,
+    Uint8List? capturedFrameBytes,
+    bool clearCapturedFrame = false,
     bool? isLoadingImage,
     bool? detectionsFrozen,
     List<BaybayinDetection>? snapshot,
@@ -89,6 +102,9 @@ class ScanTabState {
       selectedImageBytes: clearSelectedImage
           ? null
           : (selectedImageBytes ?? this.selectedImageBytes),
+      capturedFrameBytes: clearCapturedFrame
+          ? null
+          : (capturedFrameBytes ?? this.capturedFrameBytes),
       isLoadingImage: isLoadingImage ?? this.isLoadingImage,
       detectionsFrozen: detectionsFrozen ?? this.detectionsFrozen,
       snapshot: snapshot ?? this.snapshot,
@@ -160,20 +176,22 @@ class ScanTabController extends Notifier<ScanTabState> {
   }
 
   Future<void> captureWebFrame(
-    Future<List<BaybayinDetection>> Function() capture,
+    Future<(List<BaybayinDetection>, Uint8List?)> Function() capture,
   ) async {
     _resetAggregator();
     state = state.copyWith(
       isLoadingImage: true,
       resultVisible: false,
       clearSelectedImage: true,
+      clearCapturedFrame: true,
       snapshot: const <BaybayinDetection>[],
       clearAggregatedWinner: true,
       clearScanNotice: true,
     );
 
     try {
-      final List<BaybayinDetection> results = await capture();
+      final (List<BaybayinDetection> results, Uint8List? imageBytes) =
+          await capture();
       ref.read(scannerNotifierProvider.notifier).update(results);
       if (results.isNotEmpty) {
         _evaluateSafely(results, null);
@@ -181,6 +199,7 @@ class ScanTabController extends Notifier<ScanTabState> {
       state = state.copyWith(
         isLoadingImage: false,
         resultVisible: results.isNotEmpty,
+        capturedFrameBytes: results.isNotEmpty ? imageBytes : null,
         snapshot: List<BaybayinDetection>.of(results),
         scanNotice: results.isEmpty
             ? const ScanNotice(
@@ -197,6 +216,7 @@ class ScanTabController extends Notifier<ScanTabState> {
       state = state.copyWith(
         isLoadingImage: false,
         resultVisible: false,
+        clearCapturedFrame: true,
         snapshot: const <BaybayinDetection>[],
         scanNotice: e.notice,
       );
@@ -206,6 +226,7 @@ class ScanTabController extends Notifier<ScanTabState> {
       state = state.copyWith(
         isLoadingImage: false,
         resultVisible: false,
+        clearCapturedFrame: true,
         snapshot: const <BaybayinDetection>[],
         scanNotice: const ScanNotice(
           title: 'Capture failed',
@@ -216,16 +237,18 @@ class ScanTabController extends Notifier<ScanTabState> {
     }
   }
 
-  void onShutterTapped() {
+  /// Freezes the live camera into a result view.
+  ///
+  /// [capturedBytes] is the PNG snapshot of the camera frame taken just before
+  /// this call. When provided the live [ScannerCamera] widget is replaced by a
+  /// static [Image.memory] so inference stops. Pass `null` to fall back to the
+  /// legacy behaviour (result panel only, camera keeps running).
+  void onShutterTapped({Uint8List? capturedBytes}) {
     final List<BaybayinDetection> detections = ref.read(
       scannerNotifierProvider,
     );
-    if (state.resultVisible) {
-      state = state.copyWith(
-        resultVisible: false,
-        snapshot: const <BaybayinDetection>[],
-        clearScanNotice: true,
-      );
+    if (state.resultVisible || state.isShutterFrozen) {
+      dismissResult();
       return;
     }
 
@@ -244,6 +267,7 @@ class ScanTabController extends Notifier<ScanTabState> {
 
     state = state.copyWith(
       resultVisible: true,
+      capturedFrameBytes: capturedBytes,
       snapshot: List<BaybayinDetection>.of(detections),
       clearScanNotice: true,
     );
@@ -251,7 +275,9 @@ class ScanTabController extends Notifier<ScanTabState> {
   }
 
   void applyLiveDetections(List<BaybayinDetection> detections) {
-    if (state.selectedImageBytes != null || state.detectionsFrozen) {
+    if (state.selectedImageBytes != null ||
+        state.capturedFrameBytes != null ||
+        state.detectionsFrozen) {
       return;
     }
     ref.read(scannerNotifierProvider.notifier).update(detections);
@@ -264,9 +290,11 @@ class ScanTabController extends Notifier<ScanTabState> {
       return;
     }
 
+    ref.read(scannerNotifierProvider.notifier).clear();
     _resetAggregator();
     state = state.copyWith(
       resultVisible: false,
+      clearCapturedFrame: true,
       snapshot: const <BaybayinDetection>[],
       clearAggregatedWinner: true,
       clearScanNotice: true,

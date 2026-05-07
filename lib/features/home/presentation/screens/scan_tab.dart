@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
@@ -32,6 +34,14 @@ class ScanTab extends ConsumerStatefulWidget {
 }
 
 class _ScanTabState extends ConsumerState<ScanTab> {
+  /// GlobalKey on the RepaintBoundary that wraps ScannerCamera.
+  /// Used to capture the live camera frame as PNG bytes when the shutter fires.
+  final GlobalKey _cameraRepaintKey = GlobalKey();
+
+  /// Whether the white "camera flash" overlay is visible.
+  bool _showShutterFlash = false;
+  Timer? _shutterFlashTimer;
+
   WebScannerCapture? _webCapture;
   WebScannerSwitchCamera? _webSwitchCamera;
   WebScannerStatus _webStatus = WebScannerStatus.initializing;
@@ -51,6 +61,7 @@ class _ScanTabState extends ConsumerState<ScanTab> {
   @override
   void dispose() {
     _statusFadeTimer?.cancel();
+    _shutterFlashTimer?.cancel();
     super.dispose();
   }
 
@@ -192,6 +203,44 @@ class _ScanTabState extends ConsumerState<ScanTab> {
     return () => controller.captureWebFrame(capture);
   }
 
+  /// Captures the current live camera frame via [RepaintBoundary], triggers a
+  /// brief white-flash animation, then freezes the scan with [onShutterTapped].
+  ///
+  /// Falls back gracefully — if the capture fails the result panel still shows
+  /// with the live detection snapshot (no frozen image).
+  Future<void> _captureAndShutter() async {
+    final ScanTabController controller = ref.read(
+      scanTabControllerProvider.notifier,
+    );
+
+    // Trigger the flash animation immediately for tactile feedback.
+    _shutterFlashTimer?.cancel();
+    setState(() => _showShutterFlash = true);
+    _shutterFlashTimer = Timer(const Duration(milliseconds: 200), () {
+      if (mounted) setState(() => _showShutterFlash = false);
+    });
+    HapticFeedback.mediumImpact();
+
+    // Try to capture the current camera frame as PNG bytes.
+    Uint8List? capturedBytes;
+    try {
+      final RenderObject? render = _cameraRepaintKey.currentContext
+          ?.findRenderObject();
+      if (render is RenderRepaintBoundary) {
+        final ui.Image image = await render.toImage(pixelRatio: 1.5);
+        final ByteData? byteData = await image.toByteData(
+          format: ui.ImageByteFormat.png,
+        );
+        image.dispose();
+        capturedBytes = byteData?.buffer.asUint8List();
+      }
+    } catch (e) {
+      debugPrint('[ScanTab] frame capture failed: $e');
+    }
+
+    controller.onShutterTapped(capturedBytes: capturedBytes);
+  }
+
   @override
   Widget build(BuildContext context) {
     final ScanTabController controller = ref.read(
@@ -210,19 +259,23 @@ class _ScanTabState extends ConsumerState<ScanTab> {
     final List<BaybayinDetection> detections = ref.watch(
       scannerNotifierProvider,
     );
+    final bool isFrozen =
+        scanState.isShutterFrozen || scanState.selectedImageBytes != null;
     final String statusLabel = scanState.selectedImageBytes != null
         ? 'Image preview'
+        : scanState.isShutterFrozen
+        ? 'Photo captured'
         : kIsWeb
         ? _webStatus.label
         : 'Camera ready';
     final IconData statusIcon = scanState.selectedImageBytes != null
         ? Icons.image_outlined
+        : scanState.isShutterFrozen
+        ? Icons.camera_alt_rounded
         : kIsWeb
         ? _webStatus.icon
         : Icons.camera_alt_outlined;
-    _syncStatusCue(
-      '$statusLabel:$_webStatus:${scanState.selectedImageBytes != null}',
-    );
+    _syncStatusCue('$statusLabel:$_webStatus:$isFrozen');
 
     return Stack(
       fit: StackFit.expand,
@@ -233,6 +286,8 @@ class _ScanTabState extends ConsumerState<ScanTab> {
           onDetections: controller.applyLiveDetections,
           onFlashToggle: kIsWeb ? null : () => controller.toggleFlash(),
           selectedImageBytes: scanState.selectedImageBytes,
+          capturedFrameBytes: scanState.capturedFrameBytes,
+          cameraRepaintKey: _cameraRepaintKey,
           onWebCaptureChanged: _setWebCapture,
           onWebSwitchCameraChanged: _setWebSwitchCamera,
           onWebStatusChanged: _setWebStatus,
@@ -247,6 +302,17 @@ class _ScanTabState extends ConsumerState<ScanTab> {
             controller.setDetectionsFrozen(false);
           },
         ),
+        // Camera-shutter white flash overlay — fades out after 200 ms.
+        if (_showShutterFlash)
+          Positioned.fill(
+            child: IgnorePointer(
+              child: AnimatedOpacity(
+                opacity: _showShutterFlash ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 180),
+                child: const ColoredBox(color: Colors.white),
+              ),
+            ),
+          ),
         Positioned(
           top: 0,
           left: sideGutter,
@@ -256,8 +322,13 @@ class _ScanTabState extends ConsumerState<ScanTab> {
               padding: EdgeInsets.only(top: topGutter),
               child: _ScanUtilityBar(
                 flashOn: scanState.flashOn,
-                onGalleryTap: () => controller.pickImageFromGallery(),
-                onFlashToggle: kIsWeb ? null : () => controller.toggleFlash(),
+                // Hide gallery/flash controls when frozen — retake handles return.
+                onGalleryTap: isFrozen
+                    ? null
+                    : () => controller.pickImageFromGallery(),
+                onFlashToggle: kIsWeb || isFrozen
+                    ? null
+                    : () => controller.toggleFlash(),
               ),
             ),
           ),
@@ -301,14 +372,21 @@ class _ScanTabState extends ConsumerState<ScanTab> {
           right: 0,
           bottom: controlsBottom,
           child: _ScanControls(
-            onShutter: kIsWeb
+            frozen: scanState.isShutterFrozen,
+            onShutter: scanState.isShutterFrozen
+                // Retake: dismiss frozen frame and go back to live camera.
+                ? controller.dismissResult
+                : kIsWeb
                 ? (_webCapture == null || scanState.isLoadingImage
                       ? null
                       : () => controller.captureWebFrame(_webCapture!))
-                : controller.onShutterTapped,
-            shutterLabel: kIsWeb ? 'Capture Webcam Frame' : 'Capture Scan',
-            onRotateCamera:
-                scanState.selectedImageBytes != null || scanState.isLoadingImage
+                : (scanState.isLoadingImage ? null : _captureAndShutter),
+            shutterLabel: scanState.isShutterFrozen
+                ? 'Retake'
+                : kIsWeb
+                ? 'Capture Webcam Frame'
+                : 'Capture Scan',
+            onRotateCamera: isFrozen || scanState.isLoadingImage
                 ? null
                 : () => _switchCamera(controller),
             rotateLabel: kIsWeb && _webSwitchCamera == null
@@ -421,10 +499,12 @@ class _ScanCameraStack extends StatelessWidget {
     required this.onDetections,
     required this.onFlashToggle,
     required this.onPermutationsTap,
+    required this.cameraRepaintKey,
     this.onWebCaptureChanged,
     this.onWebSwitchCameraChanged,
     this.onWebStatusChanged,
     this.selectedImageBytes,
+    this.capturedFrameBytes,
   });
 
   final List<BaybayinDetection> detections;
@@ -435,23 +515,35 @@ class _ScanCameraStack extends StatelessWidget {
   final ValueChanged<WebScannerSwitchCamera?>? onWebSwitchCameraChanged;
   final ValueChanged<WebScannerStatus>? onWebStatusChanged;
   final Uint8List? selectedImageBytes;
+
+  /// Frozen camera frame from a shutter press. Takes priority over live camera.
+  final Uint8List? capturedFrameBytes;
+
+  /// Key on the [RepaintBoundary] that wraps the live [ScannerCamera].
+  /// Used by the parent to capture the frame just before freezing.
+  final GlobalKey cameraRepaintKey;
+
   final void Function(List<String> permutations) onPermutationsTap;
 
   @override
   Widget build(BuildContext context) {
+    final Uint8List? frozenImage = capturedFrameBytes ?? selectedImageBytes;
     return Stack(
       fit: StackFit.expand,
       children: <Widget>[
-        if (selectedImageBytes != null)
-          Image.memory(selectedImageBytes!, fit: BoxFit.cover)
+        if (frozenImage != null)
+          Image.memory(frozenImage, fit: BoxFit.cover)
         else
-          ScannerCamera(
-            flashOn: flashOn,
-            onDetections: onDetections,
-            onFlashToggle: onFlashToggle,
-            onWebCaptureChanged: onWebCaptureChanged,
-            onWebSwitchCameraChanged: onWebSwitchCameraChanged,
-            onWebStatusChanged: onWebStatusChanged,
+          RepaintBoundary(
+            key: cameraRepaintKey,
+            child: ScannerCamera(
+              flashOn: flashOn,
+              onDetections: onDetections,
+              onFlashToggle: onFlashToggle,
+              onWebCaptureChanged: onWebCaptureChanged,
+              onWebSwitchCameraChanged: onWebSwitchCameraChanged,
+              onWebStatusChanged: onWebStatusChanged,
+            ),
           ),
         AggregatedBoundingBox(
           detections: detections,
@@ -470,6 +562,7 @@ class _ScanControls extends StatelessWidget {
     required this.shutterLabel,
     required this.rotateLabel,
     this.onRotateCamera,
+    this.frozen = false,
     this.compact = false,
   });
 
@@ -477,6 +570,10 @@ class _ScanControls extends StatelessWidget {
   final String shutterLabel;
   final VoidCallback? onRotateCamera;
   final String rotateLabel;
+
+  /// When true the user has a frozen frame — left button becomes "Retake"
+  /// and the shutter transforms into a close/retake indicator.
+  final bool frozen;
   final bool compact;
 
   @override
@@ -490,19 +587,28 @@ class _ScanControls extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: Padding(
               padding: EdgeInsetsDirectional.only(start: compact ? 18 : 28),
-              child: _ControlIcon(
-                icon: Icons.cameraswitch_rounded,
-                label: rotateLabel,
-                onTap: onRotateCamera,
-                size: compact ? 48 : 54,
-                prominent: true,
-              ),
+              child: frozen
+                  ? _ControlIcon(
+                      icon: Icons.replay_rounded,
+                      label: 'Retake',
+                      onTap: onShutter,
+                      size: compact ? 48 : 54,
+                      prominent: true,
+                    )
+                  : _ControlIcon(
+                      icon: Icons.cameraswitch_rounded,
+                      label: rotateLabel,
+                      onTap: onRotateCamera,
+                      size: compact ? 48 : 54,
+                      prominent: true,
+                    ),
             ),
           ),
           _ShutterButton(
             onTap: onShutter,
             label: shutterLabel,
             compact: compact,
+            frozen: frozen,
           ),
         ],
       ),
@@ -518,7 +624,7 @@ class _ScanUtilityBar extends StatelessWidget {
   });
 
   final bool flashOn;
-  final VoidCallback onGalleryTap;
+  final VoidCallback? onGalleryTap;
   final VoidCallback? onFlashToggle;
 
   @override
@@ -627,11 +733,15 @@ class _ShutterButton extends StatelessWidget {
     required this.onTap,
     required this.label,
     required this.compact,
+    this.frozen = false,
   });
 
   final VoidCallback? onTap;
   final String label;
   final bool compact;
+
+  /// When [frozen] the button renders as a close/retake circle with an ×.
+  final bool frozen;
 
   @override
   Widget build(BuildContext context) {
@@ -650,24 +760,34 @@ class _ShutterButton extends StatelessWidget {
             height: outerSize,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: const Color(0xFF0E1425).withAlpha(100),
+              color: frozen
+                  ? Colors.black.withAlpha(140)
+                  : const Color(0xFF0E1425).withAlpha(100),
               border: Border.all(
                 color: Colors.white.withAlpha(onTap == null ? 80 : 180),
                 width: 2.5,
               ),
             ),
             child: Center(
-              child: Container(
-                width: innerSize,
-                height: innerSize,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withAlpha(onTap == null ? 130 : 255),
-                  boxShadow: const <BoxShadow>[
-                    BoxShadow(color: Color(0x4D7AAAFF), blurRadius: 18),
-                  ],
-                ),
-              ),
+              child: frozen
+                  ? Icon(
+                      Icons.close_rounded,
+                      color: Colors.white.withAlpha(onTap == null ? 130 : 230),
+                      size: compact ? 26 : 30,
+                    )
+                  : Container(
+                      width: innerSize,
+                      height: innerSize,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withAlpha(
+                          onTap == null ? 130 : 255,
+                        ),
+                        boxShadow: const <BoxShadow>[
+                          BoxShadow(color: Color(0x4D7AAAFF), blurRadius: 18),
+                        ],
+                      ),
+                    ),
             ),
           ),
         ),
