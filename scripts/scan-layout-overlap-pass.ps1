@@ -46,6 +46,163 @@ function Capture-Image {
   & npx playwright screenshot --viewport-size=$ViewportSpec --wait-for-timeout=$WaitMs $TargetUrl $OutputPath
 }
 
+function Add-QueryParam {
+  param(
+    [Parameter(Mandatory = $true)] [string]$BaseUrl,
+    [Parameter(Mandatory = $true)] [string]$Name,
+    [Parameter(Mandatory = $true)] [string]$Value
+  )
+
+  $separator = if ($BaseUrl.Contains('?')) { '&' } else { '?' }
+  return "$BaseUrl$separator$Name=$([uri]::EscapeDataString($Value))"
+}
+
+function Get-MinArtifactBytes {
+  param(
+    [Parameter(Mandatory = $true)] [hashtable]$Viewport
+  )
+
+  if ($Viewport.StrictTiny) {
+    return 512
+  }
+
+  return 1024
+}
+
+function Assert-ArtifactFile {
+  param(
+    [Parameter(Mandatory = $true)] [string]$Path,
+    [int]$MinBytes = 1024
+  )
+
+  if (-not (Test-Path -Path $Path)) {
+    throw "Missing artifact: $Path"
+  }
+
+  $item = Get-Item -Path $Path
+  if ($item.Length -lt $MinBytes) {
+    throw "Artifact too small ($($item.Length) bytes): $Path"
+  }
+}
+
+function Write-ContactSheet {
+  param(
+    [Parameter(Mandatory = $true)] [string]$Root,
+    [Parameter(Mandatory = $true)] [array]$Results
+  )
+
+  function Escape-Html {
+    param([string]$Text)
+    if ($null -eq $Text) {
+      return ''
+    }
+    return $Text.Replace('&', '&amp;').Replace('<', '&lt;').Replace('>', '&gt;').Replace('"', '&quot;')
+  }
+
+  $outFile = Join-Path $Root 'scan-layout-overlap-contact-sheet.html'
+  $rows = New-Object System.Text.StringBuilder
+  [void]$rows.AppendLine('<section>')
+  [void]$rows.AppendLine('  <h2>Matrix</h2>')
+  [void]$rows.AppendLine('  <div class="grid">')
+  foreach ($result in $Results) {
+    $name = Escape-Html -Text $result.viewport
+    $matrixPath = Escape-Html -Text ('matrix/' + $result.viewport + '.png')
+    [void]$rows.AppendLine("    <figure><figcaption>$name</figcaption><img src=`"$matrixPath`" alt=`"Matrix $name`"/></figure>")
+  }
+  [void]$rows.AppendLine('  </div>')
+  [void]$rows.AppendLine('</section>')
+
+  [void]$rows.AppendLine('<section>')
+  [void]$rows.AppendLine('  <h2>Transitions</h2>')
+  [void]$rows.AppendLine('  <div class="grid">')
+  foreach ($result in $Results) {
+    foreach ($transition in $result.transitions) {
+      $vpName = Escape-Html -Text $result.viewport
+      $phase = Escape-Html -Text $transition.phase
+      $transitionPath = Escape-Html -Text (
+        'transitions/' + $result.viewport + '-' + $transition.phase + '.png'
+      )
+      [void]$rows.AppendLine(
+        "    <figure><figcaption>${vpName} - $phase</figcaption><img src=`"$transitionPath`" alt=`"$vpName transition $phase`"/></figure>"
+      )
+    }
+  }
+  [void]$rows.AppendLine('  </div>')
+  [void]$rows.AppendLine('</section>')
+
+  $html = @"
+<!doctype html>
+<html>
+  <head>
+    <meta charset=`"utf-8`" />
+    <title>Scan Layout Overlap Contact Sheet</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 20px; color: #111; }
+      h1, h2 { margin: 0 0 12px; }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 12px;
+        margin-bottom: 24px;
+      }
+      figure { margin: 0; border: 1px solid #ddd; border-radius: 8px; padding: 8px; background: #fafafa; }
+      figcaption { font-size: 12px; color: #333; margin-bottom: 6px; }
+      img { width: 100%; height: auto; display: block; }
+      .meta { font-size: 12px; color: #666; margin-bottom: 18px; }
+    </style>
+  </head>
+  <body>
+    <h1>Scan Layout Overlap Contact Sheet</h1>
+    <div class="meta">Generated $(Get-Date). Open to review matrix + transitions. Flag any overlap/clipping by eye before merge.</div>
+$rows
+  </body>
+</html>
+"@
+
+  $html | Set-Content -Path $outFile -Encoding UTF8
+  Write-Info "Contact sheet written: $outFile"
+}
+
+function Assert-ReportIntegrity {
+  param(
+    [Parameter(Mandatory = $true)] [string]$Path,
+    [Parameter(Mandatory = $true)] [array]$ExpectedViewports,
+    [int]$ExpectedTransitionCount = 3
+  )
+
+  $parsed = Get-Content $Path -Raw | ConvertFrom-Json
+  if ($parsed.status -ne 'pass') {
+    throw "Report status is not pass: $Path"
+  }
+
+  if ($parsed.results.Count -ne $ExpectedViewports.Count) {
+    throw "Report results count mismatch. Expected $($ExpectedViewports.Count), got $($parsed.results.Count)"
+  }
+
+  foreach ($expect in $ExpectedViewports) {
+    $match = $parsed.results | Where-Object { $_.viewport -eq $expect.Name }
+    if (-not $match) {
+      throw "Missing viewport in report: $($expect.Name)"
+    }
+    $minBytes = Get-MinArtifactBytes -Viewport $expect
+    Assert-ArtifactFile -Path $match.matrix -MinBytes $minBytes
+
+    if ($expect.Transition) {
+      if (($match.transitions.Count) -ne $ExpectedTransitionCount) {
+        throw "Transition capture count mismatch for $($expect.Name). Expected $ExpectedTransitionCount, got $($match.transitions.Count)"
+      }
+      if (-not $match.transitionCaptured) {
+        throw "Transition capture flag false for $($expect.Name)"
+      }
+      foreach ($transition in $match.transitions) {
+        Assert-ArtifactFile -Path $transition.path -MinBytes $minBytes
+      }
+    } elseif ($match.transitions.Count -gt 0) {
+      throw "Expected no transitions for $($expect.Name), but found $($match.transitions.Count)"
+    }
+  }
+}
+
 $root = Split-Path -Path $PSScriptRoot -Parent
 $matrixDir = Join-Path $root "$OutRoot/matrix"
 $transitionDir = Join-Path $root "$OutRoot/transitions"
@@ -78,6 +235,8 @@ foreach ($vp in $viewports) {
   if ($LASTEXITCODE -ne 0) {
     throw "Matrix capture failed for $($vp.Name)."
   }
+  $minBytes = Get-MinArtifactBytes -Viewport $vp
+  Assert-ArtifactFile -Path $outPath -MinBytes $minBytes
 
   $transitions = @()
   if ($vp.Transition) {
@@ -88,10 +247,12 @@ foreach ($vp in $viewports) {
     )) {
       $transPath = Join-Path $transitionDir "$($vp.Name)-$($phase.Name).png"
       Write-Info "Capturing transition $($phase.Name) @ $($vp.Name)"
-      Capture-Image -ViewportSpec $size -TargetUrl "$($Url + '?qa_camera_status=unavail-ready')" -OutputPath $transPath -WaitMs $phase.Delay
+      $transitionUrl = Add-QueryParam -BaseUrl $Url -Name 'qa_camera_status' -Value 'unavail-ready'
+      Capture-Image -ViewportSpec $size -TargetUrl $transitionUrl -OutputPath $transPath -WaitMs $phase.Delay
       if ($LASTEXITCODE -ne 0) {
         throw "Transition capture failed for $($vp.Name) $($phase.Name)."
       }
+      Assert-ArtifactFile -Path $transPath -MinBytes $minBytes
       $transitions += [pscustomobject]@{
         phase = $phase.Name
         delayMs = $phase.Delay
@@ -120,6 +281,8 @@ $report = [pscustomobject]@{
   results = $results
 }
 
+Write-ContactSheet -Root (Join-Path $root $OutRoot) -Results $results
 $report | ConvertTo-Json -Depth 6 | Set-Content -Path $reportPath
+Assert-ReportIntegrity -Path $reportPath -ExpectedViewports $viewports
 Write-Info "Saved overlap report: $reportPath"
 Write-Info "Complete. Matrix artifacts in $matrixDir, transition artifacts in $transitionDir"

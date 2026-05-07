@@ -143,7 +143,6 @@ void main() {
           'Camera is currently unavailable while the status stream refreshes. Keep the app in the foreground and retry with clear lighting.',
         ),
       );
-
       expect(utilityRect.left, greaterThan(0), reason: viewportCase.name);
       expect(
         utilityRect.top,
@@ -286,8 +285,6 @@ void main() {
           greaterThanOrEqualTo(0),
           reason: viewportCase.name,
         );
-      }
-      if (!viewportCase.strictTinyLandscape) {
         expect(
           titleRect.bottom,
           lessThanOrEqualTo(viewport.height),
@@ -304,6 +301,18 @@ void main() {
         lessThanOrEqualTo(viewport.width),
         reason: viewportCase.name,
       );
+      if (!viewportCase.strictTinyLandscape) {
+        expect(
+          messageRect.top,
+          greaterThanOrEqualTo(0),
+          reason: viewportCase.name,
+        );
+        expect(
+          messageRect.bottom,
+          lessThanOrEqualTo(viewport.height),
+          reason: viewportCase.name,
+        );
+      }
 
       if (viewportCase.strictTinyLandscape) {
         expect(

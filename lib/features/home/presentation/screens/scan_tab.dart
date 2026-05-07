@@ -243,202 +243,211 @@ class _ScanTabState extends ConsumerState<ScanTab> {
 
   @override
   Widget build(BuildContext context) {
-    final ScanTabController controller = ref.read(
-      scanTabControllerProvider.notifier,
-    );
-    final ScanTabState scanState = ref.watch(scanTabControllerProvider);
-    final Size viewport = MediaQuery.sizeOf(context);
-    final double safeBottom = MediaQuery.paddingOf(context).bottom;
-    final bool compactLandscape =
-        viewport.width > viewport.height && viewport.height < 430;
-    final bool tinyViewport = viewport.width < 340;
-    final double sideGutter = viewport.width < 380 ? 10 : 12;
-    final double topGutter = compactLandscape ? 6 : 10;
-    final double controlsBottom = safeBottom + (compactLandscape ? 8 : 40);
-    final double controlsHeight = compactLandscape ? 82 : 96;
-    final double panelBottom = controlsBottom + controlsHeight;
-    final List<BaybayinDetection> detections = ref.watch(
-      scannerNotifierProvider,
-    );
-    final bool isFrozen =
-        scanState.isShutterFrozen || scanState.selectedImageBytes != null;
-    final String statusLabel = scanState.selectedImageBytes != null
-        ? 'Image preview'
-        : scanState.isShutterFrozen
-        ? 'Photo captured'
-        : kIsWeb
-        ? _webStatus.label
-        : 'Camera ready';
-    final IconData statusIcon = scanState.selectedImageBytes != null
-        ? Icons.image_outlined
-        : scanState.isShutterFrozen
-        ? Icons.camera_alt_rounded
-        : kIsWeb
-        ? _webStatus.icon
-        : Icons.camera_alt_outlined;
-    _syncStatusCue('$statusLabel:$_webStatus:$isFrozen');
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final ScanTabController controller = ref.read(
+          scanTabControllerProvider.notifier,
+        );
+        final ScanTabState scanState = ref.watch(scanTabControllerProvider);
+        final Size viewport = Size(constraints.maxWidth, constraints.maxHeight);
+        final double safeBottom = MediaQuery.paddingOf(context).bottom;
+        final bool compactLandscape =
+            viewport.width > viewport.height && viewport.height < 430;
+        final bool tinyViewport = viewport.width < 340;
+        final bool tinyLandscapeNotice =
+            compactLandscape && viewport.width <= 340;
+        final double sideGutter = viewport.width < 380 ? 10 : 12;
+        final double topGutter = compactLandscape ? 6 : 10;
+        final double controlsBottom = safeBottom + (compactLandscape ? 8 : 40);
+        final double controlsHeight = compactLandscape ? 82 : 96;
+        final double panelBottom = controlsBottom + controlsHeight;
+        final List<BaybayinDetection> detections = ref.watch(
+          scannerNotifierProvider,
+        );
+        final bool isFrozen =
+            scanState.isShutterFrozen || scanState.selectedImageBytes != null;
+        final String statusLabel = scanState.selectedImageBytes != null
+            ? 'Image preview'
+            : scanState.isShutterFrozen
+            ? 'Photo captured'
+            : kIsWeb
+            ? _webStatus.label
+            : 'Camera ready';
+        final IconData statusIcon = scanState.selectedImageBytes != null
+            ? Icons.image_outlined
+            : scanState.isShutterFrozen
+            ? Icons.camera_alt_rounded
+            : kIsWeb
+            ? _webStatus.icon
+            : Icons.camera_alt_outlined;
+        _syncStatusCue('$statusLabel:$_webStatus:$isFrozen');
 
-    return Stack(
-      fit: StackFit.expand,
-      children: <Widget>[
-        _ScanCameraStack(
-          detections: detections,
-          flashOn: scanState.flashOn,
-          scannerPaused: scanState.resultVisible && !kIsWeb,
-          onDetections: controller.applyLiveDetections,
-          onFlashToggle: kIsWeb ? null : () => controller.toggleFlash(),
-          selectedImageBytes: scanState.selectedImageBytes,
-          capturedFrameBytes: scanState.capturedFrameBytes,
-          cameraRepaintKey: _cameraRepaintKey,
-          onWebCaptureChanged: _setWebCapture,
-          onWebSwitchCameraChanged: _setWebSwitchCamera,
-          onWebStatusChanged: _setWebStatus,
-          onPermutationsTap: (List<String> permutations) async {
-            controller.setDetectionsFrozen(true);
-            await showDialog<void>(
-              context: context,
-              builder: (BuildContext _) {
-                return _PermutationsDialog(permutations: permutations);
+        return Stack(
+          fit: StackFit.expand,
+          children: <Widget>[
+            _ScanCameraStack(
+              detections: detections,
+              flashOn: scanState.flashOn,
+              scannerPaused: scanState.resultVisible && !kIsWeb,
+              onDetections: controller.applyLiveDetections,
+              onFlashToggle: kIsWeb ? null : () => controller.toggleFlash(),
+              selectedImageBytes: scanState.selectedImageBytes,
+              capturedFrameBytes: scanState.capturedFrameBytes,
+              cameraRepaintKey: _cameraRepaintKey,
+              onWebCaptureChanged: _setWebCapture,
+              onWebSwitchCameraChanged: _setWebSwitchCamera,
+              onWebStatusChanged: _setWebStatus,
+              onPermutationsTap: (List<String> permutations) async {
+                controller.setDetectionsFrozen(true);
+                await showDialog<void>(
+                  context: context,
+                  builder: (BuildContext _) {
+                    return _PermutationsDialog(permutations: permutations);
+                  },
+                );
+                controller.setDetectionsFrozen(false);
               },
-            );
-            controller.setDetectionsFrozen(false);
-          },
-        ),
-        // Camera-shutter white flash overlay — fades out after 200 ms.
-        if (_showShutterFlash)
-          Positioned.fill(
-            child: IgnorePointer(
-              child: AnimatedOpacity(
-                opacity: _showShutterFlash ? 1.0 : 0.0,
-                duration: const Duration(milliseconds: 180),
-                child: const ColoredBox(color: Colors.white),
-              ),
             ),
-          ),
-        Positioned(
-          top: 0,
-          left: sideGutter,
-          child: SafeArea(
-            bottom: false,
-            child: Padding(
-              padding: EdgeInsets.only(top: topGutter),
-              child: _ScanUtilityBar(
-                key: const ValueKey('scan-utility-bar'),
-                flashOn: scanState.flashOn,
-                // Hide gallery/flash controls when frozen — retake handles return.
-                onGalleryTap: isFrozen
-                    ? null
-                    : () => controller.pickImageFromGallery(),
-                onFlashToggle: kIsWeb || isFrozen
-                    ? null
-                    : () => controller.toggleFlash(),
-                compact: compactLandscape,
-                tiny: tinyViewport,
+            // Camera-shutter white flash overlay — fades out after 200 ms.
+            if (_showShutterFlash)
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: AnimatedOpacity(
+                    opacity: _showShutterFlash ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 180),
+                    child: const ColoredBox(color: Colors.white),
+                  ),
+                ),
               ),
-            ),
-          ),
-        ),
-        if (scanState.isLoadingImage)
-          const Positioned.fill(
-            child: Center(child: CircularProgressIndicator()),
-          ),
-        Positioned(
-          top: 0,
-          right: sideGutter,
-          child: SafeArea(
-            bottom: false,
-            child: Padding(
-              padding: EdgeInsets.only(top: topGutter),
-              child: IgnorePointer(
-                ignoring: !_showStatusChip,
-                child: AnimatedOpacity(
-                  opacity: _showStatusChip ? 1 : 0,
-                  duration: const Duration(milliseconds: 450),
-                  curve: Curves.easeOutCubic,
-                  child: _ScanStatusChip(
-                    key: const ValueKey('scan-status-chip'),
-                    label: statusLabel,
-                    icon: statusIcon,
+            Positioned(
+              top: 0,
+              left: sideGutter,
+              child: SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: EdgeInsets.only(top: topGutter),
+                  child: _ScanUtilityBar(
+                    key: const ValueKey('scan-utility-bar'),
+                    flashOn: scanState.flashOn,
+                    // Hide gallery/flash controls when frozen — retake handles return.
+                    onGalleryTap: isFrozen
+                        ? null
+                        : () => controller.pickImageFromGallery(),
+                    onFlashToggle: kIsWeb || isFrozen
+                        ? null
+                        : () => controller.toggleFlash(),
+                    compact: compactLandscape,
+                    tiny: tinyViewport,
                   ),
                 ),
               ),
             ),
-          ),
-        ),
-        Positioned(
-          top: compactLandscape
-              ? (tinyViewport ? 28 : 36)
-              : (tinyViewport ? 38 : 44),
-          right: sideGutter,
-          child: SafeArea(
-            bottom: false,
-            child: Padding(
-              padding: EdgeInsets.only(top: topGutter),
-              child: const YoloModelDropdown(scope: YoloModelScope.camera),
+            if (scanState.isLoadingImage)
+              const Positioned.fill(
+                child: Center(child: CircularProgressIndicator()),
+              ),
+            Positioned(
+              top: 0,
+              right: sideGutter,
+              child: SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: EdgeInsets.only(top: topGutter),
+                  child: IgnorePointer(
+                    ignoring: !_showStatusChip,
+                    child: AnimatedOpacity(
+                      opacity: _showStatusChip ? 1 : 0,
+                      duration: const Duration(milliseconds: 450),
+                      curve: Curves.easeOutCubic,
+                      child: _ScanStatusChip(
+                        key: const ValueKey('scan-status-chip'),
+                        label: statusLabel,
+                        icon: statusIcon,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ),
-          ),
-        ),
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: controlsBottom,
-          child: _ScanControls(
-            key: const ValueKey('scan-controls'),
-            frozen: scanState.isShutterFrozen,
-            onShutter: scanState.isShutterFrozen
-                // Retake: dismiss frozen frame and go back to live camera.
-                ? controller.dismissResult
-                : kIsWeb
-                ? (_webCapture == null || scanState.isLoadingImage
-                      ? null
-                      : () => controller.captureWebFrame(_webCapture!))
-                : (scanState.isLoadingImage ? null : _captureAndShutter),
-            shutterLabel: scanState.isShutterFrozen
-                ? 'Retake'
-                : kIsWeb
-                ? 'Capture Webcam Frame'
-                : 'Capture Scan',
-            onRotateCamera: isFrozen || scanState.isLoadingImage
-                ? null
-                : () => _switchCamera(controller),
-            rotateLabel: kIsWeb && _webSwitchCamera == null
-                ? 'Only one camera available'
-                : 'Switch camera',
-            compact: compactLandscape,
-            tiny: tinyViewport,
-          ),
-        ),
-        if (scanState.scanNotice != null)
-          Positioned(
-            left: 14,
-            right: 14,
-            bottom: panelBottom,
-            child: _ScanNoticePanel(
-              key: const ValueKey('scan-notice-panel'),
-              notice: scanState.scanNotice!,
-              onTryAgain: _noticeTryAgainAction(controller, scanState),
-              onGalleryTap: () => controller.pickImageFromGallery(),
-              onDismiss: controller.clearNotice,
+            Positioned(
+              top: compactLandscape
+                  ? (tinyViewport ? 28 : 36)
+                  : (tinyViewport ? 38 : 44),
+              right: sideGutter,
+              child: SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: EdgeInsets.only(top: topGutter),
+                  child: const YoloModelDropdown(scope: YoloModelScope.camera),
+                ),
+              ),
             ),
-          ),
-        if (scanState.resultVisible)
-          Positioned(
-            left: 14,
-            right: 14,
-            bottom: panelBottom,
-            child: ScannerResultPanel(
-              detections: scanState.snapshot,
-              onDismiss: controller.dismissResult,
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: controlsBottom,
+              child: _ScanControls(
+                key: const ValueKey('scan-controls'),
+                frozen: scanState.isShutterFrozen,
+                onShutter: scanState.isShutterFrozen
+                    // Retake: dismiss frozen frame and go back to live camera.
+                    ? controller.dismissResult
+                    : kIsWeb
+                    ? (_webCapture == null || scanState.isLoadingImage
+                          ? null
+                          : () => controller.captureWebFrame(_webCapture!))
+                    : (scanState.isLoadingImage ? null : _captureAndShutter),
+                shutterLabel: scanState.isShutterFrozen
+                    ? 'Retake'
+                    : kIsWeb
+                    ? 'Capture Webcam Frame'
+                    : 'Capture Scan',
+                onRotateCamera: isFrozen || scanState.isLoadingImage
+                    ? null
+                    : () => _switchCamera(controller),
+                rotateLabel: kIsWeb && _webSwitchCamera == null
+                    ? 'Only one camera available'
+                    : 'Switch camera',
+                compact: compactLandscape,
+                tiny: tinyViewport,
+              ),
             ),
-          )
-        else if (scanState.aggregatedWinner != null)
-          Positioned(
-            left: 14,
-            right: 14,
-            bottom: panelBottom,
-            child: _AggregatedWinnerBanner(winner: scanState.aggregatedWinner!),
-          ),
-      ],
+            if (scanState.scanNotice != null)
+              Positioned(
+                left: 14,
+                right: 14,
+                bottom: panelBottom,
+                child: _ScanNoticePanel(
+                  key: const ValueKey('scan-notice-panel'),
+                  notice: scanState.scanNotice!,
+                  onTryAgain: _noticeTryAgainAction(controller, scanState),
+                  onGalleryTap: () => controller.pickImageFromGallery(),
+                  onDismiss: controller.clearNotice,
+                  compact: tinyLandscapeNotice,
+                ),
+              ),
+            if (scanState.resultVisible)
+              Positioned(
+                left: 14,
+                right: 14,
+                bottom: panelBottom,
+                child: ScannerResultPanel(
+                  detections: scanState.snapshot,
+                  onDismiss: controller.dismissResult,
+                ),
+              )
+            else if (scanState.aggregatedWinner != null)
+              Positioned(
+                left: 14,
+                right: 14,
+                bottom: panelBottom,
+                child: _AggregatedWinnerBanner(
+                  winner: scanState.aggregatedWinner!,
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 }
@@ -891,12 +900,14 @@ class _ScanNoticePanel extends StatelessWidget {
     required this.onGalleryTap,
     required this.onDismiss,
     this.onTryAgain,
+    this.compact = false,
   });
 
   final ScanNotice notice;
   final VoidCallback? onTryAgain;
   final VoidCallback onGalleryTap;
   final VoidCallback onDismiss;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -906,15 +917,27 @@ class _ScanNoticePanel extends StatelessWidget {
       ScanNoticeKind.warning => cs.tertiary,
       ScanNoticeKind.error => cs.error,
     };
+    final double iconBadgeSize = compact ? 24 : 34;
+    final double iconSize = compact ? 16 : 18;
+    final double iconRadius = compact ? 8 : 10;
+    final EdgeInsets panelPadding = compact
+        ? const EdgeInsets.fromLTRB(10, 8, 10, 8)
+        : const EdgeInsets.fromLTRB(14, 12, 12, 12);
+    final double titleFontSize = compact ? 12.8 : 14;
+    final double messageFontSize = compact ? 10.8 : 12;
+    final double panelRadius = compact ? 12 : 16;
+    final int messageMaxLines = compact ? 2 : 3;
+    final double spacing = compact ? 8 : 10;
+    final double messageLineHeight = compact ? 1.15 : 1.2;
 
     return Semantics(
       liveRegion: true,
       label: '${notice.title}. ${notice.message}',
       child: Container(
-        padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+        padding: panelPadding,
         decoration: BoxDecoration(
           color: cs.surfaceContainerHigh,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(panelRadius),
           border: Border.all(color: accent.withAlpha(120)),
           boxShadow: const <BoxShadow>[
             BoxShadow(
@@ -932,22 +955,22 @@ class _ScanNoticePanel extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Container(
-                  width: 34,
-                  height: 34,
+                  width: iconBadgeSize,
+                  height: iconBadgeSize,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: accent.withAlpha(26),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(iconRadius),
                   ),
                   child: Icon(
                     notice.kind == ScanNoticeKind.error
                         ? Icons.error_outline_rounded
                         : Icons.info_outline_rounded,
-                    size: 18,
+                    size: iconSize,
                     color: accent,
                   ),
                 ),
-                const SizedBox(width: 10),
+                SizedBox(width: spacing),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -957,19 +980,19 @@ class _ScanNoticePanel extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: titleFontSize,
                           fontWeight: FontWeight.w800,
                           color: cs.onSurface,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      SizedBox(height: compact ? 1 : 2),
                       Text(
                         notice.message,
-                        maxLines: 3,
+                        maxLines: messageMaxLines,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontSize: 12,
-                          height: 1.2,
+                          fontSize: messageFontSize,
+                          height: messageLineHeight,
                           color: cs.onSurface.withAlpha(170),
                         ),
                       ),
@@ -983,28 +1006,30 @@ class _ScanNoticePanel extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 10),
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: _NoticeButton(
-                    icon: Icons.image_outlined,
-                    label: 'Use Gallery',
-                    onTap: onGalleryTap,
-                    filled: true,
+            if (!compact) ...<Widget>[
+              const SizedBox(height: 10),
+              Row(
+                children: <Widget>[
+                  Expanded(
+                    child: _NoticeButton(
+                      icon: Icons.image_outlined,
+                      label: 'Use Gallery',
+                      onTap: onGalleryTap,
+                      filled: true,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _NoticeButton(
-                    icon: Icons.center_focus_strong_rounded,
-                    label: 'Try Again',
-                    onTap: onTryAgain,
-                    filled: false,
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _NoticeButton(
+                      icon: Icons.center_focus_strong_rounded,
+                      label: 'Try Again',
+                      onTap: onTryAgain,
+                      filled: false,
+                    ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
+            ],
           ],
         ),
       ),
