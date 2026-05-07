@@ -51,74 +51,97 @@ class TranslateScreen extends ConsumerWidget {
             'Offline model is unavailable for this action.',
       _ => null,
     };
+    final Size screenSize = MediaQuery.sizeOf(context);
+    final bool compactLandscape =
+        screenSize.height < 500 && screenSize.width > screenSize.height;
+    final double navClearance = compactLandscape
+        ? 10
+        : kFloatingNavClearance + 8;
+    Widget textModePanel({required bool compactLayout}) {
+      return TranslateTextModePanel(
+        state: textState,
+        inputEnabled: aiActionsEnabled,
+        disabledReason: disabledReason,
+        compactLayout: compactLayout,
+        onDirectionChanged: ref
+            .read(translateTextControllerProvider.notifier)
+            .setDirection,
+        onInputChanged: ref
+            .read(translateTextControllerProvider.notifier)
+            .setInput,
+        onClear: ref.read(translateTextControllerProvider.notifier).clearInput,
+        onExplain: () => unawaited(
+          ref.read(translateTextControllerProvider.notifier).explain(),
+        ),
+        onCheckInput: () => unawaited(
+          ref.read(translateTextControllerProvider.notifier).checkInput(),
+        ),
+        onCopy: () => _copyOutput(context, textState),
+        onShare: () => _shareOutput(context, textState),
+      );
+    }
+
+    Widget sketchpadPanel() {
+      return TranslateSketchpadModePanel(
+        state: sketchState,
+        aiActionsEnabled: aiActionsEnabled,
+        disabledReason: disabledReason,
+        onTargetChanged: ref
+            .read(translateSketchpadControllerProvider.notifier)
+            .setTarget,
+        onGetFeedback: ref
+            .read(translateSketchpadControllerProvider.notifier)
+            .requestFeedback,
+      );
+    }
 
     return ColoredBox(
       color: Theme.of(context).colorScheme.surface,
       child: SafeArea(
-        child: Column(
-          children: <Widget>[
-            TranslateHeader(
-              aiMode: mode,
-              workspaceMode: pageState.mode,
-              onAiModeChanged: (AiPreference nextMode) {
-                unawaited(
-                  ref
-                      .read(appPreferencesNotifierProvider.notifier)
-                      .setAiPreference(nextMode),
-                );
-              },
-              onWorkspaceModeChanged: ref
-                  .read(translatePageControllerProvider.notifier)
-                  .setMode,
-            ),
-            Expanded(
-              child: switch (pageState.mode) {
-                TranslateWorkspaceMode.text => TranslateTextModePanel(
-                  state: textState,
-                  inputEnabled: aiActionsEnabled,
-                  disabledReason: disabledReason,
-                  onDirectionChanged: ref
-                      .read(translateTextControllerProvider.notifier)
-                      .setDirection,
-                  onInputChanged: ref
-                      .read(translateTextControllerProvider.notifier)
-                      .setInput,
-                  onClear: ref
-                      .read(translateTextControllerProvider.notifier)
-                      .clearInput,
-                  onExplain: () => unawaited(
-                    ref
-                        .read(translateTextControllerProvider.notifier)
-                        .explain(),
-                  ),
-                  onCheckInput: () => unawaited(
-                    ref
-                        .read(translateTextControllerProvider.notifier)
-                        .checkInput(),
-                  ),
-                  onCopy: () => _copyOutput(context, textState),
-                  onShare: () => _shareOutput(context, textState),
+        child: LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            final bool constrainedKeyboardLandscape =
+                constraints.maxWidth > constraints.maxHeight &&
+                constraints.maxHeight < 500;
+            if (constrainedKeyboardLandscape) {
+              return switch (pageState.mode) {
+                TranslateWorkspaceMode.text => textModePanel(
+                  compactLayout: true,
                 ),
-                TranslateWorkspaceMode.sketchpad => TranslateSketchpadModePanel(
-                  state: sketchState,
-                  aiActionsEnabled: aiActionsEnabled,
-                  disabledReason: disabledReason,
-                  onTargetChanged: ref
-                      .read(translateSketchpadControllerProvider.notifier)
-                      .setTarget,
-                  onGetFeedback: ref
-                      .read(translateSketchpadControllerProvider.notifier)
-                      .requestFeedback,
+                TranslateWorkspaceMode.sketchpad => sketchpadPanel(),
+              };
+            }
+
+            return Column(
+              children: <Widget>[
+                TranslateHeader(
+                  aiMode: mode,
+                  workspaceMode: pageState.mode,
+                  onAiModeChanged: (AiPreference nextMode) {
+                    unawaited(
+                      ref
+                          .read(appPreferencesNotifierProvider.notifier)
+                          .setAiPreference(nextMode),
+                    );
+                  },
+                  onWorkspaceModeChanged: ref
+                      .read(translatePageControllerProvider.notifier)
+                      .setMode,
                 ),
-              },
-            ),
-            SizedBox(
-              height:
-                  MediaQuery.paddingOf(context).bottom +
-                  kFloatingNavClearance +
-                  8,
-            ),
-          ],
+                Expanded(
+                  child: switch (pageState.mode) {
+                    TranslateWorkspaceMode.text => textModePanel(
+                      compactLayout: false,
+                    ),
+                    TranslateWorkspaceMode.sketchpad => sketchpadPanel(),
+                  },
+                ),
+                SizedBox(
+                  height: MediaQuery.paddingOf(context).bottom + navClearance,
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -151,9 +174,9 @@ class TranslateScreen extends ConsumerWidget {
   ) async {
     if (!state.hasInput) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Nothing to share yet.')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Nothing to share yet.')));
       }
       return;
     }
