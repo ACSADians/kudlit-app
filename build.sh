@@ -19,7 +19,8 @@ echo "====================="
 
 flutter config --enable-web
 flutter pub get
-flutter build web --release
-
-echo "=== Checking bundled assets ==="
-ls build/web/assets/
+flutter build web --release \
+  --dart-define=SUPABASE_URL=$SUPABASE_URL \
+  --dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY \
+  --dart-define=GEMINI_API_KEY=$GEMINI_API_KEY \
+  --dart-define=HUGGINGFACE_TOKEN=$HUGGINGFACE_TOKEN

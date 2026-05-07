@@ -32,7 +32,9 @@ class LocalGemmaDatasource implements AiDatasource {
   Future<LocalGemmaReadiness> probeReadiness(GemmaModelInfo model) {
     // Fast path: model is already loaded — skip all native work.
     if (_activeModel != null) {
-      debugPrint('[Gemma][local] readiness probe fast-path (model already loaded)');
+      debugPrint(
+        '[Gemma][local] readiness probe fast-path (model already loaded)',
+      );
       return Future<LocalGemmaReadiness>.value(
         LocalGemmaReadiness(
           installed: true,
@@ -123,7 +125,10 @@ class LocalGemmaDatasource implements AiDatasource {
   }) async {
     _cancelToken = CancelToken();
     try {
-      final String? hfToken = dotenv.env['HUGGINGFACE_TOKEN'];
+      final String _hfRaw =
+          dotenv.env['HUGGINGFACE_TOKEN'] ??
+          const String.fromEnvironment('HUGGINGFACE_TOKEN');
+      final String? hfToken = _hfRaw.isEmpty ? null : _hfRaw;
       final InferenceInstallationBuilder builder =
           FlutterGemma.installModel(
                 modelType: ModelType.gemma4,
@@ -207,7 +212,9 @@ class LocalGemmaDatasource implements AiDatasource {
   }) async* {
     InferenceChat? imageChat;
     try {
-      debugPrint('[Gemma][local] analyzeImage called | bytes=${imageBytes.length}');
+      debugPrint(
+        '[Gemma][local] analyzeImage called | bytes=${imageBytes.length}',
+      );
       // Close any active text chat — native model allows one session at a time.
       if (_chat != null) {
         await _chat!.close();
@@ -242,7 +249,10 @@ class LocalGemmaDatasource implements AiDatasource {
       debugPrint('[Gemma][local] analyzeImage stream finished');
     } catch (e, s) {
       debugPrint('[Gemma][local] analyzeImage error: $e');
-      debugPrintStack(stackTrace: s, label: '[Gemma][local] analyzeImage stack');
+      debugPrintStack(
+        stackTrace: s,
+        label: '[Gemma][local] analyzeImage stack',
+      );
       rethrow;
     } finally {
       await imageChat?.close();
@@ -258,7 +268,10 @@ class LocalGemmaDatasource implements AiDatasource {
       throw UnsupportedError('generateChallenge is not supported on-device');
 
   Future<void> _reactivateInstalledModel(GemmaModelInfo model) async {
-    final String? hfToken = dotenv.env['HUGGINGFACE_TOKEN'];
+    final String _hfRaw =
+        dotenv.env['HUGGINGFACE_TOKEN'] ??
+        const String.fromEnvironment('HUGGINGFACE_TOKEN');
+    final String? hfToken = _hfRaw.isEmpty ? null : _hfRaw;
     await FlutterGemma.installModel(
       modelType: ModelType.gemma4,
       fileType: _modelFileTypeFor(model),

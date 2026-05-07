@@ -10,13 +10,15 @@ import 'package:kudlit_ph/core/config/supabase_config.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await dotenv.load();
+  await dotenv.load(fileName: '.env');
   await Supabase.initialize(
     url: SupabaseConfig.url,
     anonKey: SupabaseConfig.anonKey,
   );
   if (!kIsWeb) {
-    final String hfToken = dotenv.env['HUGGINGFACE_TOKEN'] ?? '';
+    final String hfToken =
+        dotenv.env['HUGGINGFACE_TOKEN'] ??
+        const String.fromEnvironment('HUGGINGFACE_TOKEN');
     await FlutterGemma.initialize(
       huggingFaceToken: hfToken.isEmpty ? null : hfToken,
     );
