@@ -18,9 +18,9 @@ This PR bridges the gap between our UI and our backend databases. Previously, th
 - Implemented `ProfileManagementRepository` and `ProfileManagementDatasource` to read and write directly to the `profiles` and `user_preferences` tables in Supabase.
 - Handled Supabase `User` metadata synchronization alongside public profile updates.
 
-#### 2️⃣ Interactive Dialogs & State Management
-- Replaced the simple "Coming soon" snackbars with real, interactive dialog boxes.
-- **Edit Name:** Allows users to update their display name.
+#### 2️⃣ Inline Editing, Dialogs & State Management
+- Replaced the simple "Coming soon" snackbars with real profile controls.
+- **Edit Name:** Allows users to update their display name directly on the profile card with inline save/cancel actions.
 - **Accessibility Options:** Users can toggle `High Contrast` and `Reduced Motion`.
 - **Privacy Controls:** Users can opt-in/out of `Data Sharing Consent`.
 - Managed all state using Riverpod (`ProfileSummaryNotifier` and `ProfilePreferencesNotifier`) for seamless UI updates when data changes.

@@ -493,10 +493,15 @@ class _WebCameraPreviewState extends ConsumerState<_WebCameraPreview> {
                 : constraints.maxWidth < 380
                 ? 14
                 : 28;
+            final bool centerUnavailable = _status == WebScannerStatus.error;
             return Align(
-              alignment: Alignment.centerLeft,
+              alignment: centerUnavailable
+                  ? Alignment.center
+                  : Alignment.centerLeft,
               child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                padding: EdgeInsets.symmetric(
+                  horizontal: centerUnavailable ? 24 : horizontalPadding,
+                ),
                 child: WebStatusMessage(
                   cs: cs,
                   status: _status,
@@ -588,7 +593,7 @@ class WebStatusMessage extends StatelessWidget {
                   Text(
                     status.label,
                     textAlign: TextAlign.center,
-                    maxLines: 2,
+                    maxLines: showCompact ? 1 : 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: showCompact
@@ -606,9 +611,11 @@ class WebStatusMessage extends StatelessWidget {
                       message!,
                       textAlign: TextAlign.center,
                       softWrap: true,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: showCompact || narrow ? 12.5 : 13,
-                        height: 1.35,
+                        height: 1.2,
                         color: cs.onSurface.withAlpha(190),
                       ),
                     ),

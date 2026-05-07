@@ -48,6 +48,7 @@ app.*.map.json
 .env
 .env.*
 !.env.example
+web/client_secret_*.json
 
 # Node (not part of this project)
 node_modules/

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kudlit_ph/features/home/presentation/providers/app_preferences_provider.dart';
 import 'package:kudlit_ph/features/home/presentation/providers/translate_page_controller.dart';
 import 'package:kudlit_ph/features/home/presentation/providers/translate_text_controller.dart';
 import 'package:kudlit_ph/features/home/presentation/screens/translate_screen.dart';
@@ -22,16 +21,159 @@ void main() {
       MaterialApp(
         home: Scaffold(
           body: TranslateHeader(
-            aiMode: AiPreference.cloud,
             workspaceMode: TranslateWorkspaceMode.text,
-            onAiModeChanged: (_) {},
             onWorkspaceModeChanged: (_) {},
           ),
         ),
       ),
     );
 
+    expect(find.text('Text'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('app header stays responsive on narrow widths', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(320, 72));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      const ProviderScope(
+        child: MaterialApp(
+          home: Scaffold(body: AppHeader(showTranslateControls: true)),
+        ),
+      ),
+    );
+
     expect(find.text('Translate'), findsOneWidget);
+    expect(find.text('Online'), findsOneWidget);
+    expect(find.text('Offline'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('app header remains stable at very narrow widths', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(300, 72));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      const ProviderScope(
+        child: MaterialApp(
+          home: Scaffold(body: AppHeader(showTranslateControls: true)),
+        ),
+      ),
+    );
+
+    expect(find.text('Translate'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('app header uses compact source labels at ultra-narrow widths', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(280, 72));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      const ProviderScope(
+        child: MaterialApp(
+          home: Scaffold(body: AppHeader(showTranslateControls: true)),
+        ),
+      ),
+    );
+
+    expect(find.text('Translate'), findsOneWidget);
+    expect(find.text('On'), findsOneWidget);
+    expect(find.text('Off'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('app header stays usable on narrow width with large text scale', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(280, 72));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          builder: (BuildContext context, Widget? child) {
+            return MediaQuery(
+              data: MediaQuery.of(
+                context,
+              ).copyWith(textScaler: TextScaler.linear(1.5)),
+              child: child ?? const SizedBox.shrink(),
+            );
+          },
+          home: const Scaffold(body: AppHeader(showTranslateControls: true)),
+        ),
+      ),
+    );
+
+    expect(find.text('Translate'), findsOneWidget);
+    expect(find.text('On'), findsOneWidget);
+    expect(find.text('Off'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('translate header keeps spacing on tablet widths', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1024, 120));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: TranslateHeader(
+            workspaceMode: TranslateWorkspaceMode.text,
+            onWorkspaceModeChanged: (_) {},
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Text'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('app header keeps translate controls at tablet widths', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1024, 72));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      const ProviderScope(
+        child: MaterialApp(
+          home: Scaffold(body: AppHeader(showTranslateControls: true)),
+        ),
+      ),
+    );
+
+    expect(find.text('Translate'), findsOneWidget);
+    expect(find.text('Online'), findsOneWidget);
+    expect(find.text('Offline'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('app header hides source switch on non-translate views', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(320, 72));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      const ProviderScope(
+        child: MaterialApp(
+          home: Scaffold(body: AppHeader(showTranslateControls: false)),
+        ),
+      ),
+    );
+
+    expect(find.text('Kudlit'), findsOneWidget);
+    expect(find.text('Online'), findsNothing);
+    expect(find.text('Offline'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
@@ -197,6 +339,42 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('empty translate input sits near the prompt on portrait phones', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          home: Scaffold(
+            body: TranslateTextModePanel(
+              state: const TranslateTextState.initial(),
+              inputEnabled: true,
+              disabledReason: null,
+              onDirectionChanged: (_) {},
+              onInputChanged: (_) {},
+              onClear: () {},
+              onExplain: () {},
+              onCheckInput: () {},
+              onCopy: () {},
+              onShare: () {},
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final Finder filipinoInput = find.byKey(
+      const ValueKey<String>('translate-filipino-input'),
+    );
+
+    expect(filipinoInput, findsOneWidget);
+    expect(tester.getTopLeft(filipinoInput).dy, lessThan(360));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'translate screen keeps input visible in landscape route height',
     (tester) async {
@@ -283,11 +461,13 @@ void main() {
           child: MaterialApp(home: Scaffold(body: TranslateScreen())),
         ),
       );
+      expect(tester.takeException(), isNull);
       await tester.enterText(
         find.byKey(const ValueKey<String>('translate-filipino-input')),
         'kumusta',
       );
       await tester.pump();
+      expect(tester.takeException(), isNull);
 
       expect(find.text('Explain'), findsOneWidget);
       expect(find.text('Check Input'), findsOneWidget);
@@ -320,11 +500,13 @@ void main() {
           ),
         ),
       );
+      expect(tester.takeException(), isNull);
       await tester.enterText(
         find.byKey(const ValueKey<String>('translate-filipino-input')),
         'kumusta',
       );
       await tester.pump();
+      expect(tester.takeException(), isNull);
 
       expect(find.text('Explain'), findsOneWidget);
       expect(find.text('Check Input'), findsOneWidget);

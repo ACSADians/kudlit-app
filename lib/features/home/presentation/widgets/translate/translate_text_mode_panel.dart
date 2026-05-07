@@ -54,6 +54,40 @@ class TranslateTextModePanel extends StatelessWidget {
       );
     }
 
+    if (!state.hasInput && state.aiResponse.trim().isEmpty) {
+      final bool keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
+      final double previewHeight = keyboardOpen
+          ? 92
+          : MediaQuery.sizeOf(context).height < 700
+          ? 132
+          : 172;
+      return SingleChildScrollView(
+        padding: const EdgeInsets.only(bottom: 4),
+        child: Column(
+          children: <Widget>[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 18, 24, 12),
+              child: SizedBox(
+                height: previewHeight,
+                child: const Center(child: EmptyOutput()),
+              ),
+            ),
+            _BottomInputArea(
+              state: state,
+              inputEnabled: inputEnabled,
+              disabledReason: disabledReason,
+              compact: false,
+              onDirectionChanged: onDirectionChanged,
+              onInputChanged: onInputChanged,
+              onClear: onClear,
+              onExplain: onExplain,
+              onCheckInput: onCheckInput,
+            ),
+          ],
+        ),
+      );
+    }
+
     return Column(
       children: <Widget>[
         Expanded(

@@ -10,6 +10,7 @@ import 'package:kudlit_ph/features/home/presentation/providers/profile_managemen
 import 'package:kudlit_ph/features/home/presentation/screens/profile_tab.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/settings/accessibility_dialog.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/settings/profile_management_action_button.dart';
+import 'package:kudlit_ph/features/home/presentation/widgets/settings/profile_management_section.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/settings/segmented_picker.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/settings/settings_list.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/settings/sign_out_tile.dart';
@@ -18,10 +19,25 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 class _FakeProfileSummaryNotifier extends ProfileSummaryNotifier {
   _FakeProfileSummaryNotifier(this.summary);
 
-  final ProfileSummary summary;
+  ProfileSummary summary;
+  String? updatedDisplayName;
 
   @override
   FutureOr<Option<ProfileSummary>> build() => Some(summary);
+
+  @override
+  Future<void> updateDisplayName(String displayName) async {
+    updatedDisplayName = displayName;
+    summary = ProfileSummary(
+      displayName: displayName,
+      avatarUrl: summary.avatarUrl,
+      completedLessons: summary.completedLessons,
+      scanHistoryItems: summary.scanHistoryItems,
+      translationHistoryItems: summary.translationHistoryItems,
+      bookmarkedTranslations: summary.bookmarkedTranslations,
+    );
+    state = AsyncValue.data(Some(summary));
+  }
 }
 
 void main() {
@@ -56,6 +72,7 @@ void main() {
             () => _FakeProfileSummaryNotifier(
               const ProfileSummary(
                 displayName: 'Kudlit Learner With A Long Name',
+                avatarUrl: null,
                 completedLessons: 12,
                 scanHistoryItems: 8,
                 translationHistoryItems: 6,
@@ -83,6 +100,198 @@ void main() {
     expect(scanShortcut.right, lessThanOrEqualTo(320));
     expect(translateShortcut.left, greaterThanOrEqualTo(0));
     expect(translateShortcut.right, lessThanOrEqualTo(320));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('display name edits inline on the profile card', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    final _FakeProfileSummaryNotifier notifier = _FakeProfileSummaryNotifier(
+      const ProfileSummary(
+        displayName: 'Kudlit Learner',
+        avatarUrl: null,
+        completedLessons: 12,
+        scanHistoryItems: 8,
+        translationHistoryItems: 6,
+        bookmarkedTranslations: 3,
+      ),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          profileSummaryNotifierProvider.overrideWith(() => notifier),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: SettingsList(
+              user: const AuthUser(id: 'u1', email: 'learner@example.com'),
+              isAuthLoading: false,
+              bottomPadding: 0,
+              onActionTap: (_) {},
+              onSignOutTap: () async {},
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Kudlit Learner'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(Dialog), findsNothing);
+    expect(find.byType(TextField), findsOneWidget);
+
+    await tester.enterText(find.byType(TextField), 'Kudlit Pro');
+    await tester.tap(find.byTooltip('Save display name'));
+    await tester.pumpAndSettle();
+
+    expect(notifier.updatedDisplayName, 'Kudlit Pro');
+    expect(find.text('Kudlit Pro'), findsOneWidget);
+    expect(find.byType(TextField), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('profile management name action uses inline editor', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    final _FakeProfileSummaryNotifier notifier = _FakeProfileSummaryNotifier(
+      const ProfileSummary(
+        displayName: 'Kudlit Learner',
+        avatarUrl: null,
+        completedLessons: 12,
+        scanHistoryItems: 8,
+        translationHistoryItems: 6,
+        bookmarkedTranslations: 3,
+      ),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          profileSummaryNotifierProvider.overrideWith(() => notifier),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: ProfileManagementSection(
+                isAuthenticated: true,
+                onActionTap: (_) {},
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Edit name (Kudlit Learner)'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(Dialog), findsNothing);
+    expect(find.byType(TextField), findsOneWidget);
+
+    await tester.enterText(find.byType(TextField), 'Kudlit Max');
+    await tester.tap(find.byTooltip('Save display name'));
+    await tester.pumpAndSettle();
+
+    expect(notifier.updatedDisplayName, 'Kudlit Max');
+    expect(find.byType(TextField), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('display name inline edit can be cancelled', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    final _FakeProfileSummaryNotifier notifier = _FakeProfileSummaryNotifier(
+      const ProfileSummary(
+        displayName: 'Kudlit Learner',
+        avatarUrl: null,
+        completedLessons: 12,
+        scanHistoryItems: 8,
+        translationHistoryItems: 6,
+        bookmarkedTranslations: 3,
+      ),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          profileSummaryNotifierProvider.overrideWith(() => notifier),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: SettingsList(
+              user: const AuthUser(id: 'u1', email: 'learner@example.com'),
+              isAuthLoading: false,
+              bottomPadding: 0,
+              onActionTap: (_) {},
+              onSignOutTap: () async {},
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Kudlit Learner'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'Discarded Name');
+    await tester.tap(find.byTooltip('Cancel display name edit'));
+    await tester.pumpAndSettle();
+
+    expect(notifier.updatedDisplayName, isNull);
+    expect(find.text('Kudlit Learner'), findsOneWidget);
+    expect(find.byType(TextField), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('display name inline edit rejects blank names', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    final _FakeProfileSummaryNotifier notifier = _FakeProfileSummaryNotifier(
+      const ProfileSummary(
+        displayName: 'Kudlit Learner',
+        avatarUrl: null,
+        completedLessons: 12,
+        scanHistoryItems: 8,
+        translationHistoryItems: 6,
+        bookmarkedTranslations: 3,
+      ),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          profileSummaryNotifierProvider.overrideWith(() => notifier),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: SettingsList(
+              user: const AuthUser(id: 'u1', email: 'learner@example.com'),
+              isAuthLoading: false,
+              bottomPadding: 0,
+              onActionTap: (_) {},
+              onSignOutTap: () async {},
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Kudlit Learner'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), '   ');
+    await tester.tap(find.byTooltip('Save display name'));
+    await tester.pump();
+
+    expect(notifier.updatedDisplayName, isNull);
+    expect(find.text('Display name cannot be empty.'), findsOneWidget);
+    expect(find.byType(TextField), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

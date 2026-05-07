@@ -104,6 +104,28 @@ void main() {
     );
   });
 
+  testWidgets('google auth icon matches the secondary button color', (
+    tester,
+  ) async {
+    await pumpLogin(tester);
+
+    final Finder googleIcon = find.byWidgetPredicate(
+      (Widget widget) =>
+          widget is Image &&
+          widget.image is AssetImage &&
+          (widget.image as AssetImage).assetName ==
+              'assets/brand/google.icon.webp',
+      description: 'Google auth image',
+    );
+
+    final BuildContext iconContext = tester.element(googleIcon);
+    final Color expectedColor = Theme.of(iconContext).colorScheme.primary;
+    final Image icon = tester.widget<Image>(googleIcon);
+
+    expect(icon.color, expectedColor);
+    expect(icon.colorBlendMode, BlendMode.srcIn);
+  });
+
   testWidgets('portrait login hides the decorative mascot and speech bubble', (
     tester,
   ) async {

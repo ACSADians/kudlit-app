@@ -44,6 +44,18 @@ Each feature is ranked by:
 | 19 | Help and support hub | **FAQ**, **Report Issue**, **Contact Support**, **View Status** | Central support access from profile/settings. Use case: unblock auth/profile issues quickly. | Support backend/process may be early stage. | MVP with FAQ + issue reporting link. |
 | 20 | Public/Shareable learner profile (optional) | **Public Profile Toggle**, **Share Link**, **Hide Stats** | Optional social layer for achievements/progress. Use case: community motivation. | Not essential for core translator/scanner utility. | Later wave, strictly opt-in. |
 
+## Avatar Upload Implementation Notes
+
+- Avatar upload is wired through `image_picker` gallery selection for Web,
+  iOS, and Android.
+- Selected image bytes are uploaded to the public Supabase Storage `avatars`
+  bucket under the signed-in user's folder, then saved to `profiles.avatar_url`
+  and auth user metadata.
+- Platform setup required:
+  - Android declares `READ_MEDIA_IMAGES` and legacy
+    `READ_EXTERNAL_STORAGE` for gallery selection.
+  - iOS declares `NSPhotoLibraryUsageDescription` for photo-library access.
+
 ## Recommended Rollout Phases
 
 ### MVP (ship first)

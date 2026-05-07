@@ -52,9 +52,16 @@ class TranslateScreen extends ConsumerWidget {
       _ => null,
     };
     final Size screenSize = MediaQuery.sizeOf(context);
+    final view = View.of(context);
+    final double rawKeyboardInset =
+        view.viewInsets.bottom / view.devicePixelRatio;
+    final bool keyboardOpen =
+        MediaQuery.viewInsetsOf(context).bottom > 0 || rawKeyboardInset > 0;
     final bool compactLandscape =
         screenSize.height < 500 && screenSize.width > screenSize.height;
-    final double navClearance = compactLandscape
+    final double navClearance = keyboardOpen
+        ? 0
+        : compactLandscape
         ? 10
         : kFloatingNavClearance - 32;
     Widget textModePanel({required bool compactLayout}) {
@@ -100,10 +107,12 @@ class TranslateScreen extends ConsumerWidget {
       child: SafeArea(
         child: LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
-            final bool constrainedKeyboardLandscape =
-                constraints.maxWidth > constraints.maxHeight &&
-                constraints.maxHeight < 500;
-            if (constrainedKeyboardLandscape) {
+            final bool constrainedKeyboardLayout =
+                keyboardOpen ||
+                constraints.maxHeight < 560 ||
+                (constraints.maxWidth > constraints.maxHeight &&
+                    constraints.maxHeight < 500);
+            if (constrainedKeyboardLayout) {
               return switch (pageState.mode) {
                 TranslateWorkspaceMode.text => textModePanel(
                   compactLayout: true,
@@ -115,15 +124,7 @@ class TranslateScreen extends ConsumerWidget {
             return Column(
               children: <Widget>[
                 TranslateHeader(
-                  aiMode: mode,
                   workspaceMode: pageState.mode,
-                  onAiModeChanged: (AiPreference nextMode) {
-                    unawaited(
-                      ref
-                          .read(appPreferencesNotifierProvider.notifier)
-                          .setAiPreference(nextMode),
-                    );
-                  },
                   onWorkspaceModeChanged: ref
                       .read(translatePageControllerProvider.notifier)
                       .setMode,

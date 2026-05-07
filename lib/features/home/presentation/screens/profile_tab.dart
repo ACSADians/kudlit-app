@@ -181,9 +181,9 @@ class _UserProfile extends ConsumerWidget {
                       border: Border.all(color: cs.primary, width: 2.5),
                     ),
                     child: ClipOval(
-                      child: Image.asset(
-                        'assets/brand/user.profile/butty.thumbsup.webp',
-                        fit: BoxFit.cover,
+                      child: _ProfileAvatarImage(
+                        avatarUrl: summary?.avatarUrl,
+                        email: user.email,
                       ),
                     ),
                   ),
@@ -238,6 +238,60 @@ class _UserProfile extends ConsumerWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _ProfileAvatarImage extends StatelessWidget {
+  const _ProfileAvatarImage({required this.avatarUrl, required this.email});
+
+  final String? avatarUrl;
+  final String email;
+
+  @override
+  Widget build(BuildContext context) {
+    final String? safeAvatarUrl =
+        avatarUrl != null && avatarUrl!.trim().isNotEmpty
+        ? avatarUrl!.trim()
+        : null;
+
+    if (safeAvatarUrl != null) {
+      return Image.network(
+        safeAvatarUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (BuildContext context, Object error, StackTrace? stack) {
+          return _ProfileInitials(email: email);
+        },
+      );
+    }
+
+    return Image.asset(
+      'assets/brand/user.profile/butty.thumbsup.webp',
+      fit: BoxFit.cover,
+    );
+  }
+}
+
+class _ProfileInitials extends StatelessWidget {
+  const _ProfileInitials({required this.email});
+
+  final String email;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    return ColoredBox(
+      color: cs.primaryContainer,
+      child: Center(
+        child: Text(
+          email.isNotEmpty ? email[0].toUpperCase() : '?',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w800,
+            color: cs.onPrimaryContainer,
+          ),
+        ),
+      ),
     );
   }
 }
