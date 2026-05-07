@@ -76,6 +76,7 @@ void main() {
       selectedImageBytes: base64Decode(
         'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO2v9xAAAAAASUVORK5CYII=',
       ),
+      capturedFrameBytes: null,
       isLoadingImage: false,
       detectionsFrozen: false,
       snapshot: fixedDetections,

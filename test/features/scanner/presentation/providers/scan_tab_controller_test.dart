@@ -10,7 +10,7 @@ void main() {
 
     await container
         .read(scanTabControllerProvider.notifier)
-        .captureWebFrame(() async => const <BaybayinDetection>[]);
+        .captureWebFrame(() async => (const <BaybayinDetection>[], null));
 
     final ScanTabState state = container.read(scanTabControllerProvider);
     expect(state.isLoadingImage, isFalse);
@@ -26,7 +26,7 @@ void main() {
 
     await container
         .read(scanTabControllerProvider.notifier)
-        .captureWebFrame(() async => const <BaybayinDetection>[]);
+        .captureWebFrame(() async => (const <BaybayinDetection>[], null));
 
     container.read(scanTabControllerProvider.notifier).clearNotice();
 
@@ -43,16 +43,19 @@ void main() {
     await container
         .read(scanTabControllerProvider.notifier)
         .captureWebFrame(
-          () async => const <BaybayinDetection>[
-            BaybayinDetection(
-              label: 'ba',
-              confidence: 0.91,
-              left: 0.2,
-              top: 0.2,
-              width: 0.3,
-              height: 0.3,
-            ),
-          ],
+          () async => (
+            const <BaybayinDetection>[
+              BaybayinDetection(
+                label: 'ba',
+                confidence: 0.91,
+                left: 0.2,
+                top: 0.2,
+                width: 0.3,
+                height: 0.3,
+              ),
+            ],
+            null,
+          ),
         );
 
     final ScanTabState state = container.read(scanTabControllerProvider);
