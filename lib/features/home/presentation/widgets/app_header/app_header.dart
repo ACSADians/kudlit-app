@@ -37,7 +37,8 @@ class AppHeader extends ConsumerWidget {
             final bool keyboardOpen =
                 MediaQuery.viewInsetsOf(context).bottom > 0;
             final bool compact = constraints.maxWidth < 640;
-            final bool isTabletOrDesktop = constraints.maxWidth >= 900;
+            final bool isTablet = constraints.maxWidth >= 768;
+            final bool isDesktop = constraints.maxWidth >= 1200;
             final bool ultraCompact =
                 constraints.maxWidth < 290 || (textScale > 1.35 && compact);
             final bool denseMode = compact || keyboardOpen;
@@ -46,36 +47,56 @@ class AppHeader extends ConsumerWidget {
                 ? (ultraCompact ? 14 : 15)
                 : denseMode
                 ? (ultraCompact ? 14 : 16)
-                : isTabletOrDesktop
-                ? 18
+                : isDesktop
+                ? 20
+                : isTablet
+                ? 19
                 : 17;
             final double iconSize = keyboardOpen
                 ? (denseMode ? 22 : 24)
                 : denseMode
                 ? (ultraCompact ? 22 : 24)
-                : isTabletOrDesktop
+                : isDesktop
+                ? 32
+                : isTablet
                 ? 30
                 : 28;
-            final double gap = denseMode ? (ultraCompact ? 4 : 7) : 10;
+            final double gap = denseMode
+                ? (ultraCompact ? 4 : 7)
+                : isTablet
+                ? 12
+                : 10;
             final EdgeInsets padding = EdgeInsets.fromLTRB(
               denseMode
                   ? (ultraCompact ? 10 : 14)
-                  : isTabletOrDesktop
+                  : isDesktop
+                  ? 28
+                  : isTablet
                   ? 24
                   : 20,
               keyboardOpen
                   ? 4
                   : denseMode
                   ? (ultraCompact ? 8 : 10)
-                  : isTabletOrDesktop
+                  : isDesktop
+                  ? 16
+                  : isTablet
                   ? 14
                   : 12,
-              denseMode ? (ultraCompact ? 8 : 12) : 18,
+              denseMode
+                  ? (ultraCompact ? 8 : 12)
+                  : isDesktop
+                  ? 20
+                  : isTablet
+                  ? 18
+                  : 18,
               keyboardOpen
                   ? 4
                   : denseMode
                   ? (ultraCompact ? 8 : 10)
-                  : isTabletOrDesktop
+                  : isDesktop
+                  ? 18
+                  : isTablet
                   ? 16
                   : 12,
             );
@@ -113,11 +134,12 @@ class AppHeader extends ConsumerWidget {
                       ),
                     ),
                     if (showTranslateControls) ...<Widget>[
-                      const SizedBox(width: 8),
+                      SizedBox(width: isTablet ? 12 : 8),
                       _AiSourceSwitch(
                         mode: aiMode,
                         compact: denseMode,
                         ultraCompact: ultraCompact,
+                        tabletDensity: isTablet,
                         onChanged: (AiPreference nextMode) {
                           ref
                               .read(appPreferencesNotifierProvider.notifier)
@@ -149,19 +171,23 @@ class _AiSourceSwitch extends StatelessWidget {
     required this.mode,
     required this.compact,
     required this.ultraCompact,
+    this.tabletDensity = false,
     required this.onChanged,
   });
 
   final AiPreference mode;
   final bool compact;
   final bool ultraCompact;
+  final bool tabletDensity;
   final ValueChanged<AiPreference> onChanged;
 
   @override
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
     return Container(
-      padding: const EdgeInsets.all(2),
+      padding: tabletDensity
+          ? const EdgeInsets.all(4)
+          : const EdgeInsets.all(2),
       decoration: BoxDecoration(
         color: cs.surfaceContainer,
         borderRadius: BorderRadius.circular(999),
@@ -175,6 +201,7 @@ class _AiSourceSwitch extends StatelessWidget {
             active: mode == AiPreference.cloud,
             compact: compact,
             ultraCompact: ultraCompact,
+            tabletDensity: tabletDensity,
             onTap: () => onChanged(AiPreference.cloud),
           ),
           _AiSourcePill(
@@ -182,6 +209,7 @@ class _AiSourceSwitch extends StatelessWidget {
             active: mode == AiPreference.local,
             compact: compact,
             ultraCompact: ultraCompact,
+            tabletDensity: tabletDensity,
             onTap: () => onChanged(AiPreference.local),
           ),
         ],
@@ -196,6 +224,7 @@ class _AiSourcePill extends StatelessWidget {
     required this.active,
     required this.compact,
     required this.ultraCompact,
+    required this.tabletDensity,
     required this.onTap,
   });
 
@@ -203,6 +232,7 @@ class _AiSourcePill extends StatelessWidget {
   final bool active;
   final bool compact;
   final bool ultraCompact;
+  final bool tabletDensity;
   final VoidCallback onTap;
 
   @override
@@ -216,13 +246,25 @@ class _AiSourcePill extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           constraints: BoxConstraints(
-            minHeight: compact ? 30 : 34,
-            minWidth: compact ? (ultraCompact ? 36 : 46) : 54,
+            minHeight: compact
+                ? 30
+                : tabletDensity
+                ? 36
+                : 34,
+            minWidth: compact
+                ? (ultraCompact ? 36 : 46)
+                : tabletDensity
+                ? 64
+                : 54,
           ),
           alignment: Alignment.center,
           padding: EdgeInsets.symmetric(
-            horizontal: compact ? (ultraCompact ? 3 : 5) : 10,
-            vertical: compact ? 5 : 6,
+            horizontal: compact
+                ? (ultraCompact ? 3 : 5)
+                : tabletDensity
+                ? 11
+                : 10,
+            vertical: compact ? 5 : (tabletDensity ? 7 : 6),
           ),
           decoration: BoxDecoration(
             color: active ? cs.primary : Colors.transparent,
@@ -235,7 +277,9 @@ class _AiSourcePill extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontSize: compact ? (ultraCompact ? 8 : 9) : 10.5,
+                fontSize: compact
+                    ? (ultraCompact ? 8 : 9)
+                    : (tabletDensity ? 11 : 10.5),
                 fontWeight: FontWeight.w700,
                 color: active ? cs.onPrimary : cs.onSurface.withAlpha(170),
               ),

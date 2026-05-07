@@ -18,11 +18,25 @@ class TranslateHeader extends StatelessWidget {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         final bool narrow = constraints.maxWidth < 420;
-        final bool wide = constraints.maxWidth >= 900;
-        final double topPadding = wide ? 16 : (narrow ? 10 : 12);
-        final double horizontalPadding = wide ? 24 : 16;
-        final double bottomPadding = narrow ? 8 : 12;
-        final double spacing = wide ? 12 : 8;
+        final bool tabletDensity = constraints.maxWidth >= 768;
+        final bool desktopDensity = constraints.maxWidth >= 1200;
+        final double topPadding = desktopDensity
+            ? 18
+            : tabletDensity
+            ? 16
+            : (narrow ? 10 : 12);
+        final double horizontalPadding = desktopDensity
+            ? 32
+            : tabletDensity
+            ? 24
+            : 16;
+        final double bottomPadding = tabletDensity ? 14 : (narrow ? 8 : 12);
+        final double spacing = desktopDensity
+            ? 16
+            : tabletDensity
+            ? 12
+            : 8;
+        final double runSpacing = tabletDensity ? 10 : 8;
         return Padding(
           padding: EdgeInsets.fromLTRB(
             horizontalPadding,
@@ -35,14 +49,15 @@ class TranslateHeader extends StatelessWidget {
             children: <Widget>[
               Wrap(
                 spacing: spacing,
-                runSpacing: 8,
+                runSpacing: runSpacing,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: <Widget>[
                   TranslateModeSwitch(
                     mode: workspaceMode,
                     onChanged: onWorkspaceModeChanged,
                     compact: narrow,
-                    tabletDensity: wide,
+                    tabletDensity: tabletDensity,
+                    desktopDensity: desktopDensity,
                   ),
                 ],
               ),

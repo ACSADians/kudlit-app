@@ -157,6 +157,47 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('app header keeps translate controls at wide tablet widths', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(768, 72));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      const ProviderScope(
+        child: MaterialApp(
+          home: Scaffold(body: AppHeader(showTranslateControls: true)),
+        ),
+      ),
+    );
+
+    expect(find.text('Translate'), findsOneWidget);
+    expect(find.text('Online'), findsOneWidget);
+    expect(find.text('Offline'), findsOneWidget);
+    expect(find.text('Kudlit'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('app header keeps translate controls at desktop widths', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1280, 72));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      const ProviderScope(
+        child: MaterialApp(
+          home: Scaffold(body: AppHeader(showTranslateControls: true)),
+        ),
+      ),
+    );
+
+    expect(find.text('Translate'), findsOneWidget);
+    expect(find.text('Online'), findsOneWidget);
+    expect(find.text('Offline'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('app header hides source switch on non-translate views', (
     tester,
   ) async {
