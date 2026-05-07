@@ -11,6 +11,8 @@ import 'package:kudlit_ph/features/home/presentation/widgets/translate/translate
 import 'package:kudlit_ph/features/home/presentation/widgets/translate/translate_text_mode_panel.dart';
 
 void main() {
+  bool hasOverlap(Rect a, Rect b) => a.overlaps(b) && !a.intersect(b).isEmpty;
+
   testWidgets('translate header fits narrow phone without overflow', (
     tester,
   ) async {
@@ -188,6 +190,42 @@ void main() {
         expect(onlineRect.left, greaterThanOrEqualTo(titleRect.right));
         expect(offlineRect.left, greaterThanOrEqualTo(onlineRect.right));
         expect(tester.takeException(), isNull);
+      }
+    },
+  );
+
+  testWidgets(
+    'translate mode tabs stay compact and non-overlapping on wide breakpoints',
+    (tester) async {
+      final List<double> widths = <double>[768, 1024, 1366, 1920];
+
+      for (final double width in widths) {
+        await tester.binding.setSurfaceSize(Size(width, 120));
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: TranslateHeader(
+                workspaceMode: TranslateWorkspaceMode.text,
+                onWorkspaceModeChanged: (_) {},
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final Finder textFinder = find.text('Text');
+        final Finder sketchFinder = find.text('Sketchpad');
+        expect(textFinder, findsOneWidget);
+        expect(sketchFinder, findsOneWidget);
+
+        final Rect textRect = tester.getRect(textFinder);
+        final Rect sketchRect = tester.getRect(sketchFinder);
+
+        expect(textRect.left, greaterThanOrEqualTo(0), reason: '$width');
+        expect(sketchRect.right, lessThanOrEqualTo(width), reason: '$width');
+        expect(hasOverlap(textRect, sketchRect), isFalse, reason: '$width');
+        expect(textRect.top, equals(sketchRect.top), reason: '$width');
+        expect(tester.takeException(), isNull, reason: '$width');
       }
     },
   );

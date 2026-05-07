@@ -38,6 +38,39 @@ flutter build web
 dart format lib/ test/
 ```
 
+### Translate Header UI verification
+
+From `kudlit-app/`, run:
+
+```bash
+pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/verify-translate-header-ui.ps1
+pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/verify-translate-header-ui.ps1 -Tabs "scan,translate,learn,butty" -Widths "768,1024,1366,1920" -SkipTests
+```
+
+The script:
+
+- runs `test/features/home/presentation/widgets/translate_density_test.dart` unless `-SkipTests` is set,
+- captures screenshots under `test-results/ui-verify/` with names like `translate-header-<tab>-<width>.png`,
+- starts a local static preview only if the target URL is not already reachable.
+
+### Translate header UI hardening
+
+```bash
+pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/verify-translate-header-ui.ps1
+```
+
+Capture-only pass (skip `translate_density_test.dart`):
+
+```bash
+pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/verify-translate-header-ui.ps1 -SkipTests
+```
+
+Custom capture width set:
+
+```bash
+pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/verify-translate-header-ui.ps1 -Widths "768,1024,1366,1920,1536"
+```
+
 ## Folder Structure
 
 ```text
