@@ -20,6 +20,7 @@ class TranslateTextModePanel extends StatelessWidget {
     required this.onCheckInput,
     required this.onCopy,
     required this.onShare,
+    this.onInputFocusChanged,
     this.compactLayout = false,
   });
 
@@ -33,6 +34,7 @@ class TranslateTextModePanel extends StatelessWidget {
   final VoidCallback onCheckInput;
   final VoidCallback onCopy;
   final VoidCallback onShare;
+  final ValueChanged<bool>? onInputFocusChanged;
   final bool compactLayout;
 
   @override
@@ -50,6 +52,7 @@ class TranslateTextModePanel extends StatelessWidget {
           onClear: onClear,
           onExplain: onExplain,
           onCheckInput: onCheckInput,
+          onInputFocusChanged: onInputFocusChanged,
         ),
       );
     }
@@ -82,6 +85,7 @@ class TranslateTextModePanel extends StatelessWidget {
               onClear: onClear,
               onExplain: onExplain,
               onCheckInput: onCheckInput,
+              onInputFocusChanged: onInputFocusChanged,
             ),
           ],
         ),
@@ -130,6 +134,7 @@ class TranslateTextModePanel extends StatelessWidget {
           onClear: onClear,
           onExplain: onExplain,
           onCheckInput: onCheckInput,
+          onInputFocusChanged: onInputFocusChanged,
         ),
       ],
     );
@@ -147,6 +152,7 @@ class _BottomInputArea extends StatelessWidget {
     required this.onClear,
     required this.onExplain,
     required this.onCheckInput,
+    this.onInputFocusChanged,
   });
 
   final TranslateTextState state;
@@ -158,6 +164,7 @@ class _BottomInputArea extends StatelessWidget {
   final VoidCallback onClear;
   final VoidCallback onExplain;
   final VoidCallback onCheckInput;
+  final ValueChanged<bool>? onInputFocusChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -187,12 +194,14 @@ class _BottomInputArea extends StatelessWidget {
           _InputField(
             text: state.inputText,
             enabled: inputEnabled && !state.aiBusy,
-            expanded: !keyboardCompact,
+            expanded: !compact,
+            dense: keyboardCompact,
             hintText: state.latinToBaybayin
                 ? 'Type in Filipino...'
                 : 'Type Baybayin Unicode...',
             onChanged: onInputChanged,
             onClear: onClear,
+            onFocusChanged: onInputFocusChanged,
           ),
           if (state.hasInput) ...<Widget>[
             const SizedBox(height: 8),
@@ -225,17 +234,21 @@ class _InputField extends StatefulWidget {
     required this.text,
     required this.enabled,
     required this.expanded,
+    required this.dense,
     required this.hintText,
     required this.onChanged,
     required this.onClear,
+    this.onFocusChanged,
   });
 
   final String text;
   final bool enabled;
   final bool expanded;
+  final bool dense;
   final String hintText;
   final ValueChanged<String> onChanged;
   final VoidCallback onClear;
+  final ValueChanged<bool>? onFocusChanged;
 
   @override
   State<_InputField> createState() => _InputFieldState();
@@ -243,12 +256,18 @@ class _InputField extends StatefulWidget {
 
 class _InputFieldState extends State<_InputField> {
   final TextEditingController _controller = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
 
   @override
   void initState() {
     super.initState();
     _controller.text = widget.text;
     _controller.addListener(() => setState(() {}));
+    _focusNode.addListener(_handleFocusChanged);
+  }
+
+  void _handleFocusChanged() {
+    widget.onFocusChanged?.call(_focusNode.hasFocus);
   }
 
   @override
@@ -263,6 +282,8 @@ class _InputFieldState extends State<_InputField> {
 
   @override
   void dispose() {
+    _focusNode.removeListener(_handleFocusChanged);
+    _focusNode.dispose();
     _controller.dispose();
     super.dispose();
   }
@@ -277,6 +298,7 @@ class _InputFieldState extends State<_InputField> {
             : 'translate-filipino-input',
       ),
       controller: _controller,
+      focusNode: _focusNode,
       enabled: widget.enabled,
       keyboardType: widget.expanded
           ? TextInputType.multiline
@@ -284,7 +306,7 @@ class _InputFieldState extends State<_InputField> {
       textInputAction: widget.expanded
           ? TextInputAction.newline
           : TextInputAction.done,
-      minLines: widget.expanded ? 4 : 1,
+      minLines: widget.expanded ? (widget.dense ? 2 : 4) : 1,
       maxLines: widget.expanded ? 7 : 1,
       textAlignVertical: widget.expanded
           ? TextAlignVertical.top
@@ -294,10 +316,10 @@ class _InputFieldState extends State<_InputField> {
         hintText: widget.hintText,
         filled: true,
         fillColor: cs.surfaceContainerLow,
-        isDense: !widget.expanded,
+        isDense: widget.dense || !widget.expanded,
         contentPadding: EdgeInsets.symmetric(
           horizontal: 14,
-          vertical: widget.expanded ? 14 : 12,
+          vertical: widget.expanded ? (widget.dense ? 8 : 14) : 12,
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),

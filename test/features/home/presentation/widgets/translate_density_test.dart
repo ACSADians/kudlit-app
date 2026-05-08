@@ -536,6 +536,61 @@ void main() {
   );
 
   testWidgets(
+    'translate input keeps focus when portrait keyboard inset appears',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(390, 844));
+      double keyboardInset = 0;
+      late StateSetter setHarnessState;
+      addTearDown(() {
+        tester.binding.setSurfaceSize(null);
+      });
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            home: StatefulBuilder(
+              builder: (BuildContext context, StateSetter setState) {
+                setHarnessState = setState;
+                return MediaQuery(
+                  data: MediaQuery.of(context).copyWith(
+                    size: const Size(390, 844),
+                    viewInsets: EdgeInsets.only(bottom: keyboardInset),
+                  ),
+                  child: const Scaffold(body: TranslateScreen()),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final Finder input = find.byKey(
+        const ValueKey<String>('translate-filipino-input'),
+      );
+      await tester.tap(input);
+      await tester.pump();
+
+      TextField textField = tester.widget<TextField>(input);
+      expect(textField.maxLines, equals(7));
+
+      EditableText editable = tester.widget<EditableText>(
+        find.byType(EditableText),
+      );
+      expect(editable.focusNode.hasFocus, isTrue);
+
+      setHarnessState(() => keyboardInset = 420);
+      await tester.pump();
+
+      textField = tester.widget<TextField>(input);
+      expect(textField.maxLines, equals(7));
+      editable = tester.widget<EditableText>(find.byType(EditableText));
+      expect(editable.focusNode.hasFocus, isTrue);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'translate screen does not overflow with landscape keyboard inset',
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(844, 390));
