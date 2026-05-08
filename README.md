@@ -1,7 +1,7 @@
 # Kudlit
 
 <p align="center">
-  <img src="assets/brand/BaybayInscribe-AppIcon.webp" alt="Kudlit app icon" width="120" />
+  <img src="docs/social/kudlit-release-banner.png" alt="Kudlit v1.0.0 release banner" width="100%" />
 </p>
 
 <h3 align="center">Learn, read, and translate Baybayin with a mobile-first Filipino learning companion.</h3>
