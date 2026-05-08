@@ -23,18 +23,18 @@ Implemented now:
 Still pending or needing follow-through:
 
 - provider and widget test coverage listed in this plan
-- final UX polish pass for helper copy and edge-case messaging
-- optional true platform share integration (current share action copies output)
+- final UX polish pass for helper messaging and failure states
+- explicit reverse-mode Unicode acceptance decision (keep encoded helper vs native Unicode parser)
 
 ## Purpose
 
 This document turns the findings in
-[docs/translate-page-audit.md](/Users/kuya/Documents/Gemma/kudlit-app/docs/translate-page-audit.md)
+[translate-page-audit.md](translate-page-audit.md)
 into an implementation plan for the next version of the
 `Translate` experience.
 
 It is written to follow the architecture rules in
-[CLAUDE.md](/Users/kuya/Documents/Gemma/kudlit-app/CLAUDE.md):
+[CLAUDE.md](../CLAUDE.md):
 
 - feature-first clean architecture
 - Riverpod-driven state
@@ -61,8 +61,8 @@ The page should also make Gemma runtime behavior explicit:
 
 This plan covers:
 
-- [translate_screen.dart](/Users/kuya/Documents/Gemma/kudlit-app/lib/features/home/presentation/screens/translate_screen.dart)
-- [lib/features/home/presentation/widgets/translate/](/Users/kuya/Documents/Gemma/kudlit-app/lib/features/home/presentation/widgets/translate)
+- [translate_screen.dart](../lib/features/home/presentation/screens/translate_screen.dart)
+- [lib/features/home/presentation/widgets/translate/](../lib/features/home/presentation/widgets/translate/)
 - translator AI integration used by the page
 - local/offline Gemma readiness behavior reused from Butty
 - user feedback states for typed and drawn input
@@ -76,20 +76,16 @@ This plan does not cover:
 ## Current Gap Summary
 
 Based on
-[docs/translate-page-audit.md](/Users/kuya/Documents/Gemma/kudlit-app/docs/translate-page-audit.md),
+[translate-page-audit.md](translate-page-audit.md),
 the current screen is useful as a local transliteration utility, but it
 does not yet behave like an interactive translation workspace.
 
 Main gaps:
 
-- no sketchpad mode inside the translate experience
-- no visible online/offline model state
-- no clear loading or readiness behavior for offline Gemma
-- no feedback about stripped or unsupported input
-- no explicit explanation when reverse mode input is invalid
-- no AI-assisted explanation panel
-- copy and share are still weak or incomplete compared with the page
-  promise
+- sketchpad mode and offline readiness are implemented
+- feedback about stripped/unsupported input is still incomplete in some branches
+- reverse-mode input invalidity messaging is partially covered
+- AI-assisted explanation depth is still partial
 
 ## Target Experience
 
