@@ -23,6 +23,34 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('Butty suggestion row clears the floating tab control', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(320, 593));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(body: SuggestedQuestionsRow(onTap: (_) {})),
+      ),
+    );
+
+    final Finder clearancePadding = find.byWidgetPredicate((Widget widget) {
+      if (widget is! Padding) {
+        return false;
+      }
+      final EdgeInsetsGeometry paddingGeometry = widget.padding;
+      if (paddingGeometry is! EdgeInsetsDirectional) {
+        return false;
+      }
+      final EdgeInsetsDirectional padding = paddingGeometry;
+      return padding.end >= 72;
+    });
+
+    expect(clearancePadding, findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('Butty chat send action keeps 44px tap target', (tester) async {
     await tester.binding.setSurfaceSize(const Size(320, 593));
     addTearDown(() => tester.binding.setSurfaceSize(null));

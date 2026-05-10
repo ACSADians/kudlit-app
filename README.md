@@ -170,7 +170,7 @@ This strict pass runs `test/features/scanner/presentation/widgets/scan_tab_respo
 - `qa-artifact/scan-layout-strict-overlap/matrix/`
 - `qa-artifact/scan-layout-strict-overlap/transitions/`
 
-Latest verified timestamp: `2026-05-10T17:20:12.4299773+08:00`.
+Latest verified timestamp: `2026-05-10T18:08:55.7427350+08:00`.
 
 Default matrix set in script:
 
