@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -56,10 +55,9 @@ GoRouter appRouter(Ref ref) {
       if (state.matchedLocation == AppConstants.routeSplash) {
         if (authState.isLoading || prefsState.isLoading) return null;
         final AppPreferences? prefs = prefsState.value;
-        // Show model setup if: on mobile, models not yet downloaded, and the
-        // user hasn't already acknowledged the prompt (legacy skip or download).
+        // Show model setup if models are not yet ready and the user has not
+        // already acknowledged the prompt (legacy skip or completed setup).
         final bool needsModelSetup =
-            !kIsWeb &&
             !(prefs?.hasDownloadedModels ?? false) &&
             !(prefs?.hasSeenModelPrompt ?? false) &&
             !listenable.sessionSkipped;

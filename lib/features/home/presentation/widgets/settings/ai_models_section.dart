@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'llm_download_tile.dart';
@@ -13,14 +12,11 @@ import 'vision_download_tile.dart';
 /// - **Gemma 4 E2B** — LLM used by Butty (offline chat / feedback).
 /// - **KudVis-1-Turbo** — YOLO TFLite used by the OCR / camera scanner.
 ///
-/// Hidden on web (both models are irrelevant; cloud AI is always used).
 class AiModelsSection extends StatelessWidget {
   const AiModelsSection({super.key});
 
   @override
   Widget build(BuildContext context) {
-    if (kIsWeb) return const SizedBox.shrink();
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[

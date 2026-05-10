@@ -1,27 +1,19 @@
 import 'dart:async';
-import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:kudlit_ph/features/scanner/data/datasources/web_vision_model_preflight.dart';
 import 'package:kudlit_ph/features/scanner/presentation/providers/yolo_model_selection_provider.dart';
 import 'package:kudlit_ph/features/translator/domain/entities/ai_model_info.dart';
 
 import 'profile_management_action_button.dart';
 
-/// Tracks whether a given YOLO model id has a cached file on disk.
-final _yoloInstalledProvider = FutureProvider.autoDispose.family<bool, String>((
-  Ref ref,
-  String modelId,
-) async {
-  final String? path = await ref.read(yoloModelCacheProvider).pathFor(modelId);
-  return path != null;
-});
-
 /// Settings tile for the KudVis vision model (YOLO OCR / camera scanner).
 ///
-/// Manages its own download progress locally; invalidates the cache-status
-/// provider after a successful download so the status badge refreshes.
+/// Manages its own download/probe progress locally and invalidates the shared
+/// setup-status providers after a successful prepare action.
 class VisionDownloadTile extends ConsumerStatefulWidget {
   const VisionDownloadTile({super.key});
 
@@ -34,43 +26,51 @@ class _VisionDownloadTileState extends ConsumerState<VisionDownloadTile> {
   int _progress = 0;
   String? _error;
 
-  Future<void> _download(AiModelInfo model) async {
+  Future<void> _prepare(AiModelInfo model) async {
     setState(() {
       _downloading = true;
       _progress = 0;
       _error = null;
     });
 
-    final String url = Platform.isIOS
-        ? (model.iosModelLink ?? model.modelLink)
-        : (model.androidModelLink ?? model.modelLink);
-
     try {
-      await ref
-          .read(yoloModelCacheProvider)
-          .download(
-            model.id,
-            url,
-            version: model.version,
-            onProgress: (int received, int total) {
-              if (!mounted || total <= 0) return;
-              setState(() => _progress = ((received / total) * 100).round());
-            },
-          );
-      ref.invalidate(_yoloInstalledProvider(model.id));
+      if (kIsWeb) {
+        await createWebVisionModelPreflight().run(model.modelLink);
+      } else {
+        final String url = resolveYoloModelUrl(model);
+        await ref
+            .read(yoloModelCacheProvider)
+            .download(
+              model.id,
+              url,
+              version: model.version,
+              onProgress: (int received, int total) {
+                if (!mounted || total <= 0) return;
+                setState(() => _progress = ((received / total) * 100).round());
+              },
+            );
+      }
+
+      ref.invalidate(visionModelSetupStatusProvider);
       ref.invalidate(yoloModelPathProvider);
       final AiModelInfo? activeCameraModel = ref
           .read(activeYoloModelProvider(YoloModelScope.camera))
           .value;
-      if (activeCameraModel?.id == model.id) {
+      if (!kIsWeb && activeCameraModel?.id == model.id) {
         unawaited(
           ref
               .read(yoloModelPathProvider(YoloModelScope.camera).future)
-              .catchError((_) => ''),
+              .catchError((Object _) => ''),
         );
       }
     } catch (e) {
-      if (mounted) setState(() => _error = e.toString());
+      if (mounted) {
+        setState(
+          () => _error = kIsWeb
+              ? friendlyVisionModelError(e.toString())
+              : e.toString(),
+        );
+      }
     } finally {
       if (mounted) setState(() => _downloading = false);
     }
@@ -80,6 +80,9 @@ class _VisionDownloadTileState extends ConsumerState<VisionDownloadTile> {
   Widget build(BuildContext context) {
     final AsyncValue<List<AiModelInfo>> modelsAsync = ref.watch(
       availableYoloModelsProvider,
+    );
+    final AsyncValue<AiModelInfo?> activeModelAsync = ref.watch(
+      activeYoloModelProvider(YoloModelScope.camera),
     );
 
     return Padding(
@@ -92,61 +95,87 @@ class _VisionDownloadTileState extends ConsumerState<VisionDownloadTile> {
           modelsAsync.when(
             loading: () => const _CheckingRow(),
             error: (Object e, _) => _ErrRow(message: e.toString()),
-            data: (List<AiModelInfo> models) => _body(models),
+            data: (List<AiModelInfo> models) => _body(models, activeModelAsync),
           ),
         ],
       ),
     );
   }
 
-  Widget _body(List<AiModelInfo> models) {
+  Widget _body(
+    List<AiModelInfo> models,
+    AsyncValue<AiModelInfo?> activeModelAsync,
+  ) {
     if (models.isEmpty) {
       return const _NoModelRow();
     }
-    final AiModelInfo model = models.first;
 
-    if (_downloading) {
-      return _DownloadProgressRow(label: model.name, progress: _progress);
-    }
-    if (_error != null) {
-      return _ErrRow(message: _error!);
-    }
-    return _VisionStatusRow(model: model, onDownload: () => _download(model));
+    return activeModelAsync.when(
+      loading: () => const _CheckingRow(),
+      error: (Object e, _) => _ErrRow(message: e.toString()),
+      data: (AiModelInfo? activeModel) {
+        final AiModelInfo model = activeModel ?? models.first;
+
+        if (_downloading) {
+          return _DownloadProgressRow(
+            label: model.name,
+            progress: _progress,
+            checkingWebModel: kIsWeb,
+          );
+        }
+        if (_error != null) {
+          return _ErrRow(message: _error!);
+        }
+        return _VisionStatusRow(model: model, onPrepare: () => _prepare(model));
+      },
+    );
   }
 }
 
-// ─── Install-status row (watches cache) ───────────────────────────────────────
-
 class _VisionStatusRow extends ConsumerWidget {
-  const _VisionStatusRow({required this.model, required this.onDownload});
+  const _VisionStatusRow({required this.model, required this.onPrepare});
 
   final AiModelInfo model;
-  final VoidCallback onDownload;
+  final VoidCallback onPrepare;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final bool? installed = ref.watch(_yoloInstalledProvider(model.id)).value;
+    final AsyncValue<VisionModelSetupStatus> statusAsync = ref.watch(
+      visionModelSetupStatusProvider,
+    );
+    return statusAsync.when(
+      loading: () => const _CheckingRow(),
+      error: (Object e, _) => _ErrRow(message: e.toString()),
+      data: (VisionModelSetupStatus status) {
+        if (status.ready) {
+          final String label = kIsWeb
+              ? '${model.name} ready in browser'
+              : '${model.name} ready';
+          final String supportingText = kIsWeb
+              ? 'Ready for browser scanner startup.'
+              : 'Ready for local scanner startup.';
+          return _VisionActionRow(
+            badge: _StatusBadge(label: label, ok: true),
+            supportingText: supportingText,
+            action: ProfileManagementActionButton(
+              label: kIsWeb ? 'Reload' : 'Re-download',
+              onTap: onPrepare,
+            ),
+          );
+        }
 
-    if (installed == null) return const _CheckingRow();
-
-    if (installed) {
-      return _VisionActionRow(
-        badge: _StatusBadge(label: '${model.name} ready', ok: true),
-        supportingText: 'Ready for local scanner startup.',
-        action: ProfileManagementActionButton(
-          label: 'Re-download',
-          onTap: onDownload,
-        ),
-      );
-    }
-    return _VisionActionRow(
-      badge: const _StatusBadge(label: 'Setup needed', ok: false),
-      supportingText: 'Download once before live recognition.',
-      action: ProfileManagementActionButton(
-        label: 'Download',
-        isPrimary: true,
-        onTap: onDownload,
-      ),
+        return _VisionActionRow(
+          badge: const _StatusBadge(label: 'Setup needed', ok: false),
+          supportingText: kIsWeb
+              ? status.message
+              : 'Download once before live recognition.',
+          action: ProfileManagementActionButton(
+            label: kIsWeb ? 'Load in browser' : 'Download',
+            isPrimary: true,
+            onTap: onPrepare,
+          ),
+        );
+      },
     );
   }
 }
@@ -212,23 +241,47 @@ class _VisionActionRow extends StatelessWidget {
   }
 }
 
-// ─── Progress row ─────────────────────────────────────────────────────────────
-
 class _DownloadProgressRow extends StatelessWidget {
-  const _DownloadProgressRow({required this.label, required this.progress});
+  const _DownloadProgressRow({
+    required this.label,
+    required this.progress,
+    required this.checkingWebModel,
+  });
 
   final String label;
   final int progress;
+  final bool checkingWebModel;
 
   @override
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
 
+    if (checkingWebModel) {
+      return Row(
+        children: <Widget>[
+          Flexible(
+            child: Text(
+              'Loading $label in the browser...',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: cs.primary, fontSize: 13),
+            ),
+          ),
+          const SizedBox(width: 10),
+          const SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(strokeWidth: 2.2),
+          ),
+        ],
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text(
-          'Downloading $label · $progress%',
+          'Downloading $label - $progress%',
           style: TextStyle(color: cs.primary, fontSize: 13),
         ),
         const SizedBox(height: 6),
@@ -237,8 +290,6 @@ class _DownloadProgressRow extends StatelessWidget {
     );
   }
 }
-
-// ─── Small shared widgets ─────────────────────────────────────────────────────
 
 class _VisionTileHeader extends StatelessWidget {
   const _VisionTileHeader();
@@ -266,7 +317,9 @@ class _VisionTileHeader extends StatelessWidget {
                 ),
               ),
               Text(
-                'Local scanner recognition',
+                kIsWeb
+                    ? 'Baybayin OCR scanner - YOLOv12 via tflite_web'
+                    : 'Local scanner recognition',
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
