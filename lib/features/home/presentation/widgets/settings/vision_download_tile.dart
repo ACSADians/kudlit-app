@@ -127,7 +127,7 @@ class _VisionStatusRow extends ConsumerWidget {
     if (installed) {
       return _VisionActionRow(
         badge: _StatusBadge(label: '${model.name} ready', ok: true),
-        supportingText: 'Scanner opens faster after setup.',
+        supportingText: 'Ready for local scanner startup.',
         action: ProfileManagementActionButton(
           label: 'Re-download',
           onTap: onDownload,
@@ -136,7 +136,7 @@ class _VisionStatusRow extends ConsumerWidget {
     }
     return _VisionActionRow(
       badge: const _StatusBadge(label: 'Setup needed', ok: false),
-      supportingText: 'Required before live scanner recognition.',
+      supportingText: 'Download once before live recognition.',
       action: ProfileManagementActionButton(
         label: 'Download',
         isPrimary: true,
@@ -206,7 +206,7 @@ class _DownloadProgressRow extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text(
-          'Downloading $label… $progress%',
+          'Downloading $label · $progress%',
           style: TextStyle(color: cs.primary, fontSize: 13),
         ),
         const SizedBox(height: 6),
@@ -244,7 +244,7 @@ class _VisionTileHeader extends StatelessWidget {
                 ),
               ),
               Text(
-                'Baybayin OCR scanner  ·  YOLO TFLite',
+                'Local scanner recognition',
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
@@ -268,10 +268,9 @@ class _StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color bg = ok
-        ? Colors.green.shade800.withAlpha(40)
-        : Colors.red.shade800.withAlpha(40);
-    final Color fg = ok ? Colors.green.shade300 : Colors.red.shade300;
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    final Color bg = ok ? cs.primaryContainer : cs.errorContainer;
+    final Color fg = ok ? cs.onPrimaryContainer : cs.onErrorContainer;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -279,7 +278,12 @@ class _StatusBadge extends StatelessWidget {
         color: bg,
         borderRadius: BorderRadius.circular(20),
       ),
-      child: Text(label, style: TextStyle(fontSize: 11, color: fg)),
+      child: Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(fontSize: 11, color: fg),
+      ),
     );
   }
 }
@@ -290,7 +294,7 @@ class _NoModelRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Text(
-      'No vision model configured — add a row with model_type=\'vision\' in Supabase.',
+      'Scanner model setup is unavailable in this build.',
       style: TextStyle(
         fontSize: 12,
         color: Theme.of(context).colorScheme.onSurface.withAlpha(128),
@@ -305,7 +309,7 @@ class _CheckingRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Text(
-      'Checking…',
+      'Checking status...',
       style: TextStyle(
         fontSize: 13,
         color: Theme.of(context).colorScheme.onSurface.withAlpha(128),
@@ -321,11 +325,14 @@ class _ErrRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      'Error: $message',
-      style: TextStyle(
-        fontSize: 12,
-        color: Theme.of(context).colorScheme.error,
+    return Semantics(
+      label: 'Setup failed: $message',
+      child: Text(
+        'Setup failed. Check your connection and try again.',
+        style: TextStyle(
+          fontSize: 12,
+          color: Theme.of(context).colorScheme.error,
+        ),
       ),
     );
   }

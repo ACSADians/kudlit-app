@@ -78,7 +78,7 @@ class _AiModelsIntro extends StatelessWidget {
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  'Install models once, then use Butty and Scanner on this device.',
+                  'Install once for offline Butty and scanner setup.',
                   style: TextStyle(
                     fontSize: 12,
                     height: 1.3,

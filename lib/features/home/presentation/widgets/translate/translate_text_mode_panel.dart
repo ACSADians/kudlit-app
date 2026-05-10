@@ -170,7 +170,8 @@ class _BottomInputArea extends StatelessWidget {
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
     final bool keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
-    final bool keyboardCompact = compact || keyboardOpen;
+    final bool reverseInputCompact = !state.latinToBaybayin && state.hasInput;
+    final bool keyboardCompact = compact || keyboardOpen || reverseInputCompact;
     return Container(
       decoration: BoxDecoration(
         border: Border(top: BorderSide(color: cs.outline.withAlpha(80))),
@@ -415,43 +416,68 @@ class _InputFeedbackList extends StatelessWidget {
           ),
         )
         .toList(growable: true);
-    if (cleanupPreview != null) {
+    final String? cleanedInput = cleanupPreview;
+    if (cleanedInput != null) {
       children.add(
         Padding(
-          padding: EdgeInsets.only(bottom: compact ? 3 : 4),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Icon(
-                Icons.cleaning_services_outlined,
-                size: compact ? 13 : 14,
-                color: cs.tertiary.withAlpha(190),
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  'Used as: $cleanupPreview',
-                  style: TextStyle(
-                    fontSize: compact ? 11 : 12,
-                    height: 1.25,
-                    color: cs.onSurface.withAlpha(180),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
+          padding: EdgeInsets.only(top: compact ? 1 : 2),
+          child: _CleanupPreviewPill(value: cleanedInput, compact: compact),
         ),
       );
     }
     return Semantics(
       label: <String>[
         ...messages,
-        if (cleanupPreview != null) 'Used as: $cleanupPreview',
+        if (cleanedInput != null) 'Used as: $cleanedInput',
       ].join(' '),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: children,
+      ),
+    );
+  }
+}
+
+class _CleanupPreviewPill extends StatelessWidget {
+  const _CleanupPreviewPill({required this.value, required this.compact});
+
+  final String value;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(horizontal: 10, vertical: compact ? 6 : 7),
+      decoration: BoxDecoration(
+        color: cs.tertiaryContainer.withAlpha(95),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: cs.tertiary.withAlpha(70)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Icon(
+            Icons.cleaning_services_outlined,
+            size: compact ? 13 : 14,
+            color: cs.onTertiaryContainer.withAlpha(190),
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              'Used as: $value',
+              maxLines: compact ? 1 : 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: compact ? 11 : 12,
+                height: 1.25,
+                color: cs.onTertiaryContainer.withAlpha(220),
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -483,7 +509,7 @@ class _ReverseExamplesHint extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(right: 2),
             child: Text(
-              'Examples:',
+              compact ? 'Try:' : 'Examples:',
               style: TextStyle(
                 fontSize: compact ? 11 : 12,
                 height: 1.25,

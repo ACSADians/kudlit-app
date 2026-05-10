@@ -34,16 +34,18 @@ void main() {
       ),
     );
     await tester.pump();
+    await tester.pump();
 
     expect(find.text('Local AI setup'), findsOneWidget);
     expect(
-      find.text(
-        'Install models once, then use Butty and Scanner on this device.',
-      ),
+      find.text('Install once for offline Butty and scanner setup.'),
       findsOneWidget,
     );
     expect(find.text('Gemma 4 E2B'), findsOneWidget);
+    expect(find.text('Ready for local Butty replies.'), findsOneWidget);
     expect(find.text('KudVis-1-Turbo'), findsOneWidget);
+    expect(find.text('Local scanner recognition'), findsOneWidget);
+    expect(find.text('Download once before live recognition.'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
