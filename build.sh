@@ -8,7 +8,7 @@ if ! command -v flutter >/dev/null 2>&1; then
   export PATH="$PATH:$HOME/flutter/bin"
 fi
 
-PUBLIC_SITE_URL="${PUBLIC_SITE_URL:-https://example.com}"
+PUBLIC_SITE_URL="${PUBLIC_SITE_URL:-${CF_PAGES_URL:-https://example.com}}"
 PUBLIC_SITE_URL="${PUBLIC_SITE_URL%/}"
 APP_BASE_PATH="${APP_BASE_PATH:-/app/}"
 
