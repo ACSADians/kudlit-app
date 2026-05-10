@@ -77,6 +77,61 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('vision model tile manages the selected camera model', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'yolo_model_overrides': '{"camera":"vision-2"}',
+    });
+    final _FakeYoloModelCache cache = _FakeYoloModelCache()..installed = true;
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: _modelOverrides(
+          cache,
+          visionModels: const <AiModelInfo>[
+            AiModelInfo(
+              id: 'vision-1',
+              name: 'KudVis-1-Turbo',
+              modelLink: 'https://example.com/kudvis.tflite',
+              sortOrder: 0,
+              version: 1,
+              enabled: true,
+              modelType: ModelKind.vision,
+            ),
+            AiModelInfo(
+              id: 'vision-2',
+              name: 'KudVis-Pro',
+              modelLink: 'https://example.com/kudvis-pro.tflite',
+              sortOrder: 1,
+              version: 2,
+              enabled: true,
+              modelType: ModelKind.vision,
+            ),
+          ],
+        ),
+        child: const MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(child: VisionDownloadTile()),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('KudVis-Pro ready'), findsOneWidget);
+    expect(find.text('KudVis-1-Turbo ready'), findsNothing);
+
+    await tester.tap(find.text('Re-download'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(cache.downloadedIds, contains('vision-2'));
+    expect(cache.downloadedIds, isNot(contains('vision-1')));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('AI model actions stack below status copy on narrow cards', (
     tester,
   ) async {
@@ -148,21 +203,25 @@ void main() {
   });
 }
 
-List<Override> _modelOverrides(_FakeYoloModelCache cache) {
+List<Override> _modelOverrides(
+  _FakeYoloModelCache cache, {
+  List<AiModelInfo>? visionModels,
+}) {
   return <Override>[
     yoloModelCacheProvider.overrideWithValue(cache),
     availableYoloModelsProvider.overrideWith((Ref ref) async {
-      return const <AiModelInfo>[
-        AiModelInfo(
-          id: 'vision-1',
-          name: 'KudVis-1-Turbo',
-          modelLink: 'https://example.com/kudvis.tflite',
-          sortOrder: 0,
-          version: 1,
-          enabled: true,
-          modelType: ModelKind.vision,
-        ),
-      ];
+      return visionModels ??
+          const <AiModelInfo>[
+            AiModelInfo(
+              id: 'vision-1',
+              name: 'KudVis-1-Turbo',
+              modelLink: 'https://example.com/kudvis.tflite',
+              sortOrder: 0,
+              version: 1,
+              enabled: true,
+              modelType: ModelKind.vision,
+            ),
+          ];
     }),
     aiInferenceNotifierProvider.overrideWith(_ReadyInferenceNotifier.new),
   ];

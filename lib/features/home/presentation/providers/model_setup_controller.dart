@@ -51,7 +51,7 @@ class ModelSetupController extends Notifier<ModelSetupState> {
     state = state.copyWith(busy: true, clearError: true);
 
     try {
-      final VisionModelSetupStatus visionStatus = await ref.refresh(
+      final VisionModelSetupStatus visionStatus = await ref.read(
         visionModelSetupStatusProvider.future,
       );
       if (!visionStatus.ready) {
@@ -59,7 +59,14 @@ class ModelSetupController extends Notifier<ModelSetupState> {
         return;
       }
 
-      if (!kIsWeb) {
+      final AppPreferences prefs = await ref.read(
+        appPreferencesNotifierProvider.future,
+      );
+      final AiPreference nextPreference = kIsWeb
+          ? AiPreference.cloud
+          : prefs.aiPreference;
+
+      if (!kIsWeb && nextPreference == AiPreference.local) {
         final LocalGemmaReadiness gemmaReadiness = await ref.read(
           localModelReadinessProvider.future,
         );
@@ -75,7 +82,7 @@ class ModelSetupController extends Notifier<ModelSetupState> {
 
       await ref
           .read(appPreferencesNotifierProvider.notifier)
-          .setAiPreference(kIsWeb ? AiPreference.cloud : AiPreference.local);
+          .setAiPreference(nextPreference);
       await ref
           .read(appPreferencesNotifierProvider.notifier)
           .markModelsDownloaded();

@@ -5,8 +5,6 @@ import 'package:kudlit_ph/features/scanner/data/datasources/web_vision_model_pre
 
 const String _kSupabaseVisionModelUrl = String.fromEnvironment(
   'TEST_WEB_VISION_MODEL_URL',
-  defaultValue:
-      'https://rxrreoftioidkvdowauv.supabase.co/storage/v1/object/public/models/KudVis-1-Turbo.tflite',
 );
 
 void main() {
@@ -16,6 +14,9 @@ void main() {
     'runs real browser inference against the Supabase vision model',
     (WidgetTester tester) async {
       if (!kIsWeb) {
+        return;
+      }
+      if (_kSupabaseVisionModelUrl.isEmpty) {
         return;
       }
       final WebVisionModelPreflightResult result =

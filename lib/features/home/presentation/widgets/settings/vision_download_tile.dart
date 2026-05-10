@@ -81,6 +81,9 @@ class _VisionDownloadTileState extends ConsumerState<VisionDownloadTile> {
     final AsyncValue<List<AiModelInfo>> modelsAsync = ref.watch(
       availableYoloModelsProvider,
     );
+    final AsyncValue<AiModelInfo?> activeModelAsync = ref.watch(
+      activeYoloModelProvider(YoloModelScope.camera),
+    );
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -92,30 +95,40 @@ class _VisionDownloadTileState extends ConsumerState<VisionDownloadTile> {
           modelsAsync.when(
             loading: () => const _CheckingRow(),
             error: (Object e, _) => _ErrRow(message: e.toString()),
-            data: (List<AiModelInfo> models) => _body(models),
+            data: (List<AiModelInfo> models) => _body(models, activeModelAsync),
           ),
         ],
       ),
     );
   }
 
-  Widget _body(List<AiModelInfo> models) {
+  Widget _body(
+    List<AiModelInfo> models,
+    AsyncValue<AiModelInfo?> activeModelAsync,
+  ) {
     if (models.isEmpty) {
       return const _NoModelRow();
     }
-    final AiModelInfo model = models.first;
 
-    if (_downloading) {
-      return _DownloadProgressRow(
-        label: model.name,
-        progress: _progress,
-        checkingWebModel: kIsWeb,
-      );
-    }
-    if (_error != null) {
-      return _ErrRow(message: _error!);
-    }
-    return _VisionStatusRow(model: model, onPrepare: () => _prepare(model));
+    return activeModelAsync.when(
+      loading: () => const _CheckingRow(),
+      error: (Object e, _) => _ErrRow(message: e.toString()),
+      data: (AiModelInfo? activeModel) {
+        final AiModelInfo model = activeModel ?? models.first;
+
+        if (_downloading) {
+          return _DownloadProgressRow(
+            label: model.name,
+            progress: _progress,
+            checkingWebModel: kIsWeb,
+          );
+        }
+        if (_error != null) {
+          return _ErrRow(message: _error!);
+        }
+        return _VisionStatusRow(model: model, onPrepare: () => _prepare(model));
+      },
+    );
   }
 }
 
