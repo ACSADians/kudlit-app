@@ -117,13 +117,26 @@ Tensor createWebSmokeTestTensor({
   return Tensor(data, shape: inputShape, type: dataType);
 }
 
-List<Tensor> coerceWebOutputTensors(Object rawOutput) {
+List<Tensor> coerceWebOutputTensors(
+  Object rawOutput, {
+  List<String> outputNames = const <String>[],
+}) {
   // ignore: invalid_runtime_check_with_js_interop_types
   if (rawOutput is Tensor) {
     return <Tensor>[rawOutput];
   }
   if (rawOutput is List) {
     return rawOutput.whereType<Tensor>().toList(growable: false);
+  }
+  if (outputNames.isNotEmpty) {
+    try {
+      final NamedTensorMap namedOutputs = rawOutput as NamedTensorMap;
+      return outputNames
+          .map((String name) => namedOutputs[name])
+          .toList(growable: false);
+    } catch (_) {
+      return const <Tensor>[];
+    }
   }
   return const <Tensor>[];
 }

@@ -28,7 +28,14 @@ class _WebVisionModelPreflightWeb implements WebVisionModelPreflight {
 
     try {
       final Object rawOutput = model.predict<Object>(input);
-      outputs.addAll(coerceWebOutputTensors(rawOutput));
+      outputs.addAll(
+        coerceWebOutputTensors(
+          rawOutput,
+          outputNames: model.outputs
+              .map((ModelTensorInfo info) => info.name)
+              .toList(growable: false),
+        ),
+      );
       return WebVisionModelPreflightResult(
         modelUrl: modelUrl,
         inputShape: inputShape,

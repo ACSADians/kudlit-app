@@ -74,7 +74,14 @@ class WebTfliteBaybayinDetector implements BaybayinDetector {
     final List<Tensor> outputTensors = <Tensor>[];
     try {
       final Object rawOutput = model.predict<Object>(input);
-      outputTensors.addAll(coerceWebOutputTensors(rawOutput));
+      outputTensors.addAll(
+        coerceWebOutputTensors(
+          rawOutput,
+          outputNames: model.outputs
+              .map((ModelTensorInfo info) => info.name)
+              .toList(growable: false),
+        ),
+      );
       final List<BaybayinDetection> detections = _parseOutputTensors(
         outputTensors,
         model,
