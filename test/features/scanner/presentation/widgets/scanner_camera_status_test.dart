@@ -49,6 +49,17 @@ void main() {
     );
   });
 
+  test(
+    'web status alignment stays centered for camera prompts and detection',
+    () {
+      expect(
+        webStatusAlignment(WebScannerStatus.permissionNeeded),
+        Alignment.center,
+      );
+      expect(webStatusAlignment(WebScannerStatus.detecting), Alignment.center);
+    },
+  );
+
   testWidgets('web camera status card fits narrow scanner viewport', (
     WidgetTester tester,
   ) async {
@@ -135,6 +146,36 @@ void main() {
 
     expect(find.text('Camera ready'), findsOneWidget);
     expect(find.textContaining('raw exception'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('detecting status shows centered progress treatment', (
+    WidgetTester tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(320, 480));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: WebStatusMessage(
+              cs: ThemeData.dark().colorScheme,
+              status: WebScannerStatus.detecting,
+              showCompact: false,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Detecting'), findsOneWidget);
+    expect(
+      find.text('Hold still while Kudlit reads the frame.'),
+      findsOneWidget,
+    );
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.byType(LinearProgressIndicator), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

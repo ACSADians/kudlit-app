@@ -8,8 +8,6 @@ import 'package:kudlit_ph/features/translator/presentation/providers/ai_inferenc
 import 'package:kudlit_ph/features/translator/presentation/providers/ai_inference_state.dart';
 import 'package:kudlit_ph/features/translator/presentation/providers/translator_providers.dart';
 
-import 'profile_management_action_button.dart';
-
 class LlmDownloadTile extends ConsumerWidget {
   const LlmDownloadTile({super.key});
 
@@ -35,8 +33,8 @@ class LlmDownloadTile extends ConsumerWidget {
         children: <Widget>[
           const _TileHeader(
             icon: Icons.psychology_rounded,
-            label: 'Butty replies',
-            sublabel: 'Offline replies  ·  large download',
+            label: 'Butty AI',
+            sublabel: 'Offline chat  ·  large download',
           ),
           const SizedBox(height: 10),
           _LlmStatusRow(
@@ -44,7 +42,8 @@ class LlmDownloadTile extends ConsumerWidget {
             prefsAsync: prefsAsync,
             readinessAsync: readinessAsync,
             onCancel: notifier.cancelDownload,
-            onTrigger: (GemmaModelInfo m) => notifier.triggerLocalDownload(m),
+            onTrigger: (GemmaModelInfo model) =>
+                notifier.triggerLocalDownload(model),
           ),
         ],
       ),
@@ -64,8 +63,8 @@ class _LlmStatusRow extends StatelessWidget {
   final AsyncValue<AiInferenceState> stateAsync;
   final AsyncValue<AppPreferences> prefsAsync;
   final AsyncValue<LocalGemmaReadiness> readinessAsync;
-  final void Function() onCancel;
-  final void Function(GemmaModelInfo) onTrigger;
+  final VoidCallback onCancel;
+  final void Function(GemmaModelInfo model) onTrigger;
 
   @override
   Widget build(BuildContext context) {
@@ -98,7 +97,6 @@ class _LlmStatusRow extends StatelessWidget {
       );
     }
 
-    final AppPreferences? prefs = prefsAsync.value;
     final LocalGemmaReadiness? readiness = readinessAsync.value;
     final GemmaModelInfo? activeModel = switch (state) {
       AiReady(:final GemmaModelInfo activeModel) => activeModel,
@@ -106,106 +104,84 @@ class _LlmStatusRow extends StatelessWidget {
       _ => null,
     };
 
-    if (prefs == null || readiness == null || activeModel == null) {
+    if (readiness == null || activeModel == null) {
       return const _CheckingRow();
     }
 
     if (readiness.installed && readiness.usable) {
-      return _ReadyRow(
-        cloudMode: prefs.aiPreference == AiPreference.cloud,
-        note: prefs.aiPreference == AiPreference.cloud
-            ? 'Downloaded and ready whenever you switch to Offline mode.'
-            : 'Downloaded and ready to use without internet.',
+      return const _StatusRow(note: 'Downloaded');
+    }
+
+    if (readiness.installed) {
+      return _StatusRow(
+        note: 'Finishing setup…',
+        action: _CompactIconActionButton(
+          tooltip: 'Reload Butty AI',
+          icon: Icons.refresh_rounded,
+          onTap: () => onTrigger(activeModel),
+        ),
       );
     }
 
-    return _ActionRow(
-      badge: _StatusBadge(
-        label: readiness.installed ? 'Almost ready' : 'Needs download',
-        ok: readiness.installed ? null : false,
+    return _StatusRow(
+      note: 'Download to use Butty offline.',
+      action: _CompactIconActionButton(
+        tooltip: 'Download Butty AI',
+        icon: Icons.download_rounded,
+        onTap: () => onTrigger(activeModel),
+        isPrimary: true,
       ),
-      primary: readiness.installed ? 'Reload' : 'Download',
-      onPrimary: () => onTrigger(activeModel),
-      note: readiness.installed
-          ? 'We are still getting this ready.'
-          : 'Download once to use Butty without internet.',
     );
   }
 }
 
-class _ReadyRow extends StatelessWidget {
-  const _ReadyRow({required this.cloudMode, this.note});
+class _StatusRow extends StatelessWidget {
+  const _StatusRow({this.note, this.action});
 
-  final bool cloudMode;
   final String? note;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Row(
-          children: <Widget>[
-            _StatusBadge(
-              label: cloudMode ? 'Downloaded' : 'Ready offline',
-              ok: true,
-            ),
-          ],
-        ),
-        if (note != null) ...<Widget>[
-          const SizedBox(height: 8),
-          Text(
-            note!,
-            style: TextStyle(
-              fontSize: 11,
-              color: Theme.of(context).colorScheme.onSurface.withAlpha(150),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-}
-
-class _ActionRow extends StatelessWidget {
-  const _ActionRow({
-    required this.badge,
-    required this.primary,
-    required this.onPrimary,
-    this.note,
-  });
-
-  final Widget badge;
-  final String primary;
-  final VoidCallback onPrimary;
-  final String? note;
+  final Widget? action;
 
   @override
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
+    final Widget statusCopy = Text(
+      note ?? '',
+      style: TextStyle(
+        fontSize: 11,
+        height: 1.25,
+        color: cs.onSurface.withAlpha(150),
+      ),
+    );
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Row(
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        if (constraints.maxWidth < 300) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              statusCopy,
+              if (action != null) ...<Widget>[
+                const SizedBox(height: 10),
+                Align(alignment: Alignment.centerLeft, child: action),
+              ],
+            ],
+          );
+        }
+
+        return Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 12,
+          runSpacing: 8,
           children: <Widget>[
-            badge,
-            const Spacer(),
-            ProfileManagementActionButton(
-              label: primary,
-              isPrimary: true,
-              onTap: onPrimary,
+            ConstrainedBox(
+              constraints: const BoxConstraints(minWidth: 180, maxWidth: 260),
+              child: statusCopy,
             ),
+            if (action case final Widget compactAction) compactAction,
           ],
-        ),
-        if (note != null) ...<Widget>[
-          const SizedBox(height: 8),
-          Text(
-            note!,
-            style: TextStyle(fontSize: 11, color: cs.onSurface.withAlpha(150)),
-          ),
-        ],
-      ],
+        );
+      },
     );
   }
 }
@@ -228,19 +204,23 @@ class _ProgressRow extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 12,
+          runSpacing: 8,
           children: <Widget>[
-            Text(
-              'Downloading… $progress%',
-              style: TextStyle(color: cs.primary, fontSize: 13),
-            ),
-            GestureDetector(
-              onTap: onCancel,
+            ConstrainedBox(
+              constraints: const BoxConstraints(minWidth: 180, maxWidth: 260),
               child: Text(
-                'Cancel',
-                style: TextStyle(color: cs.error, fontSize: 12),
+                'Downloading… $progress%',
+                style: TextStyle(color: cs.primary, fontSize: 13),
               ),
+            ),
+            _CompactIconActionButton(
+              tooltip: 'Cancel Butty AI download',
+              icon: Icons.close_rounded,
+              onTap: onCancel,
             ),
           ],
         ),
@@ -308,36 +288,6 @@ class _TileHeader extends StatelessWidget {
   }
 }
 
-class _StatusBadge extends StatelessWidget {
-  const _StatusBadge({required this.label, required this.ok});
-
-  final String label;
-  final bool? ok;
-
-  @override
-  Widget build(BuildContext context) {
-    final Color bg = ok == true
-        ? Colors.green.shade800.withAlpha(40)
-        : ok == false
-        ? Colors.red.shade800.withAlpha(40)
-        : Theme.of(context).colorScheme.surfaceContainerHigh;
-    final Color fg = ok == true
-        ? Colors.green.shade300
-        : ok == false
-        ? Colors.red.shade300
-        : Theme.of(context).colorScheme.onSurface.withAlpha(150);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(label, style: TextStyle(fontSize: 11, color: fg)),
-    );
-  }
-}
-
 class _CheckingRow extends StatelessWidget {
   const _CheckingRow();
 
@@ -348,6 +298,43 @@ class _CheckingRow extends StatelessWidget {
       style: TextStyle(
         fontSize: 13,
         color: Theme.of(context).colorScheme.onSurface.withAlpha(128),
+      ),
+    );
+  }
+}
+
+class _CompactIconActionButton extends StatelessWidget {
+  const _CompactIconActionButton({
+    required this.tooltip,
+    required this.icon,
+    required this.onTap,
+    this.isPrimary = false,
+  });
+
+  final String tooltip;
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool isPrimary;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+
+    return Tooltip(
+      message: tooltip,
+      child: SizedBox(
+        width: 44,
+        height: 44,
+        child: IconButton(
+          onPressed: onTap,
+          style: IconButton.styleFrom(
+            backgroundColor: isPrimary ? cs.primary : cs.surface,
+            foregroundColor: isPrimary ? cs.onPrimary : cs.onSurface,
+            side: BorderSide(color: isPrimary ? cs.primary : cs.outline),
+            shape: const CircleBorder(),
+          ),
+          icon: Icon(icon, size: 18),
+        ),
       ),
     );
   }
