@@ -7,14 +7,20 @@ import 'package:ultralytics_yolo/ultralytics_yolo.dart';
 import 'package:kudlit_ph/features/scanner/domain/entities/baybayin_detection.dart';
 import 'package:kudlit_ph/features/scanner/domain/repositories/baybayin_detector.dart';
 
+typedef SingleImageYoloFactory = YOLO Function(String modelPath);
+
 /// On-device YOLO implementation of [BaybayinDetector] for iOS and Android.
 ///
 /// The live preview model path is supplied by `yoloModelPathProvider` (in the
 /// scanner presentation layer), which downloads the active catalog model on
 /// demand and surfaces [ModelNotReadyScreen] until it is ready.
 class YoloBaybayinDetector implements BaybayinDetector {
-  YoloBaybayinDetector({this.modelPathResolver})
-    : _controller = YOLOViewController() {
+  YoloBaybayinDetector({
+    this.modelPathResolver,
+    SingleImageYoloFactory? singleImageYoloFactory,
+  }) : _singleImageYoloFactory =
+           singleImageYoloFactory ?? _createSingleImageYolo,
+       _controller = YOLOViewController() {
     debugPrint('[YOLO] YoloBaybayinDetector created');
   }
 
@@ -24,6 +30,7 @@ class YoloBaybayinDetector implements BaybayinDetector {
   static const double _kEdgeMargin = 0.02;
 
   final Future<String> Function()? modelPathResolver;
+  final SingleImageYoloFactory _singleImageYoloFactory;
   final YOLOViewController _controller;
   final StreamController<List<BaybayinDetection>> _streamController =
       StreamController<List<BaybayinDetection>>.broadcast();
@@ -94,16 +101,25 @@ class YoloBaybayinDetector implements BaybayinDetector {
     _singleImageYolo = null;
     _singleImageModelPath = null;
 
-    final YOLO yolo = YOLO(
+    final YOLO yolo = _singleImageYoloFactory(modelPath);
+    try {
+      await yolo.loadModel();
+    } catch (_) {
+      await yolo.dispose();
+      rethrow;
+    }
+    _singleImageYolo = yolo;
+    _singleImageModelPath = modelPath;
+    return yolo;
+  }
+
+  static YOLO _createSingleImageYolo(String modelPath) {
+    return YOLO(
       modelPath: modelPath,
       task: YOLOTask.detect,
       useGpu: false,
       useMultiInstance: true,
     );
-    await yolo.loadModel();
-    _singleImageYolo = yolo;
-    _singleImageModelPath = modelPath;
-    return yolo;
   }
 
   bool _isUsefulStillImageResult(YOLOResult result) {

@@ -48,6 +48,7 @@ rm -rf build/web
 mkdir -p build/web
 
 python - <<PY
+import json
 from pathlib import Path
 from urllib.parse import urlsplit, urlunsplit
 
@@ -88,20 +89,23 @@ sitemap = f"""<?xml version="1.0" encoding="UTF-8"?>
     <loc>{app_url}</loc>
     <priority>0.7</priority>
   </url>
-  <url>
-    <loc>https://github.com/ACSADians/kudlit-app/releases/tag/v1.0.0</loc>
-    <priority>0.6</priority>
-  </url>
 </urlset>
 """
 (root / "sitemap.xml").write_text(sitemap, encoding="utf-8")
+
+manifest = json.loads(Path("web/manifest.json").read_text(encoding="utf-8"))
+manifest["start_url"] = app_url
+manifest["scope"] = final_app_path
+(root / "manifest.json").write_text(
+    json.dumps(manifest, indent=2, ensure_ascii=False) + "\n",
+    encoding="utf-8",
+)
 PY
 
 cp -R .seo-build/app build/web/app
 rm -rf build/web/app/landing build/web/app/social build/web/app/screenshots
 cp -R web/icons build/web/icons
 cp web/favicon.png build/web/favicon.png
-cp web/manifest.json build/web/manifest.json
 cp -R web/social build/web/social
 cp -R web/screenshots build/web/screenshots
 

@@ -24,6 +24,9 @@ Settings AI model setup, and branch readiness against `origin/main`.
   mobile screens.
 - Learn progress badges now use the app semantic color scheme instead of raw
   hard-coded colors.
+- Codex review fixes are applied for reverse-mode `k+` cleanup handling, root
+  PWA manifest launch path, sitemap same-host URLs, and failed YOLO model-load
+  disposal.
 
 ## QA Evidence
 
@@ -120,9 +123,11 @@ Latest E2E static build smoke:
 Latest command checks:
 
 - `flutter analyze`: `pass`
-- `flutter test`: `pass` (`171` tests)
+- `flutter test`: `pass` (`172` tests)
 - `flutter build web --release --base-href "/kudlit-app/"`: `pass`
 - `flutter build web --release`: `pass`
+- `build.sh`: `pass`; generated root manifest `start_url` points at `/app/`
+  and generated sitemap contains only same-host URLs.
 - `npx playwright screenshot ... /#/settings`: `pass`
 - `pwsh scripts/verify-translate-header-ui.ps1 ... -Tabs "translate,scan,learn,butty" -SkipTests`: `pass`
 - `pwsh scripts/prod-smoke.ps1 ...`: `pass`

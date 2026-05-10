@@ -825,6 +825,11 @@ void main() {
     );
     expect(field.controller?.text, 'k+');
     expect(find.text('Used as:'), findsNothing);
+    expect(find.text('Removed punctuation from input.'), findsNothing);
+    expect(
+      find.text('Some unsupported characters were ignored.'),
+      findsNothing,
+    );
     expect(tester.takeException(), isNull);
   });
 }
