@@ -32,4 +32,42 @@ void main() {
     expect(find.text('Quick Quiz'), findsNothing);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('locked lesson card stays readable without global opacity fade', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          home: Scaffold(
+            body: LearnHomeBody(
+              onStartLesson: (_) {},
+              onChatWithButty: () {},
+              onOpenGallery: () {},
+              onStartQuiz: () {},
+              bottomPad: 112,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Core Consonants'), findsOneWidget);
+    expect(
+      find.ancestor(
+        of: find.text('Core Consonants'),
+        matching: find.byType(Opacity),
+      ),
+      findsNothing,
+    );
+    final Rect lockedButton = tester.getRect(
+      find.widgetWithText(FilledButton, 'Locked').first,
+    );
+
+    expect(lockedButton.right, lessThanOrEqualTo(300));
+    expect(tester.takeException(), isNull);
+  });
 }

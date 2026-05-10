@@ -35,19 +35,9 @@ void main() {
       ),
     );
 
-    final Finder clearancePadding = find.byWidgetPredicate((Widget widget) {
-      if (widget is! Padding) {
-        return false;
-      }
-      final EdgeInsetsGeometry paddingGeometry = widget.padding;
-      if (paddingGeometry is! EdgeInsetsDirectional) {
-        return false;
-      }
-      final EdgeInsetsDirectional padding = paddingGeometry;
-      return padding.end >= 72;
-    });
+    final Rect scrollWindow = tester.getRect(find.byType(ListView));
 
-    expect(clearancePadding, findsOneWidget);
+    expect(scrollWindow.right, lessThanOrEqualTo(224));
     expect(tester.takeException(), isNull);
   });
 
