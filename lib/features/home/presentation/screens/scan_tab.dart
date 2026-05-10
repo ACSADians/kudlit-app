@@ -203,11 +203,11 @@ class _ScanTabState extends ConsumerState<ScanTab> {
     return () => controller.captureWebFrame(capture);
   }
 
-  /// Captures the current live camera frame via [RepaintBoundary], triggers a
-  /// brief white-flash animation, then freezes the scan with [onShutterTapped].
+  /// Captures the current live camera frame, triggers a brief white-flash
+  /// animation, then runs still-image inference on that exact frame.
   ///
-  /// Falls back gracefully — if the capture fails the result panel still shows
-  /// with the live detection snapshot (no frozen image).
+  /// Falls back gracefully with a scanner notice if the native frame is not
+  /// ready, instead of reusing the previous live detection snapshot.
   Future<void> _captureAndShutter() async {
     final ScanTabController controller = ref.read(
       scanTabControllerProvider.notifier,
@@ -238,7 +238,7 @@ class _ScanTabState extends ConsumerState<ScanTab> {
       debugPrint('[ScanTab] frame capture failed: $e');
     }
 
-    controller.onShutterTapped(capturedBytes: capturedBytes);
+    await controller.captureNativeFrame(fallbackBytes: capturedBytes);
   }
 
   @override
@@ -388,8 +388,8 @@ class _ScanTabState extends ConsumerState<ScanTab> {
               bottom: controlsBottom,
               child: _ScanControls(
                 key: const ValueKey('scan-controls'),
-                frozen: scanState.isShutterFrozen,
-                onShutter: scanState.isShutterFrozen
+                frozen: isFrozen,
+                onShutter: isFrozen
                     // Retake: dismiss frozen frame and go back to live camera.
                     ? controller.dismissResult
                     : kIsWeb
@@ -397,7 +397,7 @@ class _ScanTabState extends ConsumerState<ScanTab> {
                           ? null
                           : () => controller.captureWebFrame(_webCapture!))
                     : (scanState.isLoadingImage ? null : _captureAndShutter),
-                shutterLabel: scanState.isShutterFrozen
+                shutterLabel: isFrozen
                     ? 'Retake'
                     : kIsWeb
                     ? 'Capture Webcam Frame'
@@ -622,7 +622,7 @@ class _ScanControls extends StatelessWidget {
               child: frozen
                   ? _ControlIcon(
                       icon: Icons.replay_rounded,
-                      label: 'Retake',
+                      label: 'Close preview',
                       onTap: onShutter,
                       size: compact ? 48 : 54,
                       small: tiny,

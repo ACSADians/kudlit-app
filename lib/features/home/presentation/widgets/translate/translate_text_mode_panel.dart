@@ -20,6 +20,7 @@ class TranslateTextModePanel extends StatelessWidget {
     required this.onCheckInput,
     required this.onCopy,
     required this.onShare,
+    this.onInputFocusChanged,
     this.compactLayout = false,
   });
 
@@ -33,6 +34,7 @@ class TranslateTextModePanel extends StatelessWidget {
   final VoidCallback onCheckInput;
   final VoidCallback onCopy;
   final VoidCallback onShare;
+  final ValueChanged<bool>? onInputFocusChanged;
   final bool compactLayout;
 
   @override
@@ -50,6 +52,7 @@ class TranslateTextModePanel extends StatelessWidget {
           onClear: onClear,
           onExplain: onExplain,
           onCheckInput: onCheckInput,
+          onInputFocusChanged: onInputFocusChanged,
         ),
       );
     }
@@ -59,8 +62,14 @@ class TranslateTextModePanel extends StatelessWidget {
       final double previewHeight = keyboardOpen
           ? 92
           : MediaQuery.sizeOf(context).height < 700
-          ? 132
-          : 172;
+          ? 112
+          : 144;
+      final Widget emptyOutput = state.latinToBaybayin
+          ? const EmptyOutput()
+          : const EmptyOutput(
+              message: 'Enter encoded Baybayin below',
+              icon: Icons.translate_rounded,
+            );
       return SingleChildScrollView(
         padding: const EdgeInsets.only(bottom: 4),
         child: Column(
@@ -69,7 +78,7 @@ class TranslateTextModePanel extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(24, 18, 24, 12),
               child: SizedBox(
                 height: previewHeight,
-                child: const Center(child: EmptyOutput()),
+                child: Center(child: emptyOutput),
               ),
             ),
             _BottomInputArea(
@@ -82,6 +91,7 @@ class TranslateTextModePanel extends StatelessWidget {
               onClear: onClear,
               onExplain: onExplain,
               onCheckInput: onCheckInput,
+              onInputFocusChanged: onInputFocusChanged,
             ),
           ],
         ),
@@ -116,7 +126,12 @@ class TranslateTextModePanel extends StatelessWidget {
                         ],
                       ],
                     )
-                  : const EmptyOutput(),
+                  : state.latinToBaybayin
+                  ? const EmptyOutput()
+                  : const EmptyOutput(
+                      message: 'Enter encoded Baybayin below',
+                      icon: Icons.translate_rounded,
+                    ),
             ),
           ),
         ),
@@ -130,6 +145,7 @@ class TranslateTextModePanel extends StatelessWidget {
           onClear: onClear,
           onExplain: onExplain,
           onCheckInput: onCheckInput,
+          onInputFocusChanged: onInputFocusChanged,
         ),
       ],
     );
@@ -147,6 +163,7 @@ class _BottomInputArea extends StatelessWidget {
     required this.onClear,
     required this.onExplain,
     required this.onCheckInput,
+    this.onInputFocusChanged,
   });
 
   final TranslateTextState state;
@@ -158,12 +175,14 @@ class _BottomInputArea extends StatelessWidget {
   final VoidCallback onClear;
   final VoidCallback onExplain;
   final VoidCallback onCheckInput;
+  final ValueChanged<bool>? onInputFocusChanged;
 
   @override
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
     final bool keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
-    final bool keyboardCompact = compact || keyboardOpen;
+    final bool reverseInputCompact = !state.latinToBaybayin && state.hasInput;
+    final bool keyboardCompact = compact || keyboardOpen || reverseInputCompact;
     return Container(
       decoration: BoxDecoration(
         border: Border(top: BorderSide(color: cs.outline.withAlpha(80))),
@@ -187,13 +206,32 @@ class _BottomInputArea extends StatelessWidget {
           _InputField(
             text: state.inputText,
             enabled: inputEnabled && !state.aiBusy,
-            expanded: !keyboardCompact,
+            expanded: !compact,
+            dense: keyboardCompact,
             hintText: state.latinToBaybayin
                 ? 'Type in Filipino...'
-                : 'Type Baybayin Unicode...',
+                : 'Type encoded Baybayin like ka, ki, or k+...',
             onChanged: onInputChanged,
             onClear: onClear,
+            onFocusChanged: onInputFocusChanged,
           ),
+          if (!state.latinToBaybayin) ...<Widget>[
+            const SizedBox(height: 7),
+            _ReverseExamplesHint(
+              compact: keyboardCompact,
+              enabled: inputEnabled && !state.aiBusy,
+              onSelect: onInputChanged,
+            ),
+          ],
+          if (state.feedbackMessages.isNotEmpty ||
+              state.cleanupPreview != null) ...<Widget>[
+            const SizedBox(height: 7),
+            _InputFeedbackList(
+              messages: state.feedbackMessages,
+              cleanupPreview: state.cleanupPreview,
+              compact: keyboardCompact,
+            ),
+          ],
           if (state.hasInput) ...<Widget>[
             const SizedBox(height: 8),
             _TextActionsRow(
@@ -225,17 +263,21 @@ class _InputField extends StatefulWidget {
     required this.text,
     required this.enabled,
     required this.expanded,
+    required this.dense,
     required this.hintText,
     required this.onChanged,
     required this.onClear,
+    this.onFocusChanged,
   });
 
   final String text;
   final bool enabled;
   final bool expanded;
+  final bool dense;
   final String hintText;
   final ValueChanged<String> onChanged;
   final VoidCallback onClear;
+  final ValueChanged<bool>? onFocusChanged;
 
   @override
   State<_InputField> createState() => _InputFieldState();
@@ -243,12 +285,18 @@ class _InputField extends StatefulWidget {
 
 class _InputFieldState extends State<_InputField> {
   final TextEditingController _controller = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
 
   @override
   void initState() {
     super.initState();
     _controller.text = widget.text;
     _controller.addListener(() => setState(() {}));
+    _focusNode.addListener(_handleFocusChanged);
+  }
+
+  void _handleFocusChanged() {
+    widget.onFocusChanged?.call(_focusNode.hasFocus);
   }
 
   @override
@@ -263,6 +311,8 @@ class _InputFieldState extends State<_InputField> {
 
   @override
   void dispose() {
+    _focusNode.removeListener(_handleFocusChanged);
+    _focusNode.dispose();
     _controller.dispose();
     super.dispose();
   }
@@ -272,11 +322,12 @@ class _InputFieldState extends State<_InputField> {
     final ColorScheme cs = Theme.of(context).colorScheme;
     return TextField(
       key: ValueKey<String>(
-        widget.hintText.contains('Baybayin Unicode')
-            ? 'translate-baybayin-unicode-input'
+        widget.hintText.contains('encoded Baybayin')
+            ? 'translate-encoded-baybayin-input'
             : 'translate-filipino-input',
       ),
       controller: _controller,
+      focusNode: _focusNode,
       enabled: widget.enabled,
       keyboardType: widget.expanded
           ? TextInputType.multiline
@@ -284,7 +335,7 @@ class _InputFieldState extends State<_InputField> {
       textInputAction: widget.expanded
           ? TextInputAction.newline
           : TextInputAction.done,
-      minLines: widget.expanded ? 4 : 1,
+      minLines: widget.expanded ? (widget.dense ? 2 : 4) : 1,
       maxLines: widget.expanded ? 7 : 1,
       textAlignVertical: widget.expanded
           ? TextAlignVertical.top
@@ -294,10 +345,10 @@ class _InputFieldState extends State<_InputField> {
         hintText: widget.hintText,
         filled: true,
         fillColor: cs.surfaceContainerLow,
-        isDense: !widget.expanded,
+        isDense: widget.dense || !widget.expanded,
         contentPadding: EdgeInsets.symmetric(
           horizontal: 14,
-          vertical: widget.expanded ? 14 : 12,
+          vertical: widget.expanded ? (widget.dense ? 8 : 14) : 12,
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
@@ -329,6 +380,175 @@ class _InputFieldState extends State<_InputField> {
                 },
               )
             : null,
+      ),
+    );
+  }
+}
+
+class _InputFeedbackList extends StatelessWidget {
+  const _InputFeedbackList({
+    required this.messages,
+    required this.cleanupPreview,
+    required this.compact,
+  });
+
+  final List<String> messages;
+  final String? cleanupPreview;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    final List<Widget> children = messages
+        .map(
+          (String message) => Padding(
+            padding: EdgeInsets.only(bottom: compact ? 3 : 4),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Icon(
+                  Icons.info_outline_rounded,
+                  size: compact ? 13 : 14,
+                  color: cs.primary.withAlpha(190),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    message,
+                    style: TextStyle(
+                      fontSize: compact ? 11 : 12,
+                      height: 1.25,
+                      color: cs.onSurface.withAlpha(170),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        )
+        .toList(growable: true);
+    final String? cleanedInput = cleanupPreview;
+    if (cleanedInput != null) {
+      children.add(
+        Padding(
+          padding: EdgeInsets.only(top: compact ? 1 : 2),
+          child: _CleanupPreviewPill(value: cleanedInput, compact: compact),
+        ),
+      );
+    }
+    return Semantics(
+      label: <String>[
+        ...messages,
+        if (cleanedInput != null) 'Used as: $cleanedInput',
+      ].join(' '),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: children,
+      ),
+    );
+  }
+}
+
+class _CleanupPreviewPill extends StatelessWidget {
+  const _CleanupPreviewPill({required this.value, required this.compact});
+
+  final String value;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(horizontal: 10, vertical: compact ? 6 : 7),
+      decoration: BoxDecoration(
+        color: cs.tertiaryContainer.withAlpha(95),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: cs.tertiary.withAlpha(70)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Icon(
+            Icons.cleaning_services_outlined,
+            size: compact ? 13 : 14,
+            color: cs.onTertiaryContainer.withAlpha(190),
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              'Used as: $value',
+              maxLines: compact ? 1 : 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: compact ? 11 : 12,
+                height: 1.25,
+                color: cs.onTertiaryContainer.withAlpha(220),
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ReverseExamplesHint extends StatelessWidget {
+  const _ReverseExamplesHint({
+    required this.compact,
+    required this.enabled,
+    required this.onSelect,
+  });
+
+  final bool compact;
+  final bool enabled;
+  final ValueChanged<String> onSelect;
+
+  static const List<String> _examples = <String>['ka', 'ki', 'ku', 'k+'];
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    return Semantics(
+      label: 'Examples: ka, ki, ku, k+',
+      child: Wrap(
+        spacing: 6,
+        runSpacing: 6,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: <Widget>[
+          Padding(
+            padding: const EdgeInsets.only(right: 2),
+            child: Text(
+              compact ? 'Try:' : 'Examples:',
+              style: TextStyle(
+                fontSize: compact ? 11 : 12,
+                height: 1.25,
+                fontWeight: FontWeight.w700,
+                color: cs.onSurface.withAlpha(170),
+              ),
+            ),
+          ),
+          for (final String example in _examples)
+            ActionChip(
+              visualDensity: compact
+                  ? VisualDensity.compact
+                  : VisualDensity.standard,
+              label: Text(example),
+              tooltip: 'Use $example',
+              onPressed: enabled ? () => onSelect(example) : null,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              labelStyle: TextStyle(
+                fontSize: compact ? 11 : 12,
+                fontWeight: FontWeight.w700,
+                color: enabled ? cs.onSecondaryContainer : cs.onSurfaceVariant,
+              ),
+              backgroundColor: cs.secondaryContainer.withAlpha(190),
+              disabledColor: cs.surfaceContainerHighest,
+              side: BorderSide(color: cs.outline.withAlpha(90)),
+              padding: const EdgeInsets.symmetric(horizontal: 2),
+            ),
+        ],
       ),
     );
   }

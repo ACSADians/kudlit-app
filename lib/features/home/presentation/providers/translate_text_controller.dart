@@ -23,6 +23,7 @@ class TranslateTextState {
     required this.feedbackMessages,
     required this.aiBusy,
     required this.aiResponse,
+    this.cleanupPreview,
     this.aiSource,
   });
 
@@ -44,6 +45,7 @@ class TranslateTextState {
   final List<String> feedbackMessages;
   final bool aiBusy;
   final String aiResponse;
+  final String? cleanupPreview;
   final TranslateAiResultSource? aiSource;
 
   bool get hasInput => inputText.trim().isNotEmpty;
@@ -56,6 +58,8 @@ class TranslateTextState {
     List<String>? feedbackMessages,
     bool? aiBusy,
     String? aiResponse,
+    String? cleanupPreview,
+    bool clearCleanupPreview = false,
     TranslateAiResultSource? aiSource,
     bool clearAiSource = false,
   }) {
@@ -67,6 +71,9 @@ class TranslateTextState {
       feedbackMessages: feedbackMessages ?? this.feedbackMessages,
       aiBusy: aiBusy ?? this.aiBusy,
       aiResponse: aiResponse ?? this.aiResponse,
+      cleanupPreview: clearCleanupPreview
+          ? null
+          : (cleanupPreview ?? this.cleanupPreview),
       aiSource: clearAiSource ? null : (aiSource ?? this.aiSource),
     );
   }
@@ -82,6 +89,9 @@ class TranslateTextController extends Notifier<TranslateTextState> {
   static final RegExp _numberPattern = RegExp(r'[0-9]');
   static final RegExp _punctuationPattern = RegExp(r'[!-/:-@[-`{-~]');
   static final RegExp _unsupportedPattern = RegExp(r'[^A-Za-z0-9\sñÑᜀ-ᜟ]');
+  static final RegExp _reverseUnsupportedPattern = RegExp(
+    r'[^A-Za-z0-9+\sᜀ-ᜟ]',
+  );
   static final RegExp _baybayinPattern = RegExp(r'[ᜀ-ᜟ]');
 
   Timer? _saveDebounce;
@@ -171,6 +181,7 @@ class TranslateTextController extends Notifier<TranslateTextState> {
         baybayinText: '',
         latinText: '',
         feedbackMessages: const <String>[],
+        clearCleanupPreview: true,
         aiResponse: '',
         clearAiSource: true,
       );
@@ -182,33 +193,76 @@ class TranslateTextController extends Notifier<TranslateTextState> {
     final String latinText = latinToBaybayin
         ? trimmed
         : baybayinToLatin(trimmed);
+    final String? cleanupPreview = _cleanupPreviewFor(trimmed, latinToBaybayin);
     return state.copyWith(
       inputText: inputText,
       latinToBaybayin: latinToBaybayin,
       baybayinText: baybayinText,
       latinText: latinText,
       feedbackMessages: _feedbackFor(trimmed, latinToBaybayin),
+      cleanupPreview: cleanupPreview,
+      clearCleanupPreview: cleanupPreview == null,
     );
+  }
+
+  String? _cleanupPreviewFor(String input, bool latinToBaybayin) {
+    final bool hasRemovedCharacters = latinToBaybayin
+        ? _hasPunctuation(input, latinToBaybayin: true) ||
+              _numberPattern.hasMatch(input) ||
+              _unsupportedPattern.hasMatch(input)
+        : _hasPunctuation(input, latinToBaybayin: false) ||
+              _numberPattern.hasMatch(input) ||
+              _reverseUnsupportedPattern.hasMatch(input) ||
+              _baybayinPattern.hasMatch(input);
+    if (!hasRemovedCharacters) return null;
+
+    final String normalized = latinToBaybayin
+        ? input.toLowerCase().replaceAll(RegExp(r'[^a-z\s]'), '')
+        : input.toLowerCase().replaceAll(RegExp(r'[^a-z+\s]'), '');
+    final String compact = normalized.trim().replaceAll(RegExp(r'\s+'), ' ');
+    return compact.isEmpty ? null : compact;
   }
 
   List<String> _feedbackFor(String input, bool latinToBaybayin) {
     final List<String> messages = <String>[];
-    if (_punctuationPattern.hasMatch(input)) {
+    if (_hasPunctuation(input, latinToBaybayin: latinToBaybayin)) {
       messages.add('Removed punctuation from input.');
     }
     if (_numberPattern.hasMatch(input)) {
       messages.add('Numbers were ignored.');
     }
-    if (_unsupportedPattern.hasMatch(input)) {
+    final bool hasUnsupportedCharacters = latinToBaybayin
+        ? _unsupportedPattern.hasMatch(input)
+        : _reverseUnsupportedPattern.hasMatch(input);
+    if (hasUnsupportedCharacters) {
       messages.add('Some unsupported characters were ignored.');
     }
-    if (!latinToBaybayin && !_baybayinPattern.hasMatch(input)) {
-      messages.add('Reverse mode expects Baybayin Unicode input.');
+    if (!latinToBaybayin) {
+      if (_baybayinPattern.hasMatch(input)) {
+        messages.add(
+          'Pasted Baybayin glyphs are not parsed yet. Use encoded text like ka, ki, or k+.',
+        );
+      } else {
+        messages.add('Reverse mode reads encoded Baybayin like ka, ki, or k+.');
+      }
     }
     if (latinToBaybayin) {
       messages.add('Transliteration may be approximate for modern spelling.');
     }
     return messages;
+  }
+
+  bool _hasPunctuation(String input, {required bool latinToBaybayin}) {
+    if (latinToBaybayin) {
+      return _punctuationPattern.hasMatch(input);
+    }
+    for (final int codePoint in input.runes) {
+      final String character = String.fromCharCode(codePoint);
+      if (character != '+' && _punctuationPattern.hasMatch(character)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   Future<void> _runAiAction({required String userPrompt}) async {

@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:ultralytics_yolo/ultralytics_yolo.dart';
@@ -126,6 +127,10 @@ final yoloModelSelectionProvider =
       YoloModelSelectionNotifier.new,
     );
 
+final yoloModelCacheProvider = Provider<YoloModelCacheStore>((Ref ref) {
+  return YoloModelCache.instance;
+});
+
 // ─── Catalog ─────────────────────────────────────────────────────────────────
 
 /// All enabled vision models from the Supabase catalog, ordered by `sort_order`.
@@ -144,6 +149,18 @@ final availableYoloModelsProvider = FutureProvider<List<AiModelInfo>>((
   // every scan tab visit.
   ref.keepAlive();
   return models;
+});
+
+/// Download percentage for a YOLO model scope while its local path resolves.
+///
+/// `null` means no measured download is active. This lets the scanner keep the
+/// normal spinner for catalog/path checks and switch to a percentage only when
+/// the HTTP response reports a content length.
+final yoloModelDownloadProgressProvider = StateProvider.family<int?, String>((
+  Ref ref,
+  String scope,
+) {
+  return null;
 });
 
 // ─── Scope-aware resolution ──────────────────────────────────────────────────
@@ -215,10 +232,26 @@ final yoloModelPathProvider = FutureProvider.family<String, String>((
     throw StateError('Selected model "${model.name}" has no download URL.');
   }
 
-  final YoloModelCache cache = YoloModelCache.instance;
+  ref.read(yoloModelDownloadProgressProvider(scope).notifier).state = null;
+  final YoloModelCacheStore cache = ref.read(yoloModelCacheProvider);
   final bool upToDate = await cache.isUpToDate(model.id, model.version);
   if (!upToDate) {
-    await cache.download(model.id, url, version: model.version);
+    ref.read(yoloModelDownloadProgressProvider(scope).notifier).state = 0;
+    await cache.download(
+      model.id,
+      url,
+      version: model.version,
+      onProgress: (int received, int total) {
+        if (total <= 0) return;
+        final int percent = ((received / total) * 100)
+            .round()
+            .clamp(0, 100)
+            .toInt();
+        ref.read(yoloModelDownloadProgressProvider(scope).notifier).state =
+            percent;
+      },
+    );
+    ref.read(yoloModelDownloadProgressProvider(scope).notifier).state = 100;
   }
   final String? path = await cache.pathFor(model.id);
   if (path == null) {

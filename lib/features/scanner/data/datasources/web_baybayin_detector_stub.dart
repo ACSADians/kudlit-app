@@ -22,6 +22,9 @@ class WebBaybayinDetectorStub implements BaybayinDetector {
       const <BaybayinDetection>[];
 
   @override
+  Future<Uint8List?> captureFrame() async => null;
+
+  @override
   Future<void> toggleTorch({required bool enabled}) async {}
 
   @override

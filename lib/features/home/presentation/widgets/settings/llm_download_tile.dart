@@ -32,7 +32,7 @@ class LlmDownloadTile extends ConsumerWidget {
           const _TileHeader(
             icon: Icons.psychology_rounded,
             label: 'Gemma 4 E2B',
-            sublabel: 'Butty offline AI  ·  ~2.4 GB',
+            sublabel: 'Offline Butty chat  ·  ~2.4 GB',
           ),
           const SizedBox(height: 10),
           stateAsync.when(
@@ -75,7 +75,7 @@ class _LlmStatusRow extends StatelessWidget {
           cloudMode: mode == AiPreference.cloud,
         ),
       AiLocalModelMissing(:final String? note) => _ActionRow(
-        badge: const _StatusBadge(label: 'Not downloaded', ok: false),
+        badge: const _StatusBadge(label: 'Setup needed', ok: false),
         primary: 'Download',
         onPrimary: onDownload,
         note: note,
@@ -106,10 +106,14 @@ class _ReadyRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (cloudMode) {
-      return const _StatusBadge(label: 'Cloud mode — not needed', ok: null);
+      return const _ActionRow(
+        badge: _StatusBadge(label: 'Cloud active', ok: null),
+        note: 'Optional while Cloud is active.',
+      );
     }
-    return Row(
-      children: <Widget>[_StatusBadge(label: '$modelName installed', ok: true)],
+    return _ActionRow(
+      badge: _StatusBadge(label: '$modelName ready', ok: true),
+      note: 'Ready for local Butty replies.',
     );
   }
 }
@@ -117,42 +121,74 @@ class _ReadyRow extends StatelessWidget {
 class _ActionRow extends StatelessWidget {
   const _ActionRow({
     required this.badge,
-    required this.primary,
-    required this.onPrimary,
+    this.primary,
+    this.onPrimary,
     this.note,
   });
 
   final Widget badge;
-  final String primary;
-  final VoidCallback onPrimary;
+  final String? primary;
+  final VoidCallback? onPrimary;
   final String? note;
 
   @override
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
 
-    return Column(
+    final Widget statusCopy = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Row(
-          children: <Widget>[
-            badge,
-            const Spacer(),
-            ProfileManagementActionButton(
-              label: primary,
-              isPrimary: true,
-              onTap: onPrimary,
-            ),
-          ],
-        ),
+        badge,
         if (note != null) ...<Widget>[
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Text(
             note!,
-            style: TextStyle(fontSize: 11, color: cs.onSurface.withAlpha(150)),
+            style: TextStyle(
+              fontSize: 11,
+              height: 1.25,
+              color: cs.onSurface.withAlpha(150),
+            ),
           ),
         ],
       ],
+    );
+    final Widget? action = primary != null && onPrimary != null
+        ? ProfileManagementActionButton(
+            label: primary!,
+            isPrimary: true,
+            onTap: onPrimary,
+          )
+        : null;
+
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        if (constraints.maxWidth < 300) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              statusCopy,
+              if (action != null) ...<Widget>[
+                const SizedBox(height: 10),
+                Align(alignment: Alignment.centerLeft, child: action),
+              ],
+            ],
+          );
+        }
+
+        return Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 12,
+          runSpacing: 8,
+          children: <Widget>[
+            ConstrainedBox(
+              constraints: const BoxConstraints(minWidth: 180, maxWidth: 260),
+              child: statusCopy,
+            ),
+            ?action,
+          ],
+        );
+      },
     );
   }
 }
@@ -177,20 +213,20 @@ class _ProgressRow extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 12,
+          runSpacing: 8,
           children: <Widget>[
-            Text(
-              'Downloading $label… $progress%',
-              style: TextStyle(color: cs.primary, fontSize: 13),
-            ),
-            GestureDetector(
-              onTap: onCancel,
+            ConstrainedBox(
+              constraints: const BoxConstraints(minWidth: 180, maxWidth: 260),
               child: Text(
-                'Cancel',
-                style: TextStyle(color: cs.error, fontSize: 12),
+                'Downloading $label · $progress%',
+                style: TextStyle(color: cs.primary, fontSize: 13),
               ),
             ),
+            ProfileManagementActionButton(label: 'Cancel', onTap: onCancel),
           ],
         ),
         if (statusMessage != null) ...<Widget>[
@@ -268,16 +304,17 @@ class _StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
     final Color bg = ok == true
-        ? Colors.green.shade800.withAlpha(40)
+        ? cs.primaryContainer
         : ok == false
-        ? Colors.red.shade800.withAlpha(40)
-        : Theme.of(context).colorScheme.surfaceContainerHigh;
+        ? cs.errorContainer
+        : cs.surfaceContainerHigh;
     final Color fg = ok == true
-        ? Colors.green.shade300
+        ? cs.onPrimaryContainer
         : ok == false
-        ? Colors.red.shade300
-        : Theme.of(context).colorScheme.onSurface.withAlpha(150);
+        ? cs.onErrorContainer
+        : cs.onSurface.withAlpha(150);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -285,7 +322,12 @@ class _StatusBadge extends StatelessWidget {
         color: bg,
         borderRadius: BorderRadius.circular(20),
       ),
-      child: Text(label, style: TextStyle(fontSize: 11, color: fg)),
+      child: Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(fontSize: 11, color: fg),
+      ),
     );
   }
 }
@@ -296,7 +338,7 @@ class _CheckingRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Text(
-      'Checking…',
+      'Checking status...',
       style: TextStyle(
         fontSize: 13,
         color: Theme.of(context).colorScheme.onSurface.withAlpha(128),
@@ -312,11 +354,14 @@ class _ErrRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      'Error: $message',
-      style: TextStyle(
-        fontSize: 12,
-        color: Theme.of(context).colorScheme.error,
+    return Semantics(
+      label: 'Setup failed: $message',
+      child: Text(
+        'Setup failed. Check your connection and try again.',
+        style: TextStyle(
+          fontSize: 12,
+          color: Theme.of(context).colorScheme.error,
+        ),
       ),
     );
   }
