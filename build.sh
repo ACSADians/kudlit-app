@@ -17,8 +17,6 @@ if [[ "$APP_BASE_PATH" != /* || "$APP_BASE_PATH" != */ ]]; then
   exit 1
 fi
 
-APP_URL="${PUBLIC_SITE_URL}${APP_BASE_PATH%/}/"
-
 if [ -n "${SUPABASE_URL:-}" ] || [ -n "${SUPABASE_ANON_KEY:-}" ] || [ -n "${GEMINI_API_KEY:-}" ] || [ -n "${HUGGINGFACE_TOKEN:-}" ]; then
   # Write .env from CI environment variables so flutter_dotenv can load it.
   # All variables must be set as secrets in the CI environment.
@@ -51,10 +49,22 @@ mkdir -p build/web
 
 python - <<PY
 from pathlib import Path
+from urllib.parse import urlsplit, urlunsplit
 
 site_url = "$PUBLIC_SITE_URL"
-app_url = "$APP_URL"
+app_base_path = "$APP_BASE_PATH"
 root = Path("build/web")
+
+parts = urlsplit(site_url)
+site_path = parts.path.rstrip("/")
+app_path = app_base_path if app_base_path.startswith("/") else f"/{app_base_path}"
+
+if site_path and app_path.startswith(f"{site_path}/"):
+    final_app_path = app_path
+else:
+    final_app_path = f"{site_path}/{app_path.lstrip('/')}"
+final_app_path = "/" + final_app_path.strip("/") + "/"
+app_url = urlunsplit((parts.scheme, parts.netloc, final_app_path, "", ""))
 
 template = Path("web/landing/index.html").read_text(encoding="utf-8")
 template = template.replace("__PUBLIC_SITE_URL__", site_url)

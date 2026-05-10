@@ -59,11 +59,16 @@ class _VisionDownloadTileState extends ConsumerState<VisionDownloadTile> {
           );
       ref.invalidate(_yoloInstalledProvider(model.id));
       ref.invalidate(yoloModelPathProvider);
-      unawaited(
-        ref
-            .read(yoloModelPathProvider(YoloModelScope.camera).future)
-            .catchError((_) => ''),
-      );
+      final AiModelInfo? activeCameraModel = ref
+          .read(activeYoloModelProvider(YoloModelScope.camera))
+          .value;
+      if (activeCameraModel?.id == model.id) {
+        unawaited(
+          ref
+              .read(yoloModelPathProvider(YoloModelScope.camera).future)
+              .catchError((_) => ''),
+        );
+      }
     } catch (e) {
       if (mounted) setState(() => _error = e.toString());
     } finally {

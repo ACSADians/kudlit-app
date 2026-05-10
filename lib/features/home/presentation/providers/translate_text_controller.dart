@@ -190,13 +190,18 @@ class TranslateTextController extends Notifier<TranslateTextState> {
     final String latinText = latinToBaybayin
         ? trimmed
         : baybayinToLatin(trimmed);
+    final String? cleanupPreview = _cleanupPreviewFor(
+      trimmed,
+      latinToBaybayin,
+    );
     return state.copyWith(
       inputText: inputText,
       latinToBaybayin: latinToBaybayin,
       baybayinText: baybayinText,
       latinText: latinText,
       feedbackMessages: _feedbackFor(trimmed, latinToBaybayin),
-      cleanupPreview: _cleanupPreviewFor(trimmed, latinToBaybayin),
+      cleanupPreview: cleanupPreview,
+      clearCleanupPreview: cleanupPreview == null,
     );
   }
 

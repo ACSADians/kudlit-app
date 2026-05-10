@@ -753,6 +753,15 @@ void main() {
 
     expect(find.text('Used as: kumusta'), findsOneWidget);
     expect(tester.takeException(), isNull);
+
+    await tester.enterText(
+      find.byKey(const ValueKey<String>('translate-filipino-input')),
+      'Kumusta',
+    );
+    await tester.pump();
+
+    expect(find.text('Used as: kumusta'), findsNothing);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('reverse mode explains encoded input instead of Unicode glyphs', (

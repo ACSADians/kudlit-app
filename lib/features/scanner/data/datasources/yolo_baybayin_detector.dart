@@ -91,6 +91,9 @@ class YoloBaybayinDetector implements BaybayinDetector {
     }
 
     await _singleImageYolo?.dispose();
+    _singleImageYolo = null;
+    _singleImageModelPath = null;
+
     final YOLO yolo = YOLO(
       modelPath: modelPath,
       task: YOLOTask.detect,
@@ -142,7 +145,10 @@ class YoloBaybayinDetector implements BaybayinDetector {
   @override
   void dispose() {
     debugPrint('[YOLO] YoloBaybayinDetector disposed');
-    unawaited(_singleImageYolo?.dispose());
+    final YOLO? yolo = _singleImageYolo;
+    _singleImageYolo = null;
+    _singleImageModelPath = null;
+    unawaited(yolo?.dispose());
     _streamController.close();
   }
 }
