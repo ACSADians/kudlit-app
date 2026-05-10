@@ -1,7 +1,7 @@
 # KudVis 1 Turbo - Scanner Vision Model Loading Audit
 
 Date: 2026-05-04
-Last reviewed: 2026-05-08
+Last reviewed: 2026-05-10
 Status: Active backlog, partially implemented
 
 This audit tracks native scanner model loading, readiness states, and camera
@@ -23,14 +23,17 @@ Implemented since the original audit:
 - `_kDetectionInterval` is now `250ms`.
 - `_kConfidenceThreshold` is `0.8` and the comment matches that value.
 - `_ScanningIndicator` is not present in the current scanner code.
+- Native scan-tab model downloads now surface measured download percentage in
+  `ModelNotReadyScreen` when the HTTP response reports content length.
+- Missing scanner-model configuration now has a distinct setup-oriented error
+  title and points users to `Settings > AI models`.
+- Missing scanner-model configuration now includes a direct `Open AI models`
+  action that navigates to Settings/model setup, plus a retry action.
+- Settings now frames AI models as a local setup destination and the manual
+  vision-model download path prewarms the camera model provider after install.
 
 Still open:
 
-- Scan tab does not show model download percentage while
-  `yoloModelPathProvider(YoloModelScope.camera)` downloads on demand.
-- There is no distinct not-installed/empty-catalog action state on the scan tab.
-- Manual Settings download invalidates the model path but does not prewarm the
-  camera-scope path the same way first-run setup does.
 - `_kRequiredConsecutiveHits` remains `2`, so the current `250ms` throttle still
   requires roughly `500ms` before non-empty detections surface.
 
@@ -38,9 +41,9 @@ Still open:
 
 ### P0 - Add Scanner-Tab Download Progress
 
-Expose camera-scope download progress while the scanner model is being fetched.
-The Settings page already tracks progress locally, but the scan tab only sees
-the model path provider as loading.
+Status: Implemented for native scanner path resolution. The scan tab now watches
+camera-scope YOLO download progress and renders a percentage with a linear
+indicator while `yoloModelPathProvider(YoloModelScope.camera)` downloads.
 
 Implementation direction:
 
@@ -58,8 +61,9 @@ Acceptance:
 
 ### P0 - Add Not-Installed / Empty-Catalog State
 
-The scan tab should distinguish an actual loading download from a configuration
-or availability problem.
+Status: Implemented for the native scanner unavailable state. Empty catalog and
+missing platform URL now render a setup-oriented scanner error with direct
+navigation to Settings/model setup.
 
 Implementation direction:
 
@@ -75,9 +79,8 @@ Acceptance:
 
 ### P1 - Prewarm Camera Scope After Manual Settings Download
 
-First-run setup prewarms the camera model path after downloading a vision model.
-The Settings download flow currently invalidates providers but does not prewarm
-the camera path.
+Status: Implemented. First-run setup and manual Settings downloads now prewarm
+the camera model path after downloading a vision model.
 
 Implementation direction:
 

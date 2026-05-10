@@ -415,7 +415,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('baybayin unicode reverse input renders as a taller text area', (
+  testWidgets('encoded baybayin reverse input renders as a taller text area', (
     tester,
   ) async {
     await tester.binding.setSurfaceSize(const Size(390, 844));
@@ -444,12 +444,12 @@ void main() {
       ),
     );
 
-    final Finder unicodeInput = find.byKey(
-      const ValueKey<String>('translate-baybayin-unicode-input'),
+    final Finder encodedInput = find.byKey(
+      const ValueKey<String>('translate-encoded-baybayin-input'),
     );
 
-    expect(unicodeInput, findsOneWidget);
-    expect(tester.getSize(unicodeInput).height, greaterThanOrEqualTo(120));
+    expect(encodedInput, findsOneWidget);
+    expect(tester.getSize(encodedInput).height, greaterThanOrEqualTo(120));
     expect(tester.takeException(), isNull);
   });
 
@@ -682,6 +682,141 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets('translate text mode surfaces input cleanup helper messages', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(360, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          home: Scaffold(
+            body: TranslateTextModePanel(
+              state: const TranslateTextState(
+                inputText: 'Kumusta, 123!',
+                latinToBaybayin: true,
+                baybayinText: 'kumusta',
+                latinText: 'Kumusta, 123!',
+                feedbackMessages: <String>[
+                  'Removed punctuation from input.',
+                  'Numbers were ignored.',
+                  'Transliteration may be approximate for modern spelling.',
+                ],
+                cleanupPreview: 'kumusta',
+                aiBusy: false,
+                aiResponse: '',
+              ),
+              inputEnabled: true,
+              disabledReason: null,
+              onDirectionChanged: (_) {},
+              onInputChanged: (_) {},
+              onClear: () {},
+              onExplain: () {},
+              onCheckInput: () {},
+              onCopy: () {},
+              onShare: () {},
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Removed punctuation from input.'), findsOneWidget);
+    expect(find.text('Numbers were ignored.'), findsOneWidget);
+    expect(
+      find.text('Transliteration may be approximate for modern spelling.'),
+      findsOneWidget,
+    );
+    expect(find.text('Used as: kumusta'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('translate text mode previews cleaned input while typing', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(360, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      const ProviderScope(
+        child: MaterialApp(home: Scaffold(body: TranslateScreen())),
+      ),
+    );
+
+    await tester.enterText(
+      find.byKey(const ValueKey<String>('translate-filipino-input')),
+      'Kumusta, 123!',
+    );
+    await tester.pump();
+
+    expect(find.text('Used as: kumusta'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('reverse mode explains encoded input instead of Unicode glyphs', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(360, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      const ProviderScope(
+        child: MaterialApp(home: Scaffold(body: TranslateScreen())),
+      ),
+    );
+
+    await tester.tap(find.text('Baybayin → Filipino'));
+    await tester.pump();
+
+    expect(find.text('Examples:'), findsOneWidget);
+    expect(find.text('ka'), findsOneWidget);
+    expect(find.text('ki'), findsOneWidget);
+    expect(find.text('ku'), findsOneWidget);
+    expect(find.text('k+'), findsOneWidget);
+
+    await tester.enterText(
+      find.byKey(const ValueKey<String>('translate-encoded-baybayin-input')),
+      'ᜊ',
+    );
+    await tester.pump();
+
+    expect(
+      find.text('Type encoded Baybayin like ka, ki, or k+...'),
+      findsOneWidget,
+    );
+    expect(
+      find.text(
+        'Pasted Baybayin glyphs are not parsed yet. Use encoded text like ka, ki, or k+.',
+      ),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('reverse mode example chips fill encoded input', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(360, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      const ProviderScope(
+        child: MaterialApp(home: Scaffold(body: TranslateScreen())),
+      ),
+    );
+
+    await tester.tap(find.text('Baybayin → Filipino'));
+    await tester.pump();
+    await tester.tap(find.text('k+'));
+    await tester.pump();
+
+    final TextField field = tester.widget<TextField>(
+      find.byKey(const ValueKey<String>('translate-encoded-baybayin-input')),
+    );
+    expect(field.controller?.text, 'k+');
+    expect(find.text('Used as:'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
 }
 
 Widget _largeTextBuilder(BuildContext context, Widget? child) {

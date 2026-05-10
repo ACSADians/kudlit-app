@@ -1,6 +1,7 @@
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kudlit_ph/features/scanner/presentation/widgets/model_not_ready_screen.dart';
 import 'package:kudlit_ph/features/scanner/presentation/widgets/scanner_camera.dart';
 
 void main() {
@@ -110,5 +111,61 @@ void main() {
     );
     expect(tester.takeException(), isNull);
     semantics.dispose();
+  });
+
+  testWidgets('model not ready screen shows download progress', (
+    WidgetTester tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(320, 480));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(body: ModelNotReadyScreen(progress: 42)),
+      ),
+    );
+
+    expect(find.text('Downloading scanner model... 42%'), findsOneWidget);
+    expect(find.byType(LinearProgressIndicator), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('model not ready error gives settings path for missing models', (
+    WidgetTester tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(320, 480));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    bool openedSettings = false;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ModelNotReadyScreen.error(
+            errorMessage: 'No scanner model is configured yet.',
+            onRetry: () {},
+            onSetup: () => openedSettings = true,
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Scanner model needs setup'), findsOneWidget);
+    expect(
+      find.text(
+        'Open Settings > AI models to install or update scanner models.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Open AI models'), findsOneWidget);
+    expect(find.text('Try Again'), findsOneWidget);
+
+    final Rect ctaRect = tester.getRect(
+      find.widgetWithText(FilledButton, 'Open AI models'),
+    );
+    expect(ctaRect.height, greaterThanOrEqualTo(44));
+
+    await tester.tap(find.text('Open AI models'));
+    expect(openedSettings, isTrue);
+    expect(tester.takeException(), isNull);
   });
 }

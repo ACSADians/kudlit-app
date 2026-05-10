@@ -1,9 +1,9 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:kudlit_ph/features/scanner/data/datasources/yolo_model_cache.dart';
 import 'package:kudlit_ph/features/scanner/presentation/providers/yolo_model_selection_provider.dart';
 import 'package:kudlit_ph/features/translator/domain/entities/ai_model_info.dart';
 
@@ -14,7 +14,7 @@ final _yoloInstalledProvider = FutureProvider.autoDispose.family<bool, String>((
   Ref ref,
   String modelId,
 ) async {
-  final String? path = await YoloModelCache.instance.pathFor(modelId);
+  final String? path = await ref.read(yoloModelCacheProvider).pathFor(modelId);
   return path != null;
 });
 
@@ -46,17 +46,24 @@ class _VisionDownloadTileState extends ConsumerState<VisionDownloadTile> {
         : (model.androidModelLink ?? model.modelLink);
 
     try {
-      await YoloModelCache.instance.download(
-        model.id,
-        url,
-        version: model.version,
-        onProgress: (int received, int total) {
-          if (!mounted || total <= 0) return;
-          setState(() => _progress = ((received / total) * 100).round());
-        },
-      );
+      await ref
+          .read(yoloModelCacheProvider)
+          .download(
+            model.id,
+            url,
+            version: model.version,
+            onProgress: (int received, int total) {
+              if (!mounted || total <= 0) return;
+              setState(() => _progress = ((received / total) * 100).round());
+            },
+          );
       ref.invalidate(_yoloInstalledProvider(model.id));
       ref.invalidate(yoloModelPathProvider);
+      unawaited(
+        ref
+            .read(yoloModelPathProvider(YoloModelScope.camera).future)
+            .catchError((_) => ''),
+      );
     } catch (e) {
       if (mounted) setState(() => _error = e.toString());
     } finally {
@@ -118,26 +125,66 @@ class _VisionStatusRow extends ConsumerWidget {
     if (installed == null) return const _CheckingRow();
 
     if (installed) {
-      return Row(
-        children: <Widget>[
-          _StatusBadge(label: '${model.name} installed', ok: true),
-          const Spacer(),
-          ProfileManagementActionButton(
-            label: 'Re-download',
-            onTap: onDownload,
-          ),
-        ],
-      );
-    }
-    return Row(
-      children: <Widget>[
-        const _StatusBadge(label: 'Not downloaded', ok: false),
-        const Spacer(),
-        ProfileManagementActionButton(
-          label: 'Download',
-          isPrimary: true,
+      return _VisionActionRow(
+        badge: _StatusBadge(label: '${model.name} ready', ok: true),
+        supportingText: 'Scanner opens faster after setup.',
+        action: ProfileManagementActionButton(
+          label: 'Re-download',
           onTap: onDownload,
         ),
+      );
+    }
+    return _VisionActionRow(
+      badge: const _StatusBadge(label: 'Setup needed', ok: false),
+      supportingText: 'Required before live scanner recognition.',
+      action: ProfileManagementActionButton(
+        label: 'Download',
+        isPrimary: true,
+        onTap: onDownload,
+      ),
+    );
+  }
+}
+
+class _VisionActionRow extends StatelessWidget {
+  const _VisionActionRow({
+    required this.badge,
+    required this.supportingText,
+    required this.action,
+  });
+
+  final Widget badge;
+  final String supportingText;
+  final Widget action;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    return Wrap(
+      alignment: WrapAlignment.spaceBetween,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: 12,
+      runSpacing: 10,
+      children: <Widget>[
+        ConstrainedBox(
+          constraints: const BoxConstraints(minWidth: 180, maxWidth: 260),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              badge,
+              const SizedBox(height: 6),
+              Text(
+                supportingText,
+                style: TextStyle(
+                  fontSize: 11,
+                  height: 1.25,
+                  color: cs.onSurface.withAlpha(150),
+                ),
+              ),
+            ],
+          ),
+        ),
+        action,
       ],
     );
   }

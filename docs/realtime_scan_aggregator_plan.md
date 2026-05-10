@@ -1,6 +1,6 @@
 # Realtime Scan Aggregator Plan
 
-> Status: Implemented; scan layout hardening verified by `scripts/scan-layout-overlap-pass.ps1` on 2026-05-08
+> Status: Implemented; scan layout hardening verified by `scripts/scan-layout-overlap-pass.ps1` on 2026-05-10
 > Owner: Scanner feature
 > Date: 2026-05-05
 

@@ -43,7 +43,7 @@ Current state: core scan-tab responsive / overlap / transition hardening updates
 - [x] Add a dedicated **scan hardening runbook** section in `README.md` (or `docs/scan-layout-hardening.md`):
  - command for running strict matrix + transitions:
     - `pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/scan-layout-overlap-pass.ps1`
-  - latest verified artifact timestamp: `2026-05-08 02:22:10`
+  - latest verified artifact timestamp: `2026-05-10 17:20:12 +08:00`
   - matrix size presets used by script
     - `360x740`, `390x844`, `430x932`, `844x390`, `1024x768`
     - optional strict tiny widths currently enabled: `340x260`, `320x240`

@@ -15,15 +15,19 @@ Implemented now:
 - explicit Gemma source control (`Online` / `Offline`) with status banner
 - offline readiness probing before AI-backed actions
 - disabled AI actions when offline readiness is pending/unavailable
-- input feedback messages for punctuation/numbers/unsupported characters and
+- visible input feedback messages for punctuation/numbers/unsupported characters and
   reverse-mode guidance
+- cleaned-input preview in text mode when normalization changes what the
+  converter uses
+- encoded reverse-mode examples near the input (`ka`, `ki`, `ku`, `k+`) that
+  can be tapped to fill the text field
 - sketchpad target requirement + feedback request flow
 - AI response source labels (`Offline Gemma`, `Online Gemma`, fallback label)
 
 Still pending or needing follow-through:
 
 - provider and widget test coverage listed in this plan
-- final UX polish pass for helper messaging and failure states
+- remaining UX polish for deeper explanation/failure states beyond helper copy
 - explicit reverse-mode Unicode acceptance decision (keep encoded helper vs native Unicode parser)
 
 ## Purpose
@@ -83,8 +87,10 @@ does not yet behave like an interactive translation workspace.
 Main gaps:
 
 - sketchpad mode and offline readiness are implemented
-- feedback about stripped/unsupported input is still incomplete in some branches
-- reverse-mode input invalidity messaging is partially covered
+- feedback about stripped/unsupported input is visible in the text-mode input
+  area; cleaned-input previews are implemented for normalization changes
+- reverse-mode input invalidity messaging and tap-to-fill encoded examples are
+  covered
 - AI-assisted explanation depth is still partial
 
 ## Target Experience
@@ -429,7 +435,7 @@ Status: **In progress**
 
 - label AI result source ✅
 - surface local failure and fallback states clearly ✅
-- improve helper copy and edge-case messaging ⏳
+- improve helper copy and edge-case messaging ✅
 - add test coverage ⏳
 
 ## Test Plan
@@ -484,5 +490,6 @@ The plan is complete when the upgraded translate page:
    local success, and fallback behavior.
 2. Add/complete widget tests for mode rendering, disabled controls, and source
    labels.
-3. Polish helper copy and edge-case messages for text + sketchpad flows.
+3. Decide whether cleanup preview should grow into a full before/after
+   explanation, or stay as the current compact `Used as` helper.
 4. Decide whether to keep copy-based share behavior or add platform share.

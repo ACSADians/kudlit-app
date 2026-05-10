@@ -36,6 +36,12 @@ What the page does today:
 - renders Baybayin output using the `Baybayin Simple TAWBID` font
 - shows output action pills for `Copy`, `Share`, and `Save`
 - shows a mic button with visual toggle state only
+- surfaces inline helper messages when punctuation, numbers, unsupported
+  characters, or reverse-mode input expectations affect the result
+- previews the cleaned text used by the converter when input cleanup changes
+  the effective transliteration value
+- shows encoded reverse-mode examples (`ka`, `ki`, `ku`, `k+`) as tappable
+  chips that fill the input
 
 What the page does not do today:
 
@@ -112,7 +118,7 @@ Relevant file:
 
 - [direction_toggle.dart](../lib/features/home/presentation/widgets/translate/direction_toggle.dart)
 
-### 2. Reverse mode is technically present, but input expectations are unclear
+### 2. Reverse mode is technically present, but intentionally encoded
 
 `baybayinToLatin()` does not consume actual Baybayin glyphs. It only parses an internal ASCII-like encoding made of:
 
@@ -121,22 +127,24 @@ Relevant file:
 - `+`
 - spaces
 
-That means a user pasting real Baybayin Unicode characters will not get the intended reverse conversion.
+That means a user pasting real Baybayin Unicode characters will not get the intended reverse conversion. The UI now labels the reverse input as encoded Baybayin and shows inline helper copy when pasted glyphs are detected.
 
 Relevant file:
 
 - [baybayify.dart](../lib/core/utils/baybayify.dart#L77)
 
-### 3. Input sanitization is consistent, but destructive
+### 3. Input sanitization is consistent, with visible helper feedback
 
 `_normalize()` strips non-alpha content:
 
 - punctuation removed
 - numbers removed
 - symbols removed
-- unsupported characters removed silently
+- unsupported characters removed by the converter
 
-This keeps the algorithm simple, but users get no explanation when characters disappear.
+This keeps the algorithm simple. Current UI helper messages now tell users when punctuation, numbers, unsupported characters, or encoded reverse-mode expectations affect the result.
+When cleanup changes the effective input, the input area also previews the exact
+cleaned text used by the converter.
 
 Relevant file:
 
@@ -174,16 +182,16 @@ Relevant files:
 - [translate_text_controller.dart](../lib/features/home/presentation/providers/translate_text_controller.dart)
 - [translate_feedback_card.dart](../lib/features/home/presentation/widgets/translate/translate_feedback_card.dart)
 
-### 3. User feedback is partial for unsupported input
+### 3. User feedback is improved but still algorithm-limited
 
-Examples of missing feedback:
+Visible helper messages now cover:
 
 - punctuation removed
 - numbers removed
 - unsupported Baybayin glyph input
 - mixed-script input
 
-The current behavior silently normalizes or drops content.
+The remaining limitation is that the underlying conversion still drops unsupported input instead of preserving or transforming it.
 
 ### 4. No actual Baybayin Unicode parsing in reverse mode
 
@@ -286,8 +294,8 @@ failure and empty states.
 
 ### Priority 2: Make it trustworthy
 
-1. Add validation and helper states for unsupported characters.
-2. Show when input was normalized or stripped.
+1. Expand validation beyond helper copy into stronger input previews.
+2. Show a before/after cleanup preview when input was normalized or stripped.
 3. Add tests for `baybayifyWord()` and `baybayinToLatin()`.
 4. Define whether reverse mode should support actual Baybayin Unicode.
 

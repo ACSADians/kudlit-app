@@ -198,11 +198,28 @@ class _BottomInputArea extends StatelessWidget {
             dense: keyboardCompact,
             hintText: state.latinToBaybayin
                 ? 'Type in Filipino...'
-                : 'Type Baybayin Unicode...',
+                : 'Type encoded Baybayin like ka, ki, or k+...',
             onChanged: onInputChanged,
             onClear: onClear,
             onFocusChanged: onInputFocusChanged,
           ),
+          if (!state.latinToBaybayin) ...<Widget>[
+            const SizedBox(height: 7),
+            _ReverseExamplesHint(
+              compact: keyboardCompact,
+              enabled: inputEnabled && !state.aiBusy,
+              onSelect: onInputChanged,
+            ),
+          ],
+          if (state.feedbackMessages.isNotEmpty ||
+              state.cleanupPreview != null) ...<Widget>[
+            const SizedBox(height: 7),
+            _InputFeedbackList(
+              messages: state.feedbackMessages,
+              cleanupPreview: state.cleanupPreview,
+              compact: keyboardCompact,
+            ),
+          ],
           if (state.hasInput) ...<Widget>[
             const SizedBox(height: 8),
             _TextActionsRow(
@@ -293,8 +310,8 @@ class _InputFieldState extends State<_InputField> {
     final ColorScheme cs = Theme.of(context).colorScheme;
     return TextField(
       key: ValueKey<String>(
-        widget.hintText.contains('Baybayin Unicode')
-            ? 'translate-baybayin-unicode-input'
+        widget.hintText.contains('encoded Baybayin')
+            ? 'translate-encoded-baybayin-input'
             : 'translate-filipino-input',
       ),
       controller: _controller,
@@ -351,6 +368,150 @@ class _InputFieldState extends State<_InputField> {
                 },
               )
             : null,
+      ),
+    );
+  }
+}
+
+class _InputFeedbackList extends StatelessWidget {
+  const _InputFeedbackList({
+    required this.messages,
+    required this.cleanupPreview,
+    required this.compact,
+  });
+
+  final List<String> messages;
+  final String? cleanupPreview;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    final List<Widget> children = messages
+        .map(
+          (String message) => Padding(
+            padding: EdgeInsets.only(bottom: compact ? 3 : 4),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Icon(
+                  Icons.info_outline_rounded,
+                  size: compact ? 13 : 14,
+                  color: cs.primary.withAlpha(190),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    message,
+                    style: TextStyle(
+                      fontSize: compact ? 11 : 12,
+                      height: 1.25,
+                      color: cs.onSurface.withAlpha(170),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        )
+        .toList(growable: true);
+    if (cleanupPreview != null) {
+      children.add(
+        Padding(
+          padding: EdgeInsets.only(bottom: compact ? 3 : 4),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Icon(
+                Icons.cleaning_services_outlined,
+                size: compact ? 13 : 14,
+                color: cs.tertiary.withAlpha(190),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'Used as: $cleanupPreview',
+                  style: TextStyle(
+                    fontSize: compact ? 11 : 12,
+                    height: 1.25,
+                    color: cs.onSurface.withAlpha(180),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    return Semantics(
+      label: <String>[
+        ...messages,
+        if (cleanupPreview != null) 'Used as: $cleanupPreview',
+      ].join(' '),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: children,
+      ),
+    );
+  }
+}
+
+class _ReverseExamplesHint extends StatelessWidget {
+  const _ReverseExamplesHint({
+    required this.compact,
+    required this.enabled,
+    required this.onSelect,
+  });
+
+  final bool compact;
+  final bool enabled;
+  final ValueChanged<String> onSelect;
+
+  static const List<String> _examples = <String>['ka', 'ki', 'ku', 'k+'];
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    return Semantics(
+      label: 'Examples: ka, ki, ku, k+',
+      child: Wrap(
+        spacing: 6,
+        runSpacing: 6,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: <Widget>[
+          Padding(
+            padding: const EdgeInsets.only(right: 2),
+            child: Text(
+              'Examples:',
+              style: TextStyle(
+                fontSize: compact ? 11 : 12,
+                height: 1.25,
+                fontWeight: FontWeight.w700,
+                color: cs.onSurface.withAlpha(170),
+              ),
+            ),
+          ),
+          for (final String example in _examples)
+            ActionChip(
+              visualDensity: compact
+                  ? VisualDensity.compact
+                  : VisualDensity.standard,
+              label: Text(example),
+              tooltip: 'Use $example',
+              onPressed: enabled ? () => onSelect(example) : null,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              labelStyle: TextStyle(
+                fontSize: compact ? 11 : 12,
+                fontWeight: FontWeight.w700,
+                color: enabled ? cs.onSecondaryContainer : cs.onSurfaceVariant,
+              ),
+              backgroundColor: cs.secondaryContainer.withAlpha(190),
+              disabledColor: cs.surfaceContainerHighest,
+              side: BorderSide(color: cs.outline.withAlpha(90)),
+              padding: const EdgeInsets.symmetric(horizontal: 2),
+            ),
+        ],
       ),
     );
   }

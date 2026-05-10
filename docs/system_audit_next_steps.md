@@ -1,6 +1,6 @@
 # Kudlit System Audit Next Steps
 
-Last reviewed: 2026-05-08
+Last reviewed: 2026-05-10
 
 This file is now a backlog ownership index. It separates immediate technical
 follow-up from longer-running product/backend decisions so this document does
@@ -94,6 +94,8 @@ Latest strict evidence:
 - `qa-artifact/scan-layout-strict-overlap/scan-layout-overlap-contact-sheet.html`
 - `qa-artifact/scan-layout-strict-overlap/matrix/`
 - `qa-artifact/scan-layout-strict-overlap/transitions/`
+
+Latest verified timestamp: `2026-05-10T17:20:12.4299773+08:00`.
 
 The current matrix covers `360x740`, `390x844`, `430x932`, `844x390`,
 `1024x768`, plus strict tiny landscape checks at `340x260` and `320x240`.

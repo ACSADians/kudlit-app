@@ -5,7 +5,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:kudlit_ph/features/home/presentation/providers/app_preferences_provider.dart';
-import 'package:kudlit_ph/features/scanner/data/datasources/yolo_model_cache.dart';
 import 'package:kudlit_ph/features/scanner/presentation/providers/yolo_model_selection_provider.dart';
 import 'package:kudlit_ph/features/translator/domain/entities/ai_model_info.dart';
 import 'package:kudlit_ph/features/translator/domain/entities/gemma_model_info.dart';
@@ -75,18 +74,18 @@ class ModelSetupController extends Notifier<ModelSetupState> {
               ? (visionModel.iosModelLink ?? visionModel.modelLink)
               : (visionModel.androidModelLink ?? visionModel.modelLink);
           if (yoloUrl.isNotEmpty) {
-            await YoloModelCache.instance.download(
-              visionModel.id,
-              yoloUrl,
-              version: visionModel.version,
-            );
+            await ref
+                .read(yoloModelCacheProvider)
+                .download(
+                  visionModel.id,
+                  yoloUrl,
+                  version: visionModel.version,
+                );
             ref.invalidate(yoloModelPathProvider);
             // Pre-warm the camera scope path so the scan tab opens instantly.
             unawaited(
               ref
-                  .read(
-                    yoloModelPathProvider(YoloModelScope.camera).future,
-                  )
+                  .read(yoloModelPathProvider(YoloModelScope.camera).future)
                   .catchError((_) => ''),
             );
           }

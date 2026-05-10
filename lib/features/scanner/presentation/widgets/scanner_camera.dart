@@ -4,8 +4,10 @@ import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:ultralytics_yolo/ultralytics_yolo.dart';
 
+import 'package:kudlit_ph/app/constants.dart';
 import 'package:kudlit_ph/features/scanner/data/datasources/yolo_baybayin_detector.dart';
 import 'package:kudlit_ph/features/scanner/domain/entities/baybayin_detection.dart';
 import 'package:kudlit_ph/features/scanner/presentation/providers/scan_tab_controller.dart';
@@ -177,6 +179,11 @@ class _ScannerCameraState extends ConsumerState<ScannerCamera> {
     return 'Could not load the scanner model. Check your connection and retry.';
   }
 
+  bool _modelNeedsSetup(String message) {
+    return message.contains('No scanner model') ||
+        message.contains('download URL is missing');
+  }
+
   void _onYoloResult(List<YOLOResult> results) {
     if (widget.paused) return;
     if (_throttle.elapsed < _kDetectionInterval) return;
@@ -260,13 +267,22 @@ class _ScannerCameraState extends ConsumerState<ScannerCamera> {
     final AsyncValue<String> pathAsync = ref.watch(
       yoloModelPathProvider(YoloModelScope.camera),
     );
+    final int? downloadProgress = ref.watch(
+      yoloModelDownloadProgressProvider(YoloModelScope.camera),
+    );
     return pathAsync.when(
-      loading: () => const ModelNotReadyScreen(),
-      error: (Object error, StackTrace _) => ModelNotReadyScreen.error(
-        errorMessage: _modelErrorMessage(error),
-        onRetry: () =>
-            ref.invalidate(yoloModelPathProvider(YoloModelScope.camera)),
-      ),
+      loading: () => ModelNotReadyScreen(progress: downloadProgress),
+      error: (Object error, StackTrace _) {
+        final String message = _modelErrorMessage(error);
+        return ModelNotReadyScreen.error(
+          errorMessage: message,
+          onSetup: _modelNeedsSetup(message)
+              ? () => context.push(AppConstants.routeSettings)
+              : null,
+          onRetry: () =>
+              ref.invalidate(yoloModelPathProvider(YoloModelScope.camera)),
+        );
+      },
       data: (String modelPath) {
         final YoloBaybayinDetector detector =
             ref.watch(baybayinDetectorProvider) as YoloBaybayinDetector;
