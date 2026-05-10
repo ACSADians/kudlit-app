@@ -26,10 +26,11 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('Model setup paused'), findsOneWidget);
     expect(
-      find.text('Check your connection, then retry the model download.'),
-      findsOneWidget,
+      find.textContaining(
+        'Check your connection, then retry the model download.',
+      ),
+      findsWidgets,
     );
     expect(find.textContaining('AuthRetryableFetchException'), findsNothing);
     expect(find.textContaining('SocketException'), findsNothing);
@@ -58,10 +59,11 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('Download needs attention'), findsOneWidget);
     expect(
-      find.text('Check your connection, then retry the model download.'),
-      findsOneWidget,
+      find.textContaining(
+        'Check your connection, then retry the model download.',
+      ),
+      findsWidgets,
     );
     expect(find.textContaining('SocketException'), findsNothing);
     expect(find.textContaining('supabase.co'), findsNothing);

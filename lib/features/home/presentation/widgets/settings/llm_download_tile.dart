@@ -37,7 +37,8 @@ class LlmDownloadTile extends ConsumerWidget {
           const SizedBox(height: 10),
           stateAsync.when(
             loading: () => const _CheckingRow(),
-            error: (Object e, _) => _ErrRow(message: e.toString()),
+            error: (Object e, _) =>
+                _ErrRow(message: _friendlyLlmModelError(e.toString())),
             data: (AiInferenceState s) => _LlmStatusRow(
               state: s,
               onDownload: notifier.downloadLocalModel,
@@ -91,7 +92,9 @@ class _LlmStatusRow extends StatelessWidget {
           onCancel: onCancel,
           statusMessage: statusMessage,
         ),
-      AiInferenceError(:final String message) => _ErrRow(message: message),
+      AiInferenceError(:final String message) => _ErrRow(
+        message: _friendlyLlmModelError(message),
+      ),
       _ => const _CheckingRow(),
     };
   }
@@ -320,4 +323,45 @@ class _ErrRow extends StatelessWidget {
       ),
     );
   }
+}
+
+String _friendlyLlmModelError(String rawMessage) {
+  final String message = rawMessage.trim();
+  if (message.isEmpty) {
+    return 'Local AI setup is paused. You can use cloud AI and retry later.';
+  }
+
+  final String lower = message.toLowerCase();
+  final bool looksLikeNetworkIssue =
+      lower.contains('socketexception') ||
+      lower.contains('clientexception') ||
+      lower.contains('failed host lookup') ||
+      lower.contains('network') ||
+      lower.contains('connection') ||
+      lower.contains('timeout') ||
+      lower.contains('supabase.co');
+  if (looksLikeNetworkIssue) {
+    return 'Check your connection, then retry the model download.';
+  }
+
+  if (lower.contains('cancel')) {
+    return 'Download canceled. You can retry when you are ready.';
+  }
+
+  if (lower.contains('no ai models configured')) {
+    return 'The local model list is not available yet. You can use cloud AI for now.';
+  }
+
+  final bool looksTechnical =
+      lower.contains('exception') ||
+      lower.contains('stacktrace') ||
+      lower.contains('statuscode') ||
+      lower.contains('errno') ||
+      lower.contains('uri=') ||
+      lower.contains('https://');
+  if (looksTechnical) {
+    return 'Local AI setup is paused. You can use cloud AI and retry later.';
+  }
+
+  return message;
 }

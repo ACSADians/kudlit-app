@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:ultralytics_yolo/ultralytics_yolo.dart';
 
+import 'package:kudlit_ph/features/scanner/data/datasources/web_vision_model_preflight.dart';
 import 'package:kudlit_ph/features/scanner/data/datasources/yolo_model_cache.dart';
 import 'package:kudlit_ph/features/translator/data/datasources/supabase_ai_models_datasource.dart';
 import 'package:kudlit_ph/features/translator/domain/entities/ai_model_info.dart';
@@ -210,7 +211,7 @@ final yoloModelPathProvider = FutureProvider.family<String, String>((
     throw StateError('No enabled Baybayin models configured.');
   }
 
-  final String url = _platformUrl(model);
+  final String url = resolveYoloModelUrl(model);
   if (url.isEmpty) {
     throw StateError('Selected model "${model.name}" has no download URL.');
   }
@@ -230,7 +231,7 @@ final yoloModelPathProvider = FutureProvider.family<String, String>((
   return path;
 });
 
-String _platformUrl(AiModelInfo model) {
+String resolveYoloModelUrl(AiModelInfo model) {
   if (kIsWeb) return model.modelLink;
   // dart:io is safe here because kIsWeb guards above.
   if (defaultTargetPlatform == TargetPlatform.iOS) {
@@ -240,6 +241,116 @@ String _platformUrl(AiModelInfo model) {
     return model.androidModelLink ?? model.modelLink;
   }
   return model.modelLink;
+}
+
+@immutable
+class VisionModelSetupStatus {
+  const VisionModelSetupStatus({
+    required this.ready,
+    required this.title,
+    required this.message,
+    this.model,
+  });
+
+  final bool ready;
+  final String title;
+  final String message;
+  final AiModelInfo? model;
+}
+
+final FutureProvider<VisionModelSetupStatus> visionModelSetupStatusProvider =
+    FutureProvider<VisionModelSetupStatus>((Ref ref) async {
+      final List<AiModelInfo> models = await ref.watch(
+        availableYoloModelsProvider.future,
+      );
+      if (models.isEmpty) {
+        return const VisionModelSetupStatus(
+          ready: false,
+          title: 'No scanner model configured',
+          message: 'Add an enabled vision model in Supabase to use scanning.',
+        );
+      }
+
+      final YoloModelSelection selection = await ref.watch(
+        yoloModelSelectionProvider.future,
+      );
+      final String? selectedId = selection.idFor(YoloModelScope.camera);
+      AiModelInfo active = models.first;
+      if (selectedId != null) {
+        for (final AiModelInfo model in models) {
+          if (model.id == selectedId) {
+            active = model;
+            break;
+          }
+        }
+      }
+
+      if (kIsWeb) {
+        try {
+          await createWebVisionModelPreflight().run(active.modelLink);
+          return VisionModelSetupStatus(
+            ready: true,
+            title: 'Browser scanner ready',
+            message:
+                '${active.name} loaded successfully and passed a browser '
+                'inference warm-up.',
+            model: active,
+          );
+        } catch (e) {
+          return VisionModelSetupStatus(
+            ready: false,
+            title: 'Browser scanner needs attention',
+            message: friendlyVisionModelError(e.toString()),
+            model: active,
+          );
+        }
+      }
+
+      final bool upToDate = await YoloModelCache.instance.isUpToDate(
+        active.id,
+        active.version,
+      );
+      if (upToDate) {
+        return VisionModelSetupStatus(
+          ready: true,
+          title: 'Scanner model downloaded',
+          message: '${active.name} is ready for on-device scanning.',
+          model: active,
+        );
+      }
+
+      return VisionModelSetupStatus(
+        ready: false,
+        title: 'Scanner model not downloaded',
+        message: 'Download ${active.name} to enable the camera scanner.',
+        model: active,
+      );
+    });
+
+String friendlyVisionModelError(String rawMessage) {
+  final String raw = rawMessage.trim();
+  final String lower = raw.toLowerCase();
+  if (lower.contains('404') ||
+      lower.contains('not found') ||
+      lower.contains('object not found')) {
+    return 'The scanner model file is missing from Supabase Storage.';
+  }
+  if (lower.contains('cors') || lower.contains('failed to fetch')) {
+    return 'The browser could not load the scanner model. Check CORS and the '
+        'public model URL.';
+  }
+  if (lower.contains('input type')) {
+    return 'The web scanner model uses an unsupported input type for browser '
+        'inference.';
+  }
+  if (lower.contains('shape') || lower.contains('tensor')) {
+    return 'The scanner model loaded, but its tensor format is not compatible '
+        'with the current web parser.';
+  }
+  if (lower.contains('model') || lower.contains('tflite')) {
+    return 'The browser could not prepare the scanner model.';
+  }
+  return raw.isEmpty ? 'The browser could not prepare the scanner model.' : raw;
 }
 
 /// Sentinel thrown while the model catalog is still loading. Callers
