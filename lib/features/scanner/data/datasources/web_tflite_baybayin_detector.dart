@@ -120,6 +120,9 @@ class WebTfliteBaybayinDetector implements BaybayinDetector {
     return _parser.parse(fallbackValues, shape: fallbackShape);
   }
 
+  @override
+  Future<Uint8List?> captureFrame() async => null;
+
   Future<TFLiteModel> _loadModel() async {
     final String? modelUrl = await modelUrlResolver();
     if (modelUrl == null || modelUrl.trim().isEmpty) {

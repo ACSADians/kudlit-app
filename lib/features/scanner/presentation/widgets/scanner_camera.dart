@@ -4,8 +4,10 @@ import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:ultralytics_yolo/ultralytics_yolo.dart';
 
+import 'package:kudlit_ph/app/constants.dart';
 import 'package:kudlit_ph/features/scanner/data/datasources/yolo_baybayin_detector.dart';
 import 'package:kudlit_ph/features/scanner/domain/entities/baybayin_detection.dart';
 import 'package:kudlit_ph/features/scanner/presentation/providers/scan_tab_controller.dart';
@@ -100,7 +102,7 @@ extension WebScannerStatusMeta on WebScannerStatus {
   String get label => switch (this) {
     WebScannerStatus.initializing => 'Allow camera',
     WebScannerStatus.permissionNeeded => 'Allow camera',
-    WebScannerStatus.ready => 'Webcam ready',
+    WebScannerStatus.ready => 'Camera ready',
     WebScannerStatus.detecting => 'Detecting',
     WebScannerStatus.modelUnavailable => 'Model unavailable',
     WebScannerStatus.error => 'Camera unavailable',
@@ -175,6 +177,11 @@ class _ScannerCameraState extends ConsumerState<ScannerCamera> {
       return 'Download may have been interrupted. Check your connection and retry.';
     }
     return 'Could not load the scanner model. Check your connection and retry.';
+  }
+
+  bool _modelNeedsSetup(String message) {
+    return message.contains('No scanner model') ||
+        message.contains('download URL is missing');
   }
 
   void _onYoloResult(List<YOLOResult> results) {
@@ -260,13 +267,22 @@ class _ScannerCameraState extends ConsumerState<ScannerCamera> {
     final AsyncValue<String> pathAsync = ref.watch(
       yoloModelPathProvider(YoloModelScope.camera),
     );
+    final int? downloadProgress = ref.watch(
+      yoloModelDownloadProgressProvider(YoloModelScope.camera),
+    );
     return pathAsync.when(
-      loading: () => const ModelNotReadyScreen(),
-      error: (Object error, StackTrace _) => ModelNotReadyScreen.error(
-        errorMessage: _modelErrorMessage(error),
-        onRetry: () =>
-            ref.invalidate(yoloModelPathProvider(YoloModelScope.camera)),
-      ),
+      loading: () => ModelNotReadyScreen(progress: downloadProgress),
+      error: (Object error, StackTrace _) {
+        final String message = _modelErrorMessage(error);
+        return ModelNotReadyScreen.error(
+          errorMessage: message,
+          onSetup: _modelNeedsSetup(message)
+              ? () => context.push(AppConstants.routeSettings)
+              : null,
+          onRetry: () =>
+              ref.invalidate(yoloModelPathProvider(YoloModelScope.camera)),
+        );
+      },
       data: (String modelPath) {
         final YoloBaybayinDetector detector =
             ref.watch(baybayinDetectorProvider) as YoloBaybayinDetector;
@@ -343,7 +359,7 @@ class _WebCameraPreviewState extends ConsumerState<_WebCameraPreview> {
     );
     _qaStatusTimer = Timer(const Duration(milliseconds: 900), () {
       if (!mounted) return;
-      _setStatus(WebScannerStatus.ready, message: 'Webcam ready');
+      _setStatus(WebScannerStatus.ready, message: 'Camera ready');
     });
   }
 
@@ -639,9 +655,9 @@ class WebStatusMessage extends StatelessWidget {
                     : 16,
               ),
               decoration: BoxDecoration(
-                color: cs.surface.withAlpha(showCompact ? 210 : 235),
+                color: _statusSurface(cs).withAlpha(showCompact ? 218 : 242),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: cs.outline),
+                border: Border.all(color: _statusBorder(cs)),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -653,7 +669,7 @@ class WebStatusMessage extends StatelessWidget {
                         : narrow
                         ? 28
                         : 32,
-                    color: cs.onSurface.withAlpha(190),
+                    color: _statusIconColor(cs),
                   ),
                   SizedBox(height: showCompact || narrow ? 8 : 10),
                   Text(
@@ -692,6 +708,38 @@ class WebStatusMessage extends StatelessWidget {
         );
       },
     );
+  }
+
+  Color _statusSurface(ColorScheme cs) {
+    return switch (status) {
+      WebScannerStatus.ready => cs.primaryContainer,
+      WebScannerStatus.detecting => cs.tertiaryContainer,
+      WebScannerStatus.modelUnavailable ||
+      WebScannerStatus.error => cs.errorContainer,
+      WebScannerStatus.initializing ||
+      WebScannerStatus.permissionNeeded => cs.surfaceContainerHigh,
+    };
+  }
+
+  Color _statusBorder(ColorScheme cs) {
+    return switch (status) {
+      WebScannerStatus.ready => cs.primary.withValues(alpha: 0.42),
+      WebScannerStatus.detecting => cs.tertiary.withValues(alpha: 0.42),
+      WebScannerStatus.modelUnavailable ||
+      WebScannerStatus.error => cs.error.withValues(alpha: 0.42),
+      WebScannerStatus.initializing ||
+      WebScannerStatus.permissionNeeded => cs.outline,
+    };
+  }
+
+  Color _statusIconColor(ColorScheme cs) {
+    return switch (status) {
+      WebScannerStatus.ready => cs.primary,
+      WebScannerStatus.detecting => cs.tertiary,
+      WebScannerStatus.modelUnavailable || WebScannerStatus.error => cs.error,
+      WebScannerStatus.initializing ||
+      WebScannerStatus.permissionNeeded => cs.onSurface.withAlpha(190),
+    };
   }
 }
 

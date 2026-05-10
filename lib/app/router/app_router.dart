@@ -28,6 +28,16 @@ import 'package:kudlit_ph/features/scanner/presentation/screens/scan_history_scr
 
 part 'app_router.g.dart';
 
+@visibleForTesting
+bool isGuestAccessibleRoute(String matchedLocation) {
+  return matchedLocation == AppConstants.routeHome ||
+      matchedLocation == AppConstants.routeSettings ||
+      matchedLocation == AppConstants.routeCharacterGallery ||
+      matchedLocation == AppConstants.routeQuiz ||
+      matchedLocation == AppConstants.routeLesson ||
+      matchedLocation.startsWith('${AppConstants.routeLesson}/');
+}
+
 @Riverpod(keepAlive: true)
 GoRouter appRouter(Ref ref) {
   final RouterListenable listenable = ref.watch(routerListenableProvider);
@@ -88,8 +98,7 @@ GoRouter appRouter(Ref ref) {
 
       if (!isAuthenticated &&
           !isOnAuthRoute &&
-          state.matchedLocation != AppConstants.routeHome &&
-          state.matchedLocation != AppConstants.routeSettings) {
+          !isGuestAccessibleRoute(state.matchedLocation)) {
         return AppConstants.routeLogin;
       }
       if (isAuthenticated && isOnAuthRoute) return AppConstants.routeHome;

@@ -6,7 +6,7 @@ import 'package:kudlit_ph/features/scanner/domain/entities/baybayin_detection.da
 ///
 /// Implementations:
 /// - [YoloBaybayinDetector] — on-device YOLO (iOS / Android)
-/// - [WebBaybayinDetector] — no-op stub for web
+/// - [WebTfliteBaybayinDetector] — browser TFLite inference for web
 abstract class BaybayinDetector {
   /// Live stream of detections from the camera feed.
   /// Emits a new list each time the model processes a frame.
@@ -14,6 +14,10 @@ abstract class BaybayinDetector {
 
   /// Run inference on a single image (e.g. from the gallery).
   Future<List<BaybayinDetection>> detectImage(Uint8List imageBytes);
+
+  /// Capture the current camera frame when the platform detector owns a live
+  /// camera session. Returns null when unsupported or not ready.
+  Future<Uint8List?> captureFrame();
 
   /// Toggle the device torch / flash. No-op on web.
   Future<void> toggleTorch({required bool enabled});
