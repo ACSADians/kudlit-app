@@ -75,7 +75,7 @@ class _LlmStatusRow extends StatelessWidget {
           cloudMode: mode == AiPreference.cloud,
         ),
       AiLocalModelMissing(:final String? note) => _ActionRow(
-        badge: const _StatusBadge(label: 'Not downloaded', ok: false),
+        badge: const _StatusBadge(label: 'Setup needed', ok: false),
         primary: 'Download',
         onPrimary: onDownload,
         note: note,
@@ -108,7 +108,7 @@ class _ReadyRow extends StatelessWidget {
     if (cloudMode) {
       return const _ActionRow(
         badge: _StatusBadge(label: 'Cloud active', ok: null),
-        note: 'Local download is optional while Cloud is selected.',
+        note: 'Optional while Cloud is active.',
       );
     }
     return _ActionRow(
@@ -135,39 +135,60 @@ class _ActionRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
 
-    return Wrap(
-      alignment: WrapAlignment.spaceBetween,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      spacing: 12,
-      runSpacing: 8,
+    final Widget statusCopy = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        ConstrainedBox(
-          constraints: const BoxConstraints(minWidth: 180, maxWidth: 260),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              badge,
-              if (note != null) ...<Widget>[
-                const SizedBox(height: 6),
-                Text(
-                  note!,
-                  style: TextStyle(
-                    fontSize: 11,
-                    height: 1.25,
-                    color: cs.onSurface.withAlpha(150),
-                  ),
-                ),
-              ],
-            ],
+        badge,
+        if (note != null) ...<Widget>[
+          const SizedBox(height: 6),
+          Text(
+            note!,
+            style: TextStyle(
+              fontSize: 11,
+              height: 1.25,
+              color: cs.onSurface.withAlpha(150),
+            ),
           ),
-        ),
-        if (primary != null && onPrimary != null)
-          ProfileManagementActionButton(
+        ],
+      ],
+    );
+    final Widget? action = primary != null && onPrimary != null
+        ? ProfileManagementActionButton(
             label: primary!,
             isPrimary: true,
             onTap: onPrimary,
-          ),
-      ],
+          )
+        : null;
+
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        if (constraints.maxWidth < 300) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              statusCopy,
+              if (action != null) ...<Widget>[
+                const SizedBox(height: 10),
+                Align(alignment: Alignment.centerLeft, child: action),
+              ],
+            ],
+          );
+        }
+
+        return Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 12,
+          runSpacing: 8,
+          children: <Widget>[
+            ConstrainedBox(
+              constraints: const BoxConstraints(minWidth: 180, maxWidth: 260),
+              child: statusCopy,
+            ),
+            ?action,
+          ],
+        );
+      },
     );
   }
 }

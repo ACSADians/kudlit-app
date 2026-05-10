@@ -146,9 +146,10 @@ class _ProgressBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool done = status == LessonStatus.completed;
-    final Color fgColor = done
-        ? const Color(0xFF46B986)
-        : const Color(0xFFF5A623);
+    final Color fgColor = done ? cs.primary : cs.tertiary;
+    final Color bgColor = done
+        ? cs.primaryContainer.withAlpha(90)
+        : cs.tertiaryContainer.withAlpha(90);
     final String label = done
         ? '${progress?.score ?? 0}%'
         : 'Step ${(progress?.currentStepIndex ?? 0) + 1} / ${progress?.totalSteps ?? 0}';
@@ -156,7 +157,7 @@ class _ProgressBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: fgColor.withAlpha(30),
+        color: bgColor,
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: fgColor.withAlpha(80)),
       ),

@@ -165,32 +165,49 @@ class _VisionActionRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
-    return Wrap(
-      alignment: WrapAlignment.spaceBetween,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      spacing: 12,
-      runSpacing: 10,
+    final Widget statusCopy = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        ConstrainedBox(
-          constraints: const BoxConstraints(minWidth: 180, maxWidth: 260),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              badge,
-              const SizedBox(height: 6),
-              Text(
-                supportingText,
-                style: TextStyle(
-                  fontSize: 11,
-                  height: 1.25,
-                  color: cs.onSurface.withAlpha(150),
-                ),
-              ),
-            ],
+        badge,
+        const SizedBox(height: 6),
+        Text(
+          supportingText,
+          style: TextStyle(
+            fontSize: 11,
+            height: 1.25,
+            color: cs.onSurface.withAlpha(150),
           ),
         ),
-        action,
       ],
+    );
+
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        if (constraints.maxWidth < 300) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              statusCopy,
+              const SizedBox(height: 10),
+              Align(alignment: Alignment.centerLeft, child: action),
+            ],
+          );
+        }
+
+        return Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 12,
+          runSpacing: 10,
+          children: <Widget>[
+            ConstrainedBox(
+              constraints: const BoxConstraints(minWidth: 180, maxWidth: 260),
+              child: statusCopy,
+            ),
+            action,
+          ],
+        );
+      },
     );
   }
 }

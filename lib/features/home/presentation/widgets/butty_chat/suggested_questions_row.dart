@@ -5,7 +5,7 @@ class SuggestedQuestionsRow extends StatelessWidget {
 
   final void Function(String question) onTap;
 
-  static const double _compactFloatingNavClearance = 96;
+  static const double _compactFloatingNavClearance = 124;
   static const double _regularFloatingNavClearance = 84;
 
   static const List<String> _questions = <String>[

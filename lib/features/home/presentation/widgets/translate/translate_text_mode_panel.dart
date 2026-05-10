@@ -62,8 +62,14 @@ class TranslateTextModePanel extends StatelessWidget {
       final double previewHeight = keyboardOpen
           ? 92
           : MediaQuery.sizeOf(context).height < 700
-          ? 132
-          : 172;
+          ? 112
+          : 144;
+      final Widget emptyOutput = state.latinToBaybayin
+          ? const EmptyOutput()
+          : const EmptyOutput(
+              message: 'Enter encoded Baybayin below',
+              icon: Icons.translate_rounded,
+            );
       return SingleChildScrollView(
         padding: const EdgeInsets.only(bottom: 4),
         child: Column(
@@ -72,7 +78,7 @@ class TranslateTextModePanel extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(24, 18, 24, 12),
               child: SizedBox(
                 height: previewHeight,
-                child: const Center(child: EmptyOutput()),
+                child: Center(child: emptyOutput),
               ),
             ),
             _BottomInputArea(
@@ -120,7 +126,12 @@ class TranslateTextModePanel extends StatelessWidget {
                         ],
                       ],
                     )
-                  : const EmptyOutput(),
+                  : state.latinToBaybayin
+                  ? const EmptyOutput()
+                  : const EmptyOutput(
+                      message: 'Enter encoded Baybayin below',
+                      icon: Icons.translate_rounded,
+                    ),
             ),
           ),
         ),

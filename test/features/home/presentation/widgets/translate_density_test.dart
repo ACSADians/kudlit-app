@@ -484,8 +484,9 @@ void main() {
       const ValueKey<String>('translate-filipino-input'),
     );
 
+    expect(find.text('Type below to preview Baybayin'), findsOneWidget);
     expect(filipinoInput, findsOneWidget);
-    expect(tester.getTopLeft(filipinoInput).dy, lessThan(360));
+    expect(tester.getTopLeft(filipinoInput).dy, lessThan(330));
     expect(tester.takeException(), isNull);
   });
 

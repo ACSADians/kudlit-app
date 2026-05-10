@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:kudlit_ph/features/home/presentation/providers/app_preferences_provider.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/settings/ai_models_section.dart';
+import 'package:kudlit_ph/features/home/presentation/widgets/settings/profile_management_action_button.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/settings/vision_download_tile.dart';
 import 'package:kudlit_ph/features/scanner/data/datasources/yolo_model_cache.dart';
 import 'package:kudlit_ph/features/scanner/presentation/providers/yolo_model_selection_provider.dart';
@@ -73,6 +74,42 @@ void main() {
 
     expect(cache.downloadedIds, contains('vision-1'));
     expect(cache.upToDateChecks, contains('vision-1'));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('AI model actions stack below status copy on narrow cards', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(320, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: _modelOverrides(_FakeYoloModelCache()),
+        child: const MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: SizedBox(
+                width: 288,
+                child: SingleChildScrollView(child: AiModelsSection()),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    final Rect supportText = tester.getRect(
+      find.text('Download once before live recognition.'),
+    );
+    final Rect downloadButton = tester.getRect(
+      find.widgetWithText(ProfileManagementActionButton, 'Download'),
+    );
+
+    expect(downloadButton.top, greaterThan(supportText.bottom));
+    expect(downloadButton.height, greaterThanOrEqualTo(44));
     expect(tester.takeException(), isNull);
   });
 }

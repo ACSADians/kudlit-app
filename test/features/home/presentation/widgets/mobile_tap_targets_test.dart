@@ -41,6 +41,24 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('Butty suggestion row leaves shadow clearance on 390px phones', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(body: SuggestedQuestionsRow(onTap: (_) {})),
+      ),
+    );
+
+    final Rect scrollWindow = tester.getRect(find.byType(ListView));
+
+    expect(scrollWindow.right, lessThanOrEqualTo(282));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('Butty chat send action keeps 44px tap target', (tester) async {
     await tester.binding.setSurfaceSize(const Size(320, 593));
     addTearDown(() => tester.binding.setSurfaceSize(null));

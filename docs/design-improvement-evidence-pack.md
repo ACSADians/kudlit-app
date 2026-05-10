@@ -14,17 +14,22 @@ Settings AI model setup, and branch readiness against `origin/main`.
 - Settings AI models now use shorter local-setup copy, less technical status
   text, touch-safe progress/cancel controls, and clearer scanner/Butty model
   purposes. Model setup badges now use the app semantic color scheme instead
-  of ad hoc red/green text colors.
+  of ad hoc red/green text colors. Narrow action rows now stack status copy
+  above actions to prevent squeezed buttons at 320px.
 - Translate text mode now renders cleanup previews as a higher-contrast helper
   pill and uses compact reverse-input layout after encoded examples produce
-  actions.
+  actions. Empty output states now use direction-specific helper copy with
+  tighter keyboard-inset spacing.
 - Butty suggested prompts reserve space for the floating tab control on narrow
   mobile screens.
+- Learn progress badges now use the app semantic color scheme instead of raw
+  hard-coded colors.
 
 ## QA Evidence
 
 Latest local visual evidence:
 
+- `test-results/ui-verify/settings-320-next-polish.png`
 - `test-results/ui-verify/butty-carousel-clearance-390.png`
 - `test-results/ui-verify/translate-header-translate-360.png`
 - `test-results/ui-verify/translate-header-translate-390.png`
@@ -62,6 +67,15 @@ Latest scanner layout evidence:
 
 Latest E2E scanner layout evidence:
 
+- `qa-artifact/scan-layout-strict-overlap-next-polish/report.json`
+- `qa-artifact/scan-layout-strict-overlap-next-polish/scan-layout-overlap-contact-sheet.html`
+- Latest timestamp: `2026-05-11T01:22:42.8039564+08:00`
+- Viewports covered: `360x740`, `390x844`, `430x932`, `844x390`,
+  `1024x768`, `340x260`, `320x240`
+- Status: `pass`
+
+Previous E2E scanner layout evidence:
+
 - `qa-artifact/scan-layout-strict-overlap-e2e/report.json`
 - `qa-artifact/scan-layout-strict-overlap-e2e/scan-layout-overlap-contact-sheet.html`
 - Latest timestamp: `2026-05-10T18:57:58.7644946+08:00`
@@ -70,6 +84,15 @@ Latest E2E scanner layout evidence:
 - Status: `pass`
 
 Latest smoke evidence:
+
+- `qa-artifact/prod-smoke-next-polish/report.json`
+- Latest timestamp: `2026-05-11T01:21:22.6193113+08:00`
+- Base URL: `http://127.0.0.1:5174`
+- Viewport: `390,844`
+- Routes covered: `/#/login`, `/#/home`, `/#/settings`
+- Status: `pass`
+
+Previous smoke evidence:
 
 - `qa-artifact/prod-smoke/report.json`
 - Latest timestamp: `2026-05-10T18:09:44.6657712+08:00`
@@ -97,9 +120,10 @@ Latest E2E static build smoke:
 Latest command checks:
 
 - `flutter analyze`: `pass`
-- `flutter test`: `pass` (`169` tests)
+- `flutter test`: `pass` (`171` tests)
 - `flutter build web --release --base-href "/kudlit-app/"`: `pass`
 - `flutter build web --release`: `pass`
+- `npx playwright screenshot ... /#/settings`: `pass`
 - `pwsh scripts/verify-translate-header-ui.ps1 ... -Tabs "translate,scan,learn,butty" -SkipTests`: `pass`
 - `pwsh scripts/prod-smoke.ps1 ...`: `pass`
 - `pwsh scripts/scan-layout-overlap-pass.ps1 ...`: `pass`
@@ -112,8 +136,8 @@ Latest command checks:
 Checked without merging or switching branches:
 
 - Fetched `origin/main` and `origin/design-improvement`.
-- `git rev-list --left-right --count origin/main...HEAD`: `0 13`
-- `design-improvement` is 13 commits ahead of `origin/main` and 0 commits
+- `git rev-list --left-right --count origin/main...HEAD`: `0 15`
+- `design-improvement` is 15 commits ahead of `origin/main` and 0 commits
   behind.
 - `git merge-tree $(git merge-base HEAD origin/main) origin/main HEAD` reported
   no conflict markers in the checked output.
