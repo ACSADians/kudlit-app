@@ -35,7 +35,6 @@ class BeginButton extends StatelessWidget {
                   disabledBackgroundColor: cs.surfaceContainerHighest,
                   disabledForegroundColor: cs.onSurface.withValues(alpha: 0.58),
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  visualDensity: VisualDensity.compact,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),

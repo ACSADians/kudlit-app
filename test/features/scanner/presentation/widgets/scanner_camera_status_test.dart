@@ -113,6 +113,31 @@ void main() {
     semantics.dispose();
   });
 
+  testWidgets('web camera ready status uses concise semantic state', (
+    WidgetTester tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(320, 480));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: WebStatusMessage(
+              cs: ThemeData.dark().colorScheme,
+              status: WebScannerStatus.ready,
+              showCompact: false,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Camera ready'), findsOneWidget);
+    expect(find.textContaining('raw exception'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('model not ready screen shows download progress', (
     WidgetTester tester,
   ) async {
@@ -158,6 +183,7 @@ void main() {
     );
     expect(find.text('Open AI models'), findsOneWidget);
     expect(find.text('Try Again'), findsOneWidget);
+    expect(find.textContaining('Exception'), findsNothing);
 
     final Rect ctaRect = tester.getRect(
       find.widgetWithText(FilledButton, 'Open AI models'),

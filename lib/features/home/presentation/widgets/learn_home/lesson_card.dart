@@ -198,7 +198,7 @@ class _ProgressBar extends StatelessWidget {
           value: fraction,
           minHeight: 4,
           backgroundColor: cs.surfaceContainerHighest,
-          valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFF5A623)),
+          valueColor: AlwaysStoppedAnimation<Color>(cs.tertiary),
         ),
       ),
     );

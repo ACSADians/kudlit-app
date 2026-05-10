@@ -490,6 +490,46 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('translate empty states stay close to input on narrow phones', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    tester.view.devicePixelRatio = 1;
+    addTearDown(() {
+      tester.view.resetDevicePixelRatio();
+      tester.binding.setSurfaceSize(null);
+    });
+
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          home: Scaffold(
+            body: TranslateTextModePanel(
+              state: const TranslateTextState.initial(),
+              inputEnabled: true,
+              disabledReason: null,
+              onDirectionChanged: (_) {},
+              onInputChanged: (_) {},
+              onClear: () {},
+              onExplain: () {},
+              onCheckInput: () {},
+              onCopy: () {},
+              onShare: () {},
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final Rect emptyState = tester.getRect(
+      find.text('Type below to preview Baybayin'),
+    );
+    final Rect input = tester.getRect(find.byType(TextField).first);
+
+    expect(input.top - emptyState.bottom, lessThan(180));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'translate screen keeps input visible in landscape route height',
     (tester) async {

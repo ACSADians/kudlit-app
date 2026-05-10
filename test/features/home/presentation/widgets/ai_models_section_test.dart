@@ -112,6 +112,40 @@ void main() {
     expect(downloadButton.height, greaterThanOrEqualTo(44));
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('AI model setup keeps action hierarchy stable on narrow phones', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(320, 593));
+    tester.view.devicePixelRatio = 1;
+    addTearDown(() {
+      tester.view.resetDevicePixelRatio();
+      tester.binding.setSurfaceSize(null);
+    });
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: _modelOverrides(_FakeYoloModelCache()),
+        child: const MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: SizedBox(
+                width: 288,
+                child: SingleChildScrollView(child: AiModelsSection()),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('Local AI setup'), findsOneWidget);
+    expect(find.text('Setup needed'), findsWidgets);
+    expect(find.byType(ProfileManagementActionButton), findsWidgets);
+    expect(tester.takeException(), isNull);
+  });
 }
 
 List<Override> _modelOverrides(_FakeYoloModelCache cache) {

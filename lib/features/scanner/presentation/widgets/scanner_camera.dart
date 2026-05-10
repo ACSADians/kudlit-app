@@ -102,7 +102,7 @@ extension WebScannerStatusMeta on WebScannerStatus {
   String get label => switch (this) {
     WebScannerStatus.initializing => 'Allow camera',
     WebScannerStatus.permissionNeeded => 'Allow camera',
-    WebScannerStatus.ready => 'Webcam ready',
+    WebScannerStatus.ready => 'Camera ready',
     WebScannerStatus.detecting => 'Detecting',
     WebScannerStatus.modelUnavailable => 'Model unavailable',
     WebScannerStatus.error => 'Camera unavailable',
@@ -359,7 +359,7 @@ class _WebCameraPreviewState extends ConsumerState<_WebCameraPreview> {
     );
     _qaStatusTimer = Timer(const Duration(milliseconds: 900), () {
       if (!mounted) return;
-      _setStatus(WebScannerStatus.ready, message: 'Webcam ready');
+      _setStatus(WebScannerStatus.ready, message: 'Camera ready');
     });
   }
 
@@ -655,9 +655,9 @@ class WebStatusMessage extends StatelessWidget {
                     : 16,
               ),
               decoration: BoxDecoration(
-                color: cs.surface.withAlpha(showCompact ? 210 : 235),
+                color: _statusSurface(cs).withAlpha(showCompact ? 218 : 242),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: cs.outline),
+                border: Border.all(color: _statusBorder(cs)),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -669,7 +669,7 @@ class WebStatusMessage extends StatelessWidget {
                         : narrow
                         ? 28
                         : 32,
-                    color: cs.onSurface.withAlpha(190),
+                    color: _statusIconColor(cs),
                   ),
                   SizedBox(height: showCompact || narrow ? 8 : 10),
                   Text(
@@ -708,6 +708,38 @@ class WebStatusMessage extends StatelessWidget {
         );
       },
     );
+  }
+
+  Color _statusSurface(ColorScheme cs) {
+    return switch (status) {
+      WebScannerStatus.ready => cs.primaryContainer,
+      WebScannerStatus.detecting => cs.tertiaryContainer,
+      WebScannerStatus.modelUnavailable ||
+      WebScannerStatus.error => cs.errorContainer,
+      WebScannerStatus.initializing ||
+      WebScannerStatus.permissionNeeded => cs.surfaceContainerHigh,
+    };
+  }
+
+  Color _statusBorder(ColorScheme cs) {
+    return switch (status) {
+      WebScannerStatus.ready => cs.primary.withValues(alpha: 0.42),
+      WebScannerStatus.detecting => cs.tertiary.withValues(alpha: 0.42),
+      WebScannerStatus.modelUnavailable ||
+      WebScannerStatus.error => cs.error.withValues(alpha: 0.42),
+      WebScannerStatus.initializing ||
+      WebScannerStatus.permissionNeeded => cs.outline,
+    };
+  }
+
+  Color _statusIconColor(ColorScheme cs) {
+    return switch (status) {
+      WebScannerStatus.ready => cs.primary,
+      WebScannerStatus.detecting => cs.tertiary,
+      WebScannerStatus.modelUnavailable || WebScannerStatus.error => cs.error,
+      WebScannerStatus.initializing ||
+      WebScannerStatus.permissionNeeded => cs.onSurface.withAlpha(190),
+    };
   }
 }
 

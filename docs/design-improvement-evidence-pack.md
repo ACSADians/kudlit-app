@@ -24,6 +24,13 @@ Settings AI model setup, and branch readiness against `origin/main`.
   mobile screens.
 - Learn progress badges now use the app semantic color scheme instead of raw
   hard-coded colors.
+- Scanner web status now uses concise camera readiness copy and semantic
+  ready/warning/error containers without changing camera or model-loading
+  behavior.
+- Learn and lesson-detail actions keep actual 44px visual targets in compact
+  and short-landscape layouts.
+- Butty typing/loading bubbles now stay content-width on narrow phones while
+  keeping runtime animation enabled.
 - Codex review fixes are applied for reverse-mode `k+` cleanup handling, root
   PWA manifest launch path, sitemap same-host URLs, and failed YOLO model-load
   disposal.
@@ -32,8 +39,17 @@ Settings AI model setup, and branch readiness against `origin/main`.
 
 Latest local visual evidence:
 
+- `test-results/ui-verify/baseline-settings-320.png`
+- `test-results/ui-verify/baseline-translate-390.png`
+- `test-results/ui-verify/baseline-learn-390.png`
+- `test-results/ui-verify/baseline-butty-390.png`
 - `test-results/ui-verify/settings-320-next-polish.png`
+- `test-results/ui-verify/settings-model-setup-next-e2e-320.png`
+- `test-results/ui-verify/learn-next-e2e-390.png`
+- `test-results/ui-verify/learn-next-e2e-844x390.png`
+- `test-results/ui-verify/butty-next-e2e-390.png`
 - `test-results/ui-verify/butty-carousel-clearance-390.png`
+- `test-results/ui-verify/translate-header-translate-320.png`
 - `test-results/ui-verify/translate-header-translate-360.png`
 - `test-results/ui-verify/translate-header-translate-390.png`
 - `test-results/ui-verify/translate-header-translate-430.png`
@@ -70,6 +86,15 @@ Latest scanner layout evidence:
 
 Latest E2E scanner layout evidence:
 
+- `qa-artifact/scan-layout-strict-overlap-next-e2e-polish/report.json`
+- `qa-artifact/scan-layout-strict-overlap-next-e2e-polish/scan-layout-overlap-contact-sheet.html`
+- Latest timestamp: `2026-05-11T02:32:29.3741293+08:00`
+- Viewports covered: `360x740`, `390x844`, `430x932`, `844x390`,
+  `1024x768`, `340x260`, `320x240`
+- Status: `pass`
+
+Previous next-polish scanner layout evidence:
+
 - `qa-artifact/scan-layout-strict-overlap-next-polish/report.json`
 - `qa-artifact/scan-layout-strict-overlap-next-polish/scan-layout-overlap-contact-sheet.html`
 - Latest timestamp: `2026-05-11T01:22:42.8039564+08:00`
@@ -87,6 +112,15 @@ Previous E2E scanner layout evidence:
 - Status: `pass`
 
 Latest smoke evidence:
+
+- `qa-artifact/prod-smoke-next-e2e-polish/report.json`
+- Latest timestamp: `2026-05-11T02:31:07.8496704+08:00`
+- Base URL: `http://127.0.0.1:5174`
+- Viewport: `390,844`
+- Routes covered: `/#/login`, `/#/home`, `/#/settings`
+- Status: `pass`
+
+Previous next-polish smoke evidence:
 
 - `qa-artifact/prod-smoke-next-polish/report.json`
 - Latest timestamp: `2026-05-11T01:21:22.6193113+08:00`
@@ -123,13 +157,15 @@ Latest E2E static build smoke:
 Latest command checks:
 
 - `flutter analyze`: `pass`
-- `flutter test`: `pass` (`172` tests)
+- `flutter test`: `pass` (`177` tests)
 - `flutter build web --release --base-href "/kudlit-app/"`: `pass`
 - `flutter build web --release`: `pass`
 - `build.sh`: `pass`; generated root manifest `start_url` points at `/app/`
   and generated sitemap contains only same-host URLs.
 - `npx playwright screenshot ... /#/settings`: `pass`
+- `npx playwright screenshot ... baseline/settings/learn/butty`: `pass`
 - `pwsh scripts/verify-translate-header-ui.ps1 ... -Tabs "translate,scan,learn,butty" -SkipTests`: `pass`
+- `pwsh scripts/verify-translate-header-ui.ps1 ... -Tabs "translate" -Widths "320,360,390,430,844" -SkipTests`: `pass`
 - `pwsh scripts/prod-smoke.ps1 ...`: `pass`
 - `pwsh scripts/scan-layout-overlap-pass.ps1 ...`: `pass`
 - `git diff --check`: `pass` with CRLF normalization warnings only
@@ -141,15 +177,18 @@ Latest command checks:
 Checked without merging or switching branches:
 
 - Fetched `origin/main` and `origin/design-improvement`.
-- `git rev-list --left-right --count origin/main...HEAD`: `0 15`
-- `design-improvement` is 15 commits ahead of `origin/main` and 0 commits
+- `git rev-list --left-right --count origin/main...HEAD`: `0 17`
+- `design-improvement` is 17 commits ahead of `origin/main` and 0 commits
   behind.
 - `git merge-tree $(git merge-base HEAD origin/main) origin/main HEAD` reported
   no conflict markers in the checked output.
 - GitHub PR #36 is open, mergeable, and targets `main` from
   `design-improvement`.
 - The branch is pushed and the PR check rollup is green for `flutter analyze`
-  and `Cloudflare Pages`.
+  and `Cloudflare Pages` at pushed HEAD `b6ce176`.
+- The latest next-E2E polish diff is local and uncommitted, so PR checks do not
+  yet cover those local changes until a checkpoint commit and push are
+  explicitly requested.
 
 Branch diff size against `origin/main`:
 
