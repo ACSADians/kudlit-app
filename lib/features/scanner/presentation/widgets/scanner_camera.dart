@@ -513,7 +513,7 @@ class _WebCameraPreviewState extends ConsumerState<_WebCameraPreview> {
       return const ScanNotice(
         title: 'Web model unavailable',
         message:
-            'The active scanner model file is missing from storage. Use Gallery for now or update the model URL.',
+            'Camera reading is not ready right now. Use Gallery for now and try again later.',
         kind: ScanNoticeKind.error,
       );
     }
@@ -521,15 +521,14 @@ class _WebCameraPreviewState extends ConsumerState<_WebCameraPreview> {
       return const ScanNotice(
         title: 'Web model unavailable',
         message:
-            'The scanner model could not be loaded by the browser. Check CORS or the public model URL.',
+            'Camera reading could not start right now. Please try again later.',
         kind: ScanNoticeKind.error,
       );
     }
     if (raw.contains('tensor') || raw.contains('shape')) {
       return const ScanNotice(
-        title: 'Model not compatible',
-        message:
-            'This model output does not match the web scanner parser. Use a YOLO TFLite model with the expected class order.',
+        title: 'Scanner unavailable',
+        message: 'Camera reading is not available for this setup yet.',
         kind: ScanNoticeKind.error,
       );
     }

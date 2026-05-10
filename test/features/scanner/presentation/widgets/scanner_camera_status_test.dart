@@ -177,20 +177,20 @@ void main() {
     expect(find.text('Scanner model needs setup'), findsOneWidget);
     expect(
       find.text(
-        'Open Settings > AI models to install or update scanner models.',
+        'Open Settings > Offline downloads to get camera reading ready.',
       ),
       findsOneWidget,
     );
-    expect(find.text('Open AI models'), findsOneWidget);
+    expect(find.text('Open downloads'), findsOneWidget);
     expect(find.text('Try Again'), findsOneWidget);
     expect(find.textContaining('Exception'), findsNothing);
 
     final Rect ctaRect = tester.getRect(
-      find.widgetWithText(FilledButton, 'Open AI models'),
+      find.widgetWithText(FilledButton, 'Open downloads'),
     );
     expect(ctaRect.height, greaterThanOrEqualTo(44));
 
-    await tester.tap(find.text('Open AI models'));
+    await tester.tap(find.text('Open downloads'));
     expect(openedSettings, isTrue);
     expect(tester.takeException(), isNull);
   });
