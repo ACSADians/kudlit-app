@@ -1,6 +1,6 @@
 # Design Improvement Evidence Pack
 
-Date: 2026-05-10
+Date: 2026-05-11
 Branch: `design-improvement`
 
 ## Scope
@@ -97,32 +97,34 @@ Latest E2E static build smoke:
 Latest command checks:
 
 - `flutter analyze`: `pass`
-- `flutter test`: `pass` (`167` tests)
+- `flutter test`: `pass` (`169` tests)
 - `flutter build web --release --base-href "/kudlit-app/"`: `pass`
 - `flutter build web --release`: `pass`
 - `pwsh scripts/verify-translate-header-ui.ps1 ... -Tabs "translate,scan,learn,butty" -SkipTests`: `pass`
 - `pwsh scripts/prod-smoke.ps1 ...`: `pass`
 - `pwsh scripts/scan-layout-overlap-pass.ps1 ...`: `pass`
 - `git diff --check`: `pass` with CRLF normalization warnings only
+- GitHub PR #36 `flutter analyze`: `pass`
+- GitHub PR #36 `Cloudflare Pages`: `pass`
 
 ## Branch Readiness
 
 Checked without merging or switching branches:
 
 - Fetched `origin/main` and `origin/design-improvement`.
-- `git rev-list --left-right --count origin/main...HEAD`: `0 8`
-- `design-improvement` is 8 commits ahead of `origin/main` and 0 commits
+- `git rev-list --left-right --count origin/main...HEAD`: `0 13`
+- `design-improvement` is 13 commits ahead of `origin/main` and 0 commits
   behind.
 - `git merge-tree $(git merge-base HEAD origin/main) origin/main HEAD` reported
   no conflict markers in the checked output.
-- GitHub has no open PR for `design-improvement` at this snapshot.
-- Recent PRs with `design-improvement` as the head branch are already merged;
-  new local changes are not committed or pushed yet, so no remote CI run exists
-  for this exact working tree.
+- GitHub PR #36 is open, mergeable, and targets `main` from
+  `design-improvement`.
+- The branch is pushed and the PR check rollup is green for `flutter analyze`
+  and `Cloudflare Pages`.
 
 Branch diff size against `origin/main`:
 
-- 58 files changed.
+- 69 files changed.
 - Includes app UI, scanner/translate model-readiness UX, tests, docs, web
   release assets, and deployment/docs updates.
 
@@ -133,4 +135,4 @@ Branch diff size against `origin/main`:
 - Current checks prove layout, build, tests, and local web/static-preview
   behavior. They do not prove real model downloads from production data or
   physical camera latency.
-- Merge/review is not performed here. This pack only reports readiness signals.
+- Merge is not performed here. This pack only reports readiness signals.
