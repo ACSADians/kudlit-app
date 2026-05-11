@@ -5,9 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:kudlit_ph/features/home/presentation/providers/app_preferences_provider.dart';
 import 'package:kudlit_ph/features/scanner/presentation/providers/yolo_model_selection_provider.dart';
+import 'package:kudlit_ph/features/translator/data/datasources/local_gemma_datasource.dart';
 import 'package:kudlit_ph/features/translator/domain/entities/ai_model_info.dart';
 import 'package:kudlit_ph/features/translator/domain/entities/gemma_model_info.dart';
-import 'package:kudlit_ph/features/translator/data/datasources/local_gemma_datasource.dart';
 import 'package:kudlit_ph/features/translator/presentation/providers/ai_inference_provider.dart';
 import 'package:kudlit_ph/features/translator/presentation/providers/ai_inference_state.dart';
 import 'package:kudlit_ph/features/translator/presentation/providers/translator_providers.dart';
@@ -51,7 +51,7 @@ class ModelSetupController extends Notifier<ModelSetupState> {
     state = state.copyWith(busy: true, clearError: true);
 
     try {
-      final VisionModelSetupStatus visionStatus = await ref.read(
+      final VisionModelSetupStatus visionStatus = await ref.refresh(
         visionModelSetupStatusProvider.future,
       );
       if (!visionStatus.ready) {
@@ -59,30 +59,21 @@ class ModelSetupController extends Notifier<ModelSetupState> {
         return;
       }
 
-      final AppPreferences prefs = await ref.read(
-        appPreferencesNotifierProvider.future,
+      final LocalGemmaReadiness gemmaReadiness = await ref.refresh(
+        localModelReadinessProvider.future,
       );
-      final AiPreference nextPreference = kIsWeb
-          ? AiPreference.cloud
-          : prefs.aiPreference;
-
-      if (!kIsWeb && nextPreference == AiPreference.local) {
-        final LocalGemmaReadiness gemmaReadiness = await ref.read(
-          localModelReadinessProvider.future,
+      if (!gemmaReadiness.installed || !gemmaReadiness.usable) {
+        state = state.copyWith(
+          busy: false,
+          errorMessage:
+              'Download the Gemma model before continuing with offline AI.',
         );
-        if (!gemmaReadiness.installed || !gemmaReadiness.usable) {
-          state = state.copyWith(
-            busy: false,
-            errorMessage:
-                'Download the Gemma model before continuing with offline AI.',
-          );
-          return;
-        }
+        return;
       }
 
       await ref
           .read(appPreferencesNotifierProvider.notifier)
-          .setAiPreference(nextPreference);
+          .setAiPreference(AiPreference.local);
       await ref
           .read(appPreferencesNotifierProvider.notifier)
           .markModelsDownloaded();
@@ -99,31 +90,6 @@ class ModelSetupController extends Notifier<ModelSetupState> {
 
     state = state.copyWith(busy: true, clearError: true);
 
-    if (kIsWeb) {
-      try {
-        final VisionModelSetupStatus visionStatus = await ref.refresh(
-          visionModelSetupStatusProvider.future,
-        );
-        if (!visionStatus.ready) {
-          state = state.copyWith(
-            busy: false,
-            errorMessage: visionStatus.message,
-          );
-          return;
-        }
-        await ref
-            .read(appPreferencesNotifierProvider.notifier)
-            .setAiPreference(AiPreference.cloud);
-        await ref
-            .read(appPreferencesNotifierProvider.notifier)
-            .markModelsDownloaded();
-        state = state.copyWith(busy: false, clearError: true);
-      } catch (e) {
-        state = state.copyWith(busy: false, errorMessage: e.toString());
-      }
-      return;
-    }
-
     await ref
         .read(aiInferenceNotifierProvider.notifier)
         .triggerLocalDownload(llmModel);
@@ -137,40 +103,53 @@ class ModelSetupController extends Notifier<ModelSetupState> {
     }
 
     try {
-      final List<AiModelInfo> visionModels = await ref.read(
-        availableYoloModelsProvider.future,
-      );
-      final AiModelInfo? visionModel = visionModels.isEmpty
-          ? null
-          : visionModels.first;
-      if (visionModel == null) {
-        state = state.copyWith(
-          busy: false,
-          errorMessage: 'No scanner model is configured yet.',
+      if (kIsWeb) {
+        final VisionModelSetupStatus visionStatus = await ref.refresh(
+          visionModelSetupStatusProvider.future,
         );
-        return;
-      }
-
-      final String yoloUrl = resolveYoloModelUrl(visionModel);
-      if (yoloUrl.isEmpty) {
-        state = state.copyWith(
-          busy: false,
-          errorMessage:
-              'The selected scanner model does not have a download URL.',
+        if (!visionStatus.ready) {
+          state = state.copyWith(
+            busy: false,
+            errorMessage: visionStatus.message,
+          );
+          return;
+        }
+      } else {
+        final List<AiModelInfo> visionModels = await ref.read(
+          availableYoloModelsProvider.future,
         );
-        return;
-      }
+        final AiModelInfo? visionModel = visionModels.isEmpty
+            ? null
+            : visionModels.first;
+        if (visionModel == null) {
+          state = state.copyWith(
+            busy: false,
+            errorMessage: 'No scanner model is configured yet.',
+          );
+          return;
+        }
 
-      await ref
-          .read(yoloModelCacheProvider)
-          .download(visionModel.id, yoloUrl, version: visionModel.version);
-      ref.invalidate(visionModelSetupStatusProvider);
-      ref.invalidate(yoloModelPathProvider);
-      unawaited(
-        ref
-            .read(yoloModelPathProvider(YoloModelScope.camera).future)
-            .catchError((Object _) => ''),
-      );
+        final String yoloUrl = resolveYoloModelUrl(visionModel);
+        if (yoloUrl.isEmpty) {
+          state = state.copyWith(
+            busy: false,
+            errorMessage:
+                'The selected scanner model does not have a download URL.',
+          );
+          return;
+        }
+
+        await ref
+            .read(yoloModelCacheProvider)
+            .download(visionModel.id, yoloUrl, version: visionModel.version);
+        ref.invalidate(visionModelSetupStatusProvider);
+        ref.invalidate(yoloModelPathProvider);
+        unawaited(
+          ref
+              .read(yoloModelPathProvider(YoloModelScope.camera).future)
+              .catchError((Object _) => ''),
+        );
+      }
     } catch (e) {
       debugPrint('[ModelSetup] YOLO download failed: $e');
       state = state.copyWith(

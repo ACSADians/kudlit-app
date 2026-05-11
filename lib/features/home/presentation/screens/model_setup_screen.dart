@@ -378,8 +378,8 @@ class _SetupHeadline extends StatelessWidget {
         SizedBox(height: compact ? 8 : 10),
         Text(
           kIsWeb
-              ? 'Kudlit checks the browser scanner model here before you start. '
-                    'Gemma stays in cloud mode on web.'
+              ? 'Kudlit prepares both the browser scanner model and the '
+                    'browser Gemma model here before you start.'
               : 'Kudlit uses on-device AI models for Baybayin recognition '
                     'and translation — no internet needed once downloaded.',
           style: TextStyle(
@@ -422,8 +422,9 @@ class _DownloadNotice extends StatelessWidget {
           Expanded(
             child: Text(
               kIsWeb
-                  ? 'On web, the scanner model loads from Supabase Storage in '
-                        'the browser. Gemma continues to use cloud AI.'
+                  ? 'On web, both the scanner model and Gemma are loaded and '
+                        'stored by the browser. The first setup can take a '
+                        'while for large Gemma files.'
                   : 'AI model files are typically 1–5 GB. '
                         'Wi-Fi recommended. Download continues in the background.',
               style: TextStyle(

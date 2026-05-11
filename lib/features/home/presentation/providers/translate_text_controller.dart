@@ -278,7 +278,7 @@ class TranslateTextController extends Notifier<TranslateTextState> {
         ref.read(appPreferencesNotifierProvider).value?.aiPreference ??
         AiPreference.cloud;
 
-    if (kIsWeb || mode == AiPreference.cloud) {
+    if (mode == AiPreference.cloud) {
       await _streamResponse(
         stream: ref
             .read(cloudGemmaDatasourceProvider)
