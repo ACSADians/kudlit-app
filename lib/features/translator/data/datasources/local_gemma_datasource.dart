@@ -4,6 +4,7 @@ import 'package:flutter_gemma/flutter_gemma.dart';
 
 import 'package:kudlit_ph/core/error/exceptions.dart';
 import 'package:kudlit_ph/features/translator/data/datasources/ai_datasource.dart';
+import 'package:kudlit_ph/features/translator/data/datasources/gemma_model_file_type.dart';
 import 'package:kudlit_ph/features/translator/domain/entities/baybayin_challenge.dart';
 import 'package:kudlit_ph/features/translator/domain/entities/chat_message.dart';
 import 'package:kudlit_ph/features/translator/domain/entities/gemma_model_info.dart';
@@ -16,7 +17,6 @@ import 'package:kudlit_ph/features/translator/domain/entities/gemma_model_info.d
 /// - iOS: `flutter_gemma` uses `NSURLSession` which schedules the
 ///   download discretionarily — iOS picks the timing, the app may
 ///   be backgrounded or terminated while download proceeds.
-/// - Web: not supported by this datasource (`kIsWeb` guard upstream).
 class LocalGemmaDatasource implements AiDatasource {
   LocalGemmaDatasource();
 
@@ -32,7 +32,9 @@ class LocalGemmaDatasource implements AiDatasource {
   Future<LocalGemmaReadiness> probeReadiness(GemmaModelInfo model) {
     // Fast path: model is already loaded — skip all native work.
     if (_activeModel != null) {
-      debugPrint('[Gemma][local] readiness probe fast-path (model already loaded)');
+      debugPrint(
+        '[Gemma][local] readiness probe fast-path (model already loaded)',
+      );
       return Future<LocalGemmaReadiness>.value(
         LocalGemmaReadiness(
           installed: true,
@@ -97,7 +99,7 @@ class LocalGemmaDatasource implements AiDatasource {
   /// Ensures the model is loaded into memory without blocking inference.
   /// Safe to call fire-and-forget after download completes.
   Future<void> ensureModelLoaded() async {
-    if (kIsWeb || _activeModel != null) return;
+    if (_activeModel != null) return;
     try {
       _activeModel = await FlutterGemma.getActiveModel();
       _activeModelHasVision = false;
@@ -127,7 +129,7 @@ class LocalGemmaDatasource implements AiDatasource {
       final InferenceInstallationBuilder builder =
           FlutterGemma.installModel(
                 modelType: ModelType.gemma4,
-                fileType: _modelFileTypeFor(model),
+                fileType: resolveGemmaModelFileType(model.modelLink),
               )
               .fromNetwork(model.modelLink, token: hfToken)
               .withCancelToken(_cancelToken!);
@@ -205,9 +207,16 @@ class LocalGemmaDatasource implements AiDatasource {
     String mimeType = 'image/png',
     String? prompt,
   }) async* {
+    if (kIsWeb) {
+      throw UnsupportedError(
+        'Image analysis is not supported by flutter_gemma on web yet.',
+      );
+    }
     InferenceChat? imageChat;
     try {
-      debugPrint('[Gemma][local] analyzeImage called | bytes=${imageBytes.length}');
+      debugPrint(
+        '[Gemma][local] analyzeImage called | bytes=${imageBytes.length}',
+      );
       // Close any active text chat — native model allows one session at a time.
       if (_chat != null) {
         await _chat!.close();
@@ -242,7 +251,10 @@ class LocalGemmaDatasource implements AiDatasource {
       debugPrint('[Gemma][local] analyzeImage stream finished');
     } catch (e, s) {
       debugPrint('[Gemma][local] analyzeImage error: $e');
-      debugPrintStack(stackTrace: s, label: '[Gemma][local] analyzeImage stack');
+      debugPrintStack(
+        stackTrace: s,
+        label: '[Gemma][local] analyzeImage stack',
+      );
       rethrow;
     } finally {
       await imageChat?.close();
@@ -261,17 +273,9 @@ class LocalGemmaDatasource implements AiDatasource {
     final String? hfToken = dotenv.env['HUGGINGFACE_TOKEN'];
     await FlutterGemma.installModel(
       modelType: ModelType.gemma4,
-      fileType: _modelFileTypeFor(model),
+      fileType: resolveGemmaModelFileType(model.modelLink),
     ).fromNetwork(model.modelLink, token: hfToken).install();
     debugPrint('[Gemma][local] active model restored for ${model.fileName}');
-  }
-
-  ModelFileType _modelFileTypeFor(GemmaModelInfo model) {
-    final String lower = model.fileName.toLowerCase();
-    if (lower.endsWith('.litertlm')) {
-      return ModelFileType.litertlm;
-    }
-    return ModelFileType.task;
   }
 
   @override
