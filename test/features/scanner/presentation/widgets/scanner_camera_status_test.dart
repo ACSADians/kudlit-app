@@ -70,6 +70,23 @@ void main() {
     },
   );
 
+  test('web camera permission helpers catch known denial variants', () {
+    expect(isPermissionErrorCode('notAllowedError'), isTrue);
+    expect(isPermissionErrorCode('PermissionDeniedError'), isTrue);
+    expect(isPermissionErrorCode('NotReadableError'), isTrue);
+    expect(isPermissionErrorCode('security'), isTrue);
+    expect(isPermissionErrorCode('cameraUnknown'), isFalse);
+
+    expect(isPermissionError('User denied camera access.'), isTrue);
+    expect(
+      isPermissionError(
+        'getUserMedia failed due to denied permission from browser.',
+      ),
+      isTrue,
+    );
+    expect(isPermissionError('No camera found on this device.'), isFalse);
+  });
+
   testWidgets('web camera status card fits narrow scanner viewport', (
     WidgetTester tester,
   ) async {

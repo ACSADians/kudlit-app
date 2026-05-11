@@ -75,29 +75,38 @@ bool isWebCameraSecureContext(Uri uri) {
       host == '::1';
 }
 
-bool _isPermissionError(Object error) {
+@visibleForTesting
+bool isPermissionError(Object error) {
   final String message = error.toString().toLowerCase();
-  return message.contains('permission') ||
-      message.contains('denied') ||
-      message.contains('notallowed') ||
-      message.contains('not allowed') ||
-      message.contains('not granted') ||
-      message.contains('camera access') ||
-      message.contains('user media') ||
-      message.contains('user denied') ||
-      message.contains('forbidden');
+  return _containsPermissionToken(message);
 }
 
-bool _isPermissionErrorCode(String code) {
-  return code.contains('permission') ||
-      code == 'security' ||
-      code == 'cameraunknown' ||
-      code.contains('denied') ||
-      code.contains('notallowed') ||
-      code.contains('notallowederror') ||
-      code.contains('permissiondeniederror') ||
-      code.contains('notgranted') ||
-      code.contains('forbidden');
+@visibleForTesting
+bool isPermissionErrorCode(String code) {
+  return _containsPermissionToken(code.toLowerCase());
+}
+
+bool _containsPermissionToken(String value) {
+  const List<String> permissionTokens = <String>[
+    'permission',
+    'denied',
+    'notallowed',
+    'not allowed',
+    'user denied',
+    'not allowederror',
+    'permissiondeniederror',
+    'notgranted',
+    'forbidden',
+    'security',
+    'camera access',
+    'user media',
+    'notreadab',
+    'notfounderror',
+    'not found',
+    'not supported',
+    'not supportederror',
+  ];
+  return permissionTokens.any((String token) => value.contains(token));
 }
 
 String? _qaCameraStatusValueFromUri() {
@@ -117,15 +126,14 @@ bool _shouldRunQaCameraStatusProbe() {
 }
 
 void _emitQaCameraStatusProbeLog(WebScannerStatus status, String? message) {
-  if (!_shouldRunQaCameraStatusProbe()) return;
+  if (!kDebugMode) return;
 
   final String effectiveMessage = message == null
       ? status.label
       : '${status.label}: $message';
-  developer.log(
-    'status=${status.name} message="${effectiveMessage.replaceAll('\n', ' ')}"',
-    name: 'E2E_SCANNER_STATUS',
-  );
+  final String logLine =
+      'status=${status.name} message="${effectiveMessage.replaceAll('\n', ' ')}"';
+  developer.log(logLine, name: 'E2E_SCANNER_STATUS');
 }
 
 @visibleForTesting
@@ -459,8 +467,8 @@ class _WebCameraPreviewState extends ConsumerState<_WebCameraPreview> {
       final String description = e.description?.toLowerCase() ?? '';
       _logQaCameraInitError(e);
       final bool denied =
-          _isPermissionErrorCode(code) ||
-          _isPermissionError(description) ||
+          isPermissionErrorCode(code) ||
+          isPermissionError(description) ||
           (code == 'cameraunknown' &&
               description.contains('fetching the camera stream'));
       _setStatus(
@@ -471,7 +479,7 @@ class _WebCameraPreviewState extends ConsumerState<_WebCameraPreview> {
       );
     } catch (error) {
       _logQaCameraInitError(error, StackTrace.current);
-      final bool denied = _isPermissionError(error);
+      final bool denied = isPermissionError(error);
       _setStatus(
         denied ? WebScannerStatus.permissionNeeded : WebScannerStatus.error,
         message: denied
@@ -628,8 +636,11 @@ class _WebCameraPreviewState extends ConsumerState<_WebCameraPreview> {
 
   void _logQaCameraInitError(Object error, [StackTrace? stackTrace]) {
     if (!_shouldRunQaCameraStatusProbe()) return;
+    final String normalized = error.toString().replaceAll('\n', ' ');
+    final String prefixed =
+        '[E2E_SCANNER_STATUS] camera-init-error: $normalized';
     developer.log(
-      'camera-init-error: ${error.toString().replaceAll('\n', ' ')}',
+      prefixed,
       name: 'E2E_SCANNER_STATUS',
       error: error,
       stackTrace: stackTrace,

@@ -81,6 +81,13 @@ class _ScanTabState extends ConsumerState<ScanTab> {
     _revealStatusChip();
   }
 
+  bool _shouldCenterWebStatusChip() {
+    return kIsWeb &&
+        (_webStatus == WebScannerStatus.initializing ||
+            _webStatus == WebScannerStatus.permissionNeeded ||
+            _webStatus == WebScannerStatus.error);
+  }
+
   void _revealStatusChip() {
     _statusFadeTimer?.cancel();
     if (mounted) {
@@ -348,6 +355,7 @@ class _ScanTabState extends ConsumerState<ScanTab> {
               ),
             Positioned(
               top: 0,
+              left: _shouldCenterWebStatusChip() ? sideGutter : null,
               right: sideGutter,
               child: SafeArea(
                 bottom: false,
@@ -359,11 +367,19 @@ class _ScanTabState extends ConsumerState<ScanTab> {
                       opacity: _showStatusChip ? 1 : 0,
                       duration: const Duration(milliseconds: 450),
                       curve: Curves.easeOutCubic,
-                      child: _ScanStatusChip(
-                        key: const ValueKey('scan-status-chip'),
-                        label: statusLabel,
-                        icon: statusIcon,
-                      ),
+                      child: _shouldCenterWebStatusChip()
+                          ? Center(
+                              child: _ScanStatusChip(
+                                key: const ValueKey('scan-status-chip'),
+                                label: statusLabel,
+                                icon: statusIcon,
+                              ),
+                            )
+                          : _ScanStatusChip(
+                              key: const ValueKey('scan-status-chip'),
+                              label: statusLabel,
+                              icon: statusIcon,
+                            ),
                     ),
                   ),
                 ),
@@ -540,6 +556,7 @@ class _ScanCameraStack extends StatelessWidget {
   final ValueChanged<WebScannerSwitchCamera?>? onWebSwitchCameraChanged;
   final ValueChanged<WebScannerStatus>? onWebStatusChanged;
   final Uint8List? selectedImageBytes;
+  final void Function(List<String> permutations) onPermutationsTap;
 
   /// Frozen camera frame from a shutter press. Takes priority over live camera.
   final Uint8List? capturedFrameBytes;
@@ -547,8 +564,6 @@ class _ScanCameraStack extends StatelessWidget {
   /// Key on the [RepaintBoundary] that wraps the live [ScannerCamera].
   /// Used by the parent to capture the frame just before freezing.
   final GlobalKey cameraRepaintKey;
-
-  final void Function(List<String> permutations) onPermutationsTap;
 
   @override
   Widget build(BuildContext context) {

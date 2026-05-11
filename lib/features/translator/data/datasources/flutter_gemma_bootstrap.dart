@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_gemma/core/api/flutter_gemma.dart';
 import 'package:flutter_gemma/core/domain/web_storage_mode.dart';
 
@@ -9,6 +8,6 @@ Future<void> initializeFlutterGemma({String? huggingFaceToken}) async {
 
   await FlutterGemma.initialize(
     huggingFaceToken: normalizedToken,
-    webStorageMode: kIsWeb ? WebStorageMode.streaming : WebStorageMode.cacheApi,
+    webStorageMode: WebStorageMode.cacheApi,
   );
 }
