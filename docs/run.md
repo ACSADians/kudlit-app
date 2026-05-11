@@ -15,6 +15,8 @@ Use this when validating camera status transitions in web scanner.
   - cd tmp-playwright
   - npm install
   - npm run test:camera-permission-state
+  - npm run test:camera-permission-state:mobile-390x844
+  - npm run qa:clean-camera-permission-artifacts
 
 The script covers:
 - denied/prompt state capture

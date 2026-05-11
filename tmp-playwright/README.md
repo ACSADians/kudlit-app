@@ -15,11 +15,9 @@ Quick QA entry points for camera permission coverage in web scanner.
 
 ### 2) Mobile strict variant (390x844) + naming checks
 
-- Run a mobile-sized check with deterministic filenames:
-  - run this one-off Node flow from `tmp-playwright`:
-    - URL set to `127.0.0.1:5173`
-    - viewport `390x844`
-    - expected names:
+- Run a mobile-sized check with deterministic filenames from `tmp-playwright`:
+  - `npm run test:camera-permission-state:mobile-390x844`
+  - expected names (written by the script):
       - `camera-permission-denied-camera-state-390x844.png`
       - `camera-permission-granted-camera-state-390x844.png`
       - `camera-permission-transition-before-grant-390x844.png`
@@ -29,6 +27,15 @@ Quick QA entry points for camera permission coverage in web scanner.
 - Pass check:
   - script prints `[PASS] camera-permission mobile viewport regression completed`
   - all 4 expected screenshot names exist
+
+### 4) Cleanup permission artifacts
+
+- Run before another fresh permission sweep:
+  - `npm run qa:clean-camera-permission-artifacts`
+- This will reset:
+  - `qa-artifact/camera-permission-state/`
+  - `qa-artifact/camera-permission-state/mobile-390x844/`
+  - `qa-artifact/manual-camera-flow/`
 
 ### 3) Manual capture flow (scanner states)
 
