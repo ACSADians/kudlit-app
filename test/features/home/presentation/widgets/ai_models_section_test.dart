@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
+import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:kudlit_ph/features/home/presentation/providers/app_preferences_provider.dart';
@@ -19,7 +19,9 @@ void main() {
     SharedPreferences.setMockInitialValues(<String, Object>{});
   });
 
-  testWidgets('AI models section keeps setup cards minimal', (tester) async {
+  testWidgets('offline downloads section keeps setup cards minimal', (
+    tester,
+  ) async {
     await tester.binding.setSurfaceSize(const Size(360, 740));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -34,18 +36,21 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    expect(find.text('Local AI setup'), findsOneWidget);
+    expect(find.text('OFFLINE DOWNLOADS'), findsOneWidget);
+    expect(find.text('Use Kudlit offline'), findsOneWidget);
     expect(
-      find.text('Install once for offline Butty and scanner setup.'),
+      find.text(
+        'Set these up once to keep replies and camera reading available without internet.',
+      ),
       findsOneWidget,
     );
     expect(find.text('Butty AI'), findsOneWidget);
-    expect(find.text('Offline chat  ·  ~2.4 GB'), findsOneWidget);
-    expect(find.text('Downloaded'), findsOneWidget);
+    expect(find.text('Offline chat  ·  large download'), findsOneWidget);
+    expect(find.text('Downloaded'), findsWidgets);
     expect(find.text('KudVis-1-Turbo'), findsOneWidget);
-    expect(find.text('Local scanner recognition'), findsOneWidget);
+    expect(find.text('Reads Baybayin with your camera'), findsOneWidget);
     expect(find.text('Download before using the scanner.'), findsOneWidget);
-    expect(find.text('Setup needed'), findsNothing);
+    expect(find.text('Needs download'), findsNothing);
     expect(find.text('Ready to scan'), findsNothing);
     expect(tester.takeException(), isNull);
   });
@@ -120,6 +125,7 @@ void main() {
     await tester.pump();
     await tester.pump();
 
+    expect(find.text('KudVis-Pro'), findsOneWidget);
     expect(find.text('Downloaded'), findsWidgets);
 
     await tester.tap(find.byTooltip('Refresh scanner model'));
@@ -195,8 +201,8 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    expect(find.text('Local AI setup'), findsOneWidget);
-    expect(find.text('Setup needed'), findsNothing);
+    expect(find.text('Use Kudlit offline'), findsOneWidget);
+    expect(find.text('Needs download'), findsNothing);
     expect(find.byType(IconButton), findsWidgets);
     expect(tester.takeException(), isNull);
   });
@@ -269,9 +275,8 @@ class _FakeYoloModelCache implements YoloModelCacheStore {
     void Function(int received, int total)? onProgress,
   }) async {
     downloadedIds.add(modelId);
-    onProgress?.call(1, 2);
     installed = true;
-    onProgress?.call(2, 2);
+    onProgress?.call(1, 1);
     return '/tmp/$modelId.tflite';
   }
 

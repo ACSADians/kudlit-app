@@ -8,10 +8,6 @@ import 'package:kudlit_ph/features/scanner/data/datasources/web_vision_model_pre
 import 'package:kudlit_ph/features/scanner/presentation/providers/yolo_model_selection_provider.dart';
 import 'package:kudlit_ph/features/translator/domain/entities/ai_model_info.dart';
 
-/// Settings tile for the KudVis vision model (YOLO OCR / camera scanner).
-///
-/// Manages its own download/probe progress locally and invalidates the shared
-/// setup-status providers after a successful prepare action.
 class VisionDownloadTile extends ConsumerStatefulWidget {
   const VisionDownloadTile({super.key});
 
@@ -82,13 +78,20 @@ class _VisionDownloadTileState extends ConsumerState<VisionDownloadTile> {
     final AsyncValue<AiModelInfo?> activeModelAsync = ref.watch(
       activeYoloModelProvider(YoloModelScope.camera),
     );
+    final List<AiModelInfo>? availableModels = modelsAsync.asData?.value;
+    final AiModelInfo? activeModel = activeModelAsync.asData?.value;
+    final String headerLabel =
+        activeModel?.name ??
+        ((availableModels != null && availableModels.isNotEmpty)
+            ? availableModels.first.name
+            : 'Scanner model');
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          const _VisionTileHeader(),
+          _VisionTileHeader(label: headerLabel),
           const SizedBox(height: 10),
           modelsAsync.when(
             loading: () => const _CheckingRow(),
@@ -248,7 +251,7 @@ class _DownloadProgressRow extends StatelessWidget {
         children: <Widget>[
           Flexible(
             child: Text(
-              'Loading $label in the browser...',
+              'Getting camera reading ready...',
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(color: cs.primary, fontSize: 13),
@@ -268,7 +271,7 @@ class _DownloadProgressRow extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text(
-          'Downloading $label - $progress%',
+          'Downloading… $progress%',
           style: TextStyle(color: cs.primary, fontSize: 13),
         ),
         const SizedBox(height: 6),
@@ -279,7 +282,9 @@ class _DownloadProgressRow extends StatelessWidget {
 }
 
 class _VisionTileHeader extends StatelessWidget {
-  const _VisionTileHeader();
+  const _VisionTileHeader({required this.label});
+
+  final String label;
 
   @override
   Widget build(BuildContext context) {
@@ -294,7 +299,7 @@ class _VisionTileHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               Text(
-                'KudVis-1-Turbo',
+                label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
@@ -305,8 +310,8 @@ class _VisionTileHeader extends StatelessWidget {
               ),
               Text(
                 kIsWeb
-                    ? 'Baybayin OCR scanner - YOLOv12 via tflite_web'
-                    : 'Local scanner recognition',
+                    ? 'Baybayin camera reading in this browser'
+                    : 'Reads Baybayin with your camera',
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(

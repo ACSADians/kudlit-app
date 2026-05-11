@@ -6,12 +6,6 @@ import 'settings_divider.dart';
 import 'settings_section_label.dart';
 import 'vision_download_tile.dart';
 
-/// Settings section that shows download status and controls for both
-/// on-device AI models:
-///
-/// - **Gemma 4 E2B** — LLM used by Butty (offline chat / feedback).
-/// - **KudVis-1-Turbo** — YOLO TFLite used by the OCR / camera scanner.
-///
 class AiModelsSection extends StatelessWidget {
   const AiModelsSection({super.key});
 
@@ -20,7 +14,7 @@ class AiModelsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        const SettingsSectionLabel(text: 'AI models'),
+        const SettingsSectionLabel(text: 'Offline downloads'),
         SettingsCard(
           children: <Widget>[
             const _AiModelsIntro(),
@@ -65,7 +59,7 @@ class _AiModelsIntro extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Text(
-                  'Local AI setup',
+                  'Use Kudlit offline',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
@@ -74,7 +68,7 @@ class _AiModelsIntro extends StatelessWidget {
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  'Install once for offline Butty and scanner setup.',
+                  'Set these up once to keep replies and camera reading available without internet.',
                   style: TextStyle(
                     fontSize: 12,
                     height: 1.3,

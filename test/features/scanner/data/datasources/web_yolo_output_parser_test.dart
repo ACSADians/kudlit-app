@@ -65,7 +65,7 @@ void main() {
     expect(detections.single.confidence, closeTo(0.72, 0.001));
   });
 
-  test('parses 2D YOLOv12 output shape into detections', () {
+  test('parses 2D web model output shape into detections', () {
     final List<BaybayinDetection> detections = parser.parse(
       <double>[
         0.5,

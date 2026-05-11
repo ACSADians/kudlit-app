@@ -43,6 +43,14 @@
 
   <title>Kudlit App - Baybayin Scanner, Translator, and Learning Companion</title>
   <link rel="manifest" href="manifest.json">
+  <script type="module">
+    import {
+      FilesetResolver,
+      LlmInference
+    } from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-genai@0.10.27';
+    window.FilesetResolver = FilesetResolver;
+    window.LlmInference = LlmInference;
+  </script>
 </head>
 <body>
   <!--

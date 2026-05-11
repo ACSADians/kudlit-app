@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:kudlit_ph/features/home/presentation/providers/app_preferences_provider.dart';
+import 'package:kudlit_ph/features/translator/data/datasources/local_gemma_datasource.dart';
 import 'package:kudlit_ph/features/translator/domain/entities/gemma_model_info.dart';
 import 'package:kudlit_ph/features/translator/presentation/providers/ai_inference_provider.dart';
 import 'package:kudlit_ph/features/translator/presentation/providers/ai_inference_state.dart';
+import 'package:kudlit_ph/features/translator/presentation/providers/translator_providers.dart';
 
-/// Settings tile for the Gemma 4 LLM model (Butty offline AI).
-///
-/// Shows install status and a download/cancel button driven by
-/// [AiInferenceNotifier] so it stays in sync with the chat screen.
 class LlmDownloadTile extends ConsumerWidget {
   const LlmDownloadTile({super.key});
 
@@ -20,6 +19,12 @@ class LlmDownloadTile extends ConsumerWidget {
     final AsyncValue<AiInferenceState> stateAsync = ref.watch(
       aiInferenceNotifierProvider,
     );
+    final AsyncValue<AppPreferences> prefsAsync = ref.watch(
+      appPreferencesNotifierProvider,
+    );
+    final AsyncValue<LocalGemmaReadiness> readinessAsync = ref.watch(
+      localModelReadinessProvider,
+    );
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -29,18 +34,16 @@ class LlmDownloadTile extends ConsumerWidget {
           const _TileHeader(
             icon: Icons.psychology_rounded,
             label: 'Butty AI',
-            sublabel: 'Offline chat  ·  ~2.4 GB',
+            sublabel: 'Offline chat  ·  large download',
           ),
           const SizedBox(height: 10),
-          stateAsync.when(
-            loading: () => const _CheckingRow(),
-            error: (Object e, _) =>
-                _ErrRow(message: _friendlyLlmModelError(e.toString())),
-            data: (AiInferenceState s) => _LlmStatusRow(
-              state: s,
-              onDownload: notifier.downloadLocalModel,
-              onCancel: notifier.cancelDownload,
-            ),
+          _LlmStatusRow(
+            stateAsync: stateAsync,
+            prefsAsync: prefsAsync,
+            readinessAsync: readinessAsync,
+            onCancel: notifier.cancelDownload,
+            onTrigger: (GemmaModelInfo model) =>
+                notifier.triggerLocalDownload(model),
           ),
         ],
       ),
@@ -48,48 +51,87 @@ class LlmDownloadTile extends ConsumerWidget {
   }
 }
 
-// ─── State row ────────────────────────────────────────────────────────────────
-
 class _LlmStatusRow extends StatelessWidget {
   const _LlmStatusRow({
-    required this.state,
-    required this.onDownload,
+    required this.stateAsync,
+    required this.prefsAsync,
+    required this.readinessAsync,
     required this.onCancel,
+    required this.onTrigger,
   });
 
-  final AiInferenceState state;
-  final Future<void> Function() onDownload;
-  final void Function() onCancel;
+  final AsyncValue<AiInferenceState> stateAsync;
+  final AsyncValue<AppPreferences> prefsAsync;
+  final AsyncValue<LocalGemmaReadiness> readinessAsync;
+  final VoidCallback onCancel;
+  final void Function(GemmaModelInfo model) onTrigger;
 
   @override
   Widget build(BuildContext context) {
-    return switch (state) {
-      AiReady() => const _StatusRow(note: 'Downloaded'),
-      AiLocalModelMissing(:final String? note) => _StatusRow(
-        note: note ?? 'Download to use Butty offline.',
-        action: _CompactIconActionButton(
-          tooltip: 'Download Butty AI',
-          icon: Icons.download_rounded,
-          onTap: onDownload,
-          isPrimary: true,
-        ),
-      ),
-      AiDownloading(
-        :final GemmaModelInfo model,
-        :final int progress,
-        :final String? statusMessage,
-      ) =>
-        _ProgressRow(
-          label: model.name,
-          progress: progress,
-          onCancel: onCancel,
-          statusMessage: statusMessage,
-        ),
-      AiInferenceError(:final String message) => _ErrRow(
-        message: _friendlyLlmModelError(message),
-      ),
-      _ => const _CheckingRow(),
+    if (stateAsync.hasError) {
+      return _ErrRow(
+        message: _friendlyLlmModelError(stateAsync.asError!.error.toString()),
+      );
+    }
+
+    final AiInferenceState? state = stateAsync.value;
+    if (state is AiDownloading) {
+      return _ProgressRow(
+        progress: state.progress,
+        onCancel: onCancel,
+        statusMessage: state.statusMessage,
+      );
+    }
+    if (state is AiInferenceError) {
+      return _ErrRow(message: _friendlyLlmModelError(state.message));
+    }
+
+    if (prefsAsync.hasError) {
+      return _ErrRow(
+        message: _friendlyLlmModelError(prefsAsync.asError!.error.toString()),
+      );
+    }
+    if (readinessAsync.hasError) {
+      return _ErrRow(
+        message: _friendlyLlmModelError(readinessAsync.error.toString()),
+      );
+    }
+
+    final LocalGemmaReadiness? readiness = readinessAsync.value;
+    final GemmaModelInfo? activeModel = switch (state) {
+      AiReady(:final GemmaModelInfo activeModel) => activeModel,
+      AiLocalModelMissing(:final GemmaModelInfo model) => model,
+      _ => null,
     };
+
+    if (readiness == null || activeModel == null) {
+      return const _CheckingRow();
+    }
+
+    if (readiness.installed && readiness.usable) {
+      return const _StatusRow(note: 'Downloaded');
+    }
+
+    if (readiness.installed) {
+      return _StatusRow(
+        note: 'Finishing setup…',
+        action: _CompactIconActionButton(
+          tooltip: 'Reload Butty AI',
+          icon: Icons.refresh_rounded,
+          onTap: () => onTrigger(activeModel),
+        ),
+      );
+    }
+
+    return _StatusRow(
+      note: 'Download to use Butty offline.',
+      action: _CompactIconActionButton(
+        tooltip: 'Download Butty AI',
+        icon: Icons.download_rounded,
+        onTap: () => onTrigger(activeModel),
+        isPrimary: true,
+      ),
+    );
   }
 }
 
@@ -102,20 +144,13 @@ class _StatusRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
-
-    final Widget statusCopy = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        if (note != null)
-          Text(
-            note!,
-            style: TextStyle(
-              fontSize: 11,
-              height: 1.25,
-              color: cs.onSurface.withAlpha(150),
-            ),
-          ),
-      ],
+    final Widget statusCopy = Text(
+      note ?? '',
+      style: TextStyle(
+        fontSize: 11,
+        height: 1.25,
+        color: cs.onSurface.withAlpha(150),
+      ),
     );
 
     return LayoutBuilder(
@@ -153,13 +188,11 @@ class _StatusRow extends StatelessWidget {
 
 class _ProgressRow extends StatelessWidget {
   const _ProgressRow({
-    required this.label,
     required this.progress,
     required this.onCancel,
     this.statusMessage,
   });
 
-  final String label;
   final int progress;
   final VoidCallback onCancel;
   final String? statusMessage;
@@ -180,7 +213,7 @@ class _ProgressRow extends StatelessWidget {
             ConstrainedBox(
               constraints: const BoxConstraints(minWidth: 180, maxWidth: 260),
               child: Text(
-                'Downloading $label · $progress%',
+                'Downloading… $progress%',
                 style: TextStyle(color: cs.primary, fontSize: 13),
               ),
             ),
@@ -204,8 +237,6 @@ class _ProgressRow extends StatelessWidget {
     );
   }
 }
-
-// ─── Shared small widgets ─────────────────────────────────────────────────────
 
 class _TileHeader extends StatelessWidget {
   const _TileHeader({
@@ -263,7 +294,7 @@ class _CheckingRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Text(
-      'Checking status...',
+      'Checking…',
       style: TextStyle(
         fontSize: 13,
         color: Theme.of(context).colorScheme.onSurface.withAlpha(128),
@@ -316,14 +347,11 @@ class _ErrRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
-      label: 'Setup failed: $message',
-      child: Text(
-        message,
-        style: TextStyle(
-          fontSize: 12,
-          color: Theme.of(context).colorScheme.error,
-        ),
+    return Text(
+      'Error: $message',
+      style: TextStyle(
+        fontSize: 12,
+        color: Theme.of(context).colorScheme.error,
       ),
     );
   }
@@ -332,7 +360,7 @@ class _ErrRow extends StatelessWidget {
 String _friendlyLlmModelError(String rawMessage) {
   final String message = rawMessage.trim();
   if (message.isEmpty) {
-    return 'Local AI setup is paused. You can use cloud AI and retry later.';
+    return 'Offline setup is paused. You can stay on internet mode and try again later.';
   }
 
   final String lower = message.toLowerCase();
@@ -353,7 +381,7 @@ String _friendlyLlmModelError(String rawMessage) {
   }
 
   if (lower.contains('no ai models configured')) {
-    return 'The local model list is not available yet. You can use cloud AI for now.';
+    return 'Offline downloads are not available right now. You can stay on internet mode for now.';
   }
 
   final bool looksTechnical =
@@ -364,7 +392,7 @@ String _friendlyLlmModelError(String rawMessage) {
       lower.contains('uri=') ||
       lower.contains('https://');
   if (looksTechnical) {
-    return 'Local AI setup is paused. You can use cloud AI and retry later.';
+    return 'Offline setup is paused. You can stay on internet mode and try again later.';
   }
 
   return message;

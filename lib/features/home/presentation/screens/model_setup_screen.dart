@@ -52,7 +52,7 @@ class _ModelSetupScreenState extends ConsumerState<ModelSetupScreen> {
   String _friendlyModelSetupError(String rawMessage) {
     final String message = rawMessage.trim();
     if (message.isEmpty) {
-      return 'Local AI setup is paused. You can use cloud AI and retry later.';
+      return 'Offline setup is paused. You can stay on internet mode and try again later.';
     }
 
     final String lower = message.toLowerCase();
@@ -73,7 +73,7 @@ class _ModelSetupScreenState extends ConsumerState<ModelSetupScreen> {
     }
 
     if (lower.contains('no ai models configured')) {
-      return 'The local model list is not available yet. You can use cloud AI for now.';
+      return 'Offline downloads are not available right now. You can stay on internet mode for now.';
     }
 
     final bool looksTechnical =
@@ -84,7 +84,7 @@ class _ModelSetupScreenState extends ConsumerState<ModelSetupScreen> {
         lower.contains('uri=') ||
         lower.contains('https://');
     if (looksTechnical) {
-      return 'Local AI setup is paused. You can use cloud AI and retry later.';
+      return 'Offline setup is paused. You can stay on internet mode and try again later.';
     }
 
     return message;
@@ -368,7 +368,7 @@ class _SetupHeadline extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text(
-          'Power up Kudlit',
+          'Get ready to use Kudlit',
           style: TextStyle(
             color: KudlitColors.blue900,
             fontSize: compact ? 24 : 28,
@@ -378,10 +378,8 @@ class _SetupHeadline extends StatelessWidget {
         SizedBox(height: compact ? 8 : 10),
         Text(
           kIsWeb
-              ? 'Kudlit checks the browser scanner model here before you start. '
-                    'Gemma stays in cloud mode on web.'
-              : 'Kudlit uses on-device AI models for Baybayin recognition '
-                    'and translation — no internet needed once downloaded.',
+              ? 'Set up the downloads Kudlit needs before you start.'
+              : 'Download these once so key features can keep working even without internet.',
           style: TextStyle(
             color: KudlitColors.grey300,
             fontSize: compact ? 13 : 15,
@@ -422,10 +420,8 @@ class _DownloadNotice extends StatelessWidget {
           Expanded(
             child: Text(
               kIsWeb
-                  ? 'On web, the scanner model loads from Supabase Storage in '
-                        'the browser. Gemma continues to use cloud AI.'
-                  : 'AI model files are typically 1–5 GB. '
-                        'Wi-Fi recommended. Download continues in the background.',
+                  ? 'The first setup happens in this browser and may take a while.'
+                  : 'These downloads can be large. Wi-Fi is recommended.',
               style: TextStyle(
                 color: KudlitColors.blue800,
                 fontSize: compact ? 10 : 11,
@@ -454,7 +450,7 @@ class _SetupActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final String label = busy ? 'Checking models' : 'Continue';
+    final String label = busy ? 'Checking setup' : 'Continue';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -463,7 +459,7 @@ class _SetupActions extends StatelessWidget {
           button: true,
           enabled: !busy,
           label: label,
-          hint: 'Checks whether the required models are ready, then continues.',
+          hint: 'Checks whether everything is ready, then continues.',
           child: FilledButton.icon(
             onPressed: busy ? null : onContinue,
             icon: busy
@@ -498,7 +494,7 @@ class _SetupActions extends StatelessWidget {
             disabledForegroundColor: KudlitColors.grey500,
           ),
           child: const Text(
-            'Not now - use cloud AI',
+            'Not now - stay on internet mode',
             style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
           ),
         ),
