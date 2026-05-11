@@ -96,7 +96,10 @@ class SqliteChatDatasource {
   }
 
   /// Attach the Supabase UUID to a previously-inserted local row.
-  Future<void> setRemoteId({required int localId, required String remoteId}) async {
+  Future<void> setRemoteId({
+    required int localId,
+    required String remoteId,
+  }) async {
     try {
       final Database db = await _open();
       await db.update(

@@ -101,9 +101,7 @@ class SqliteScanHistoryDatasource {
       id: row['id'] as int?,
       tokens: decoded.cast<String>(),
       translation: row['translation'] as String,
-      timestamp: DateTime.fromMillisecondsSinceEpoch(
-        row['timestamp'] as int,
-      ),
+      timestamp: DateTime.fromMillisecondsSinceEpoch(row['timestamp'] as int),
     );
   }
 }

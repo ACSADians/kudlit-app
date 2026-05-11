@@ -123,8 +123,9 @@ class TranslateSketchpadController extends Notifier<TranslateSketchpadState> {
               .analyzeImage(imageBytes, prompt: prompt)) {
         buffer.write(chunk);
         final String cleaned = cleanAssistantOutput(buffer.toString());
-        final String displayResponse =
-            GemmaPrompts.parseThinkBlock(cleaned).answer;
+        final String displayResponse = GemmaPrompts.parseThinkBlock(
+          cleaned,
+        ).answer;
         state = state.copyWith(
           aiBusy: true,
           aiResponse: displayResponse,
@@ -132,8 +133,9 @@ class TranslateSketchpadController extends Notifier<TranslateSketchpadState> {
         );
       }
       final String cleaned = cleanAssistantOutput(buffer.toString());
-      final String displayResponse =
-          GemmaPrompts.parseThinkBlock(cleaned).answer;
+      final String displayResponse = GemmaPrompts.parseThinkBlock(
+        cleaned,
+      ).answer;
       state = state.copyWith(
         aiBusy: false,
         aiResponse: displayResponse,
@@ -166,8 +168,9 @@ class TranslateSketchpadController extends Notifier<TranslateSketchpadState> {
       await for (final String chunk in stream) {
         buffer.write(chunk);
         final String cleaned = cleanAssistantOutput(buffer.toString());
-        final String displayResponse =
-            GemmaPrompts.parseThinkBlock(cleaned).answer;
+        final String displayResponse = GemmaPrompts.parseThinkBlock(
+          cleaned,
+        ).answer;
         state = state.copyWith(
           aiBusy: true,
           aiResponse: displayResponse,
@@ -175,8 +178,9 @@ class TranslateSketchpadController extends Notifier<TranslateSketchpadState> {
         );
       }
       final String cleaned = cleanAssistantOutput(buffer.toString());
-      final String displayResponse =
-          GemmaPrompts.parseThinkBlock(cleaned).answer;
+      final String displayResponse = GemmaPrompts.parseThinkBlock(
+        cleaned,
+      ).answer;
       state = state.copyWith(
         aiBusy: false,
         aiResponse: displayResponse,
