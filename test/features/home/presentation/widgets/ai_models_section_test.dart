@@ -20,7 +20,7 @@ void main() {
     SharedPreferences.setMockInitialValues(<String, Object>{});
   });
 
-  testWidgets('AI models section frames local setup as a clear destination', (
+  testWidgets('offline downloads section frames setup in plain language', (
     tester,
   ) async {
     await tester.binding.setSurfaceSize(const Size(360, 740));
@@ -37,16 +37,23 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    expect(find.text('Local AI setup'), findsOneWidget);
+    expect(find.text('OFFLINE DOWNLOADS'), findsOneWidget);
+    expect(find.text('Use Kudlit offline'), findsOneWidget);
     expect(
-      find.text('Install once for offline Butty and scanner setup.'),
+      find.text(
+        'Set these up once to keep replies and camera reading available without internet.',
+      ),
       findsOneWidget,
     );
-    expect(find.text('Gemma 4 E2B'), findsOneWidget);
-    expect(find.text('Ready for local Butty replies.'), findsOneWidget);
-    expect(find.text('KudVis-1-Turbo'), findsOneWidget);
-    expect(find.text('Local scanner recognition'), findsOneWidget);
-    expect(find.text('Download once before live recognition.'), findsOneWidget);
+    expect(find.text('Butty replies'), findsOneWidget);
+    expect(find.text('Offline help  ·  large download'), findsOneWidget);
+    expect(find.text('Needs download'), findsWidgets);
+    expect(find.text('Camera reading'), findsOneWidget);
+    expect(find.text('Reads Baybayin with your camera'), findsOneWidget);
+    expect(
+      find.text('Download once before using camera reading.'),
+      findsOneWidget,
+    );
     expect(tester.takeException(), isNull);
   });
 
@@ -68,7 +75,7 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    await tester.tap(find.text('Download'));
+    await tester.tap(find.text('Set up'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
@@ -120,10 +127,9 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    expect(find.text('KudVis-Pro ready'), findsOneWidget);
-    expect(find.text('KudVis-1-Turbo ready'), findsNothing);
+    expect(find.text('Ready to scan'), findsOneWidget);
 
-    await tester.tap(find.text('Re-download'));
+    await tester.tap(find.text('Set up again'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
@@ -157,10 +163,10 @@ void main() {
     await tester.pump();
 
     final Rect supportText = tester.getRect(
-      find.text('Download once before live recognition.'),
+      find.text('Download once before using camera reading.'),
     );
     final Rect downloadButton = tester.getRect(
-      find.widgetWithText(ProfileManagementActionButton, 'Download'),
+      find.widgetWithText(ProfileManagementActionButton, 'Set up'),
     );
 
     expect(downloadButton.top, greaterThan(supportText.bottom));
@@ -196,8 +202,8 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    expect(find.text('Local AI setup'), findsOneWidget);
-    expect(find.text('Setup needed'), findsWidgets);
+    expect(find.text('Use Kudlit offline'), findsOneWidget);
+    expect(find.text('Needs download'), findsWidgets);
     expect(find.byType(ProfileManagementActionButton), findsWidgets);
     expect(tester.takeException(), isNull);
   });

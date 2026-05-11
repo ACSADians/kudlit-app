@@ -10,10 +10,6 @@ import 'package:kudlit_ph/features/translator/presentation/providers/translator_
 
 import 'profile_management_action_button.dart';
 
-/// Settings tile for the Gemma 4 LLM model (Butty offline AI).
-///
-/// Shows install status and a download/cancel button driven by
-/// [AiInferenceNotifier] so it stays in sync with the chat screen.
 class LlmDownloadTile extends ConsumerWidget {
   const LlmDownloadTile({super.key});
 
@@ -39,8 +35,8 @@ class LlmDownloadTile extends ConsumerWidget {
         children: <Widget>[
           const _TileHeader(
             icon: Icons.psychology_rounded,
-            label: 'Gemma 4 E2B',
-            sublabel: 'Butty offline AI  ·  ~2.4 GB',
+            label: 'Butty replies',
+            sublabel: 'Offline help  ·  large download',
           ),
           const SizedBox(height: 10),
           _LlmStatusRow(
@@ -82,7 +78,6 @@ class _LlmStatusRow extends StatelessWidget {
     final AiInferenceState? state = stateAsync.value;
     if (state is AiDownloading) {
       return _ProgressRow(
-        label: state.model.name,
         progress: state.progress,
         onCancel: onCancel,
         statusMessage: state.statusMessage,
@@ -117,34 +112,30 @@ class _LlmStatusRow extends StatelessWidget {
 
     if (readiness.installed && readiness.usable) {
       return _ReadyRow(
-        modelName: activeModel.name,
         cloudMode: prefs.aiPreference == AiPreference.cloud,
         note: prefs.aiPreference == AiPreference.cloud
-            ? 'Installed locally. Switch AI mode to Local when you want browser or on-device Gemma.'
-            : readiness.detail,
+            ? 'Downloaded and ready whenever you switch to Offline mode.'
+            : 'Downloaded and ready to use without internet.',
       );
     }
 
     return _ActionRow(
       badge: _StatusBadge(
-        label: readiness.installed ? 'Installed - not ready' : 'Not downloaded',
+        label: readiness.installed ? 'Almost ready' : 'Needs download',
         ok: readiness.installed ? null : false,
       ),
       primary: readiness.installed ? 'Reload' : 'Download',
       onPrimary: () => onTrigger(activeModel),
-      note: readiness.detail,
+      note: readiness.installed
+          ? 'We are still getting this ready.'
+          : 'Download once to use Butty without internet.',
     );
   }
 }
 
 class _ReadyRow extends StatelessWidget {
-  const _ReadyRow({
-    required this.modelName,
-    required this.cloudMode,
-    this.note,
-  });
+  const _ReadyRow({required this.cloudMode, this.note});
 
-  final String modelName;
   final bool cloudMode;
   final String? note;
 
@@ -156,9 +147,7 @@ class _ReadyRow extends StatelessWidget {
         Row(
           children: <Widget>[
             _StatusBadge(
-              label: cloudMode
-                  ? '$modelName installed - cloud selected'
-                  : '$modelName installed',
+              label: cloudMode ? 'Downloaded' : 'Ready offline',
               ok: true,
             ),
           ],
@@ -223,13 +212,11 @@ class _ActionRow extends StatelessWidget {
 
 class _ProgressRow extends StatelessWidget {
   const _ProgressRow({
-    required this.label,
     required this.progress,
     required this.onCancel,
     this.statusMessage,
   });
 
-  final String label;
   final int progress;
   final VoidCallback onCancel;
   final String? statusMessage;
@@ -245,7 +232,7 @@ class _ProgressRow extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: <Widget>[
             Text(
-              'Downloading $label… $progress%',
+              'Downloading… $progress%',
               style: TextStyle(color: cs.primary, fontSize: 13),
             ),
             GestureDetector(
@@ -386,7 +373,7 @@ class _ErrRow extends StatelessWidget {
 String _friendlyLlmModelError(String rawMessage) {
   final String message = rawMessage.trim();
   if (message.isEmpty) {
-    return 'Local AI setup is paused. You can use cloud AI and retry later.';
+    return 'Offline setup is paused. You can keep using online help and try again later.';
   }
 
   final String lower = message.toLowerCase();
@@ -407,7 +394,7 @@ String _friendlyLlmModelError(String rawMessage) {
   }
 
   if (lower.contains('no ai models configured')) {
-    return 'The local model list is not available yet. You can use cloud AI for now.';
+    return 'Offline downloads are not available right now. You can keep using online help for now.';
   }
 
   final bool looksTechnical =
@@ -418,7 +405,7 @@ String _friendlyLlmModelError(String rawMessage) {
       lower.contains('uri=') ||
       lower.contains('https://');
   if (looksTechnical) {
-    return 'Local AI setup is paused. You can use cloud AI and retry later.';
+    return 'Offline setup is paused. You can keep using online help and try again later.';
   }
 
   return message;

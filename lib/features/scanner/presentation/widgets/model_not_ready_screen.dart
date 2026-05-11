@@ -156,7 +156,7 @@ class _ErrorContent extends StatelessWidget {
         if (needsSetup) ...<Widget>[
           const SizedBox(height: 8),
           Text(
-            'Open Settings > AI models to install or update scanner models.',
+            'Open Settings > Offline downloads to get camera reading ready.',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 13,
@@ -176,7 +176,7 @@ class _ErrorContent extends StatelessWidget {
                 onPressed: onSetup,
                 style: FilledButton.styleFrom(minimumSize: const Size(0, 44)),
                 icon: const Icon(Icons.tune_rounded, size: 18),
-                label: const Text('Open AI models'),
+                label: const Text('Open downloads'),
               ),
             FilledButton.tonal(
               onPressed: onRetry,

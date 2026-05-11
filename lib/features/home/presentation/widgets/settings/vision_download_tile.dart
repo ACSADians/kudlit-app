@@ -10,10 +10,6 @@ import 'package:kudlit_ph/features/translator/domain/entities/ai_model_info.dart
 
 import 'profile_management_action_button.dart';
 
-/// Settings tile for the KudVis vision model (YOLO OCR / camera scanner).
-///
-/// Manages its own download/probe progress locally and invalidates the shared
-/// setup-status providers after a successful prepare action.
 class VisionDownloadTile extends ConsumerStatefulWidget {
   const VisionDownloadTile({super.key});
 
@@ -148,29 +144,23 @@ class _VisionStatusRow extends ConsumerWidget {
       error: (Object e, _) => _ErrRow(message: e.toString()),
       data: (VisionModelSetupStatus status) {
         if (status.ready) {
-          final String label = kIsWeb
-              ? '${model.name} ready in browser'
-              : '${model.name} ready';
-          final String supportingText = kIsWeb
-              ? 'Ready for browser scanner startup.'
-              : 'Ready for local scanner startup.';
           return _VisionActionRow(
-            badge: _StatusBadge(label: label, ok: true),
-            supportingText: supportingText,
+            badge: const _StatusBadge(label: 'Ready to scan', ok: true),
+            supportingText: 'Downloaded and ready when you open the scanner.',
             action: ProfileManagementActionButton(
-              label: kIsWeb ? 'Reload' : 'Re-download',
+              label: 'Set up again',
               onTap: onPrepare,
             ),
           );
         }
 
         return _VisionActionRow(
-          badge: const _StatusBadge(label: 'Setup needed', ok: false),
+          badge: const _StatusBadge(label: 'Needs download', ok: false),
           supportingText: kIsWeb
-              ? status.message
-              : 'Download once before live recognition.',
+              ? 'Set this up once to use camera reading in this browser.'
+              : 'Download once before using camera reading.',
           action: ProfileManagementActionButton(
-            label: kIsWeb ? 'Load in browser' : 'Download',
+            label: 'Set up',
             isPrimary: true,
             onTap: onPrepare,
           ),
@@ -261,7 +251,7 @@ class _DownloadProgressRow extends StatelessWidget {
         children: <Widget>[
           Flexible(
             child: Text(
-              'Loading $label in the browser...',
+              'Getting camera reading ready...',
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(color: cs.primary, fontSize: 13),
@@ -281,7 +271,7 @@ class _DownloadProgressRow extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text(
-          'Downloading $label - $progress%',
+          'Downloading… $progress%',
           style: TextStyle(color: cs.primary, fontSize: 13),
         ),
         const SizedBox(height: 6),
@@ -307,7 +297,7 @@ class _VisionTileHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               Text(
-                'KudVis-1-Turbo',
+                'Camera reading',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
@@ -318,8 +308,8 @@ class _VisionTileHeader extends StatelessWidget {
               ),
               Text(
                 kIsWeb
-                    ? 'Baybayin OCR scanner - YOLOv12 via tflite_web'
-                    : 'Local scanner recognition',
+                    ? 'Reads Baybayin in this browser'
+                    : 'Reads Baybayin with your camera',
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(

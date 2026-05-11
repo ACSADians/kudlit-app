@@ -8,6 +8,7 @@ import 'package:kudlit_ph/features/home/presentation/providers/app_preferences_p
 import 'package:kudlit_ph/features/home/presentation/providers/model_setup_controller.dart';
 import 'package:kudlit_ph/features/home/presentation/screens/model_setup_screen.dart';
 import 'package:kudlit_ph/features/scanner/presentation/providers/yolo_model_selection_provider.dart';
+import 'package:kudlit_ph/features/translator/data/datasources/local_gemma_datasource.dart';
 import 'package:kudlit_ph/features/translator/presentation/providers/ai_inference_provider.dart';
 import 'package:kudlit_ph/features/translator/presentation/providers/ai_inference_state.dart';
 import 'package:kudlit_ph/features/translator/presentation/providers/translator_providers.dart';
@@ -80,9 +81,10 @@ void main() {
   });
 
   test(
-    'complete setup reuses scanner status and keeps cloud mode allowed',
+    'complete setup requires offline downloads and enables local mode',
     () async {
       int statusReads = 0;
+      int readinessReads = 0;
       final ProviderContainer container = ProviderContainer(
         overrides: <Override>[
           visionModelSetupStatusProvider.overrideWith((Ref ref) async {
@@ -94,15 +96,18 @@ void main() {
             );
           }),
           localModelReadinessProvider.overrideWith((Ref ref) async {
-            throw StateError('Cloud setup should not require local Gemma.');
+            readinessReads++;
+            return const LocalGemmaReadiness(
+              installed: true,
+              usable: true,
+              detail: 'Offline ready.',
+            );
           }),
         ],
       );
       addTearDown(container.dispose);
 
       await container.read(appPreferencesNotifierProvider.future);
-      await container.read(visionModelSetupStatusProvider.future);
-
       await container
           .read(modelSetupControllerProvider.notifier)
           .completeSetup();
@@ -111,7 +116,8 @@ void main() {
         appPreferencesNotifierProvider.future,
       );
       expect(statusReads, 1);
-      expect(prefs.aiPreference, AiPreference.cloud);
+      expect(readinessReads, 1);
+      expect(prefs.aiPreference, AiPreference.local);
       expect(prefs.hasDownloadedModels, isTrue);
       expect(container.read(modelSetupControllerProvider).errorMessage, isNull);
     },

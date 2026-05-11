@@ -299,8 +299,8 @@ final FutureProvider<VisionModelSetupStatus> visionModelSetupStatusProvider =
       if (models.isEmpty) {
         return const VisionModelSetupStatus(
           ready: false,
-          title: 'No scanner model configured',
-          message: 'Add an enabled vision model in Supabase to use scanning.',
+          title: 'Scanner setup unavailable',
+          message: 'Scanning is not ready yet.',
         );
       }
 
@@ -323,16 +323,14 @@ final FutureProvider<VisionModelSetupStatus> visionModelSetupStatusProvider =
           await createWebVisionModelPreflight().run(active.modelLink);
           return VisionModelSetupStatus(
             ready: true,
-            title: 'Browser scanner ready',
-            message:
-                '${active.name} loaded successfully and passed a browser '
-                'inference warm-up.',
+            title: 'Scanner ready',
+            message: 'Camera reading is ready to use.',
             model: active,
           );
         } catch (e) {
           return VisionModelSetupStatus(
             ready: false,
-            title: 'Browser scanner needs attention',
+            title: 'Scanner needs attention',
             message: friendlyVisionModelError(e.toString()),
             model: active,
           );
@@ -345,16 +343,16 @@ final FutureProvider<VisionModelSetupStatus> visionModelSetupStatusProvider =
       if (upToDate) {
         return VisionModelSetupStatus(
           ready: true,
-          title: 'Scanner model downloaded',
-          message: '${active.name} is ready for on-device scanning.',
+          title: 'Scanner ready',
+          message: 'Camera reading is ready to use.',
           model: active,
         );
       }
 
       return VisionModelSetupStatus(
         ready: false,
-        title: 'Scanner model not downloaded',
-        message: 'Download ${active.name} to enable the camera scanner.',
+        title: 'Scanner needs download',
+        message: 'Download this to use camera reading.',
         model: active,
       );
     });
@@ -365,24 +363,23 @@ String friendlyVisionModelError(String rawMessage) {
   if (lower.contains('404') ||
       lower.contains('not found') ||
       lower.contains('object not found')) {
-    return 'The scanner model file is missing from Supabase Storage.';
+    return 'This download is unavailable right now. Please try again later.';
   }
   if (lower.contains('cors') || lower.contains('failed to fetch')) {
-    return 'The browser could not load the scanner model. Check CORS and the '
-        'public model URL.';
+    return 'This download could not be prepared right now. Please try again.';
   }
   if (lower.contains('input type')) {
-    return 'The web scanner model uses an unsupported input type for browser '
-        'inference.';
+    return 'This download is not ready for this device yet.';
   }
   if (lower.contains('shape') || lower.contains('tensor')) {
-    return 'The scanner model loaded, but its tensor format is not compatible '
-        'with the current web parser.';
+    return 'This download is not ready for this device yet.';
   }
   if (lower.contains('model') || lower.contains('tflite')) {
-    return 'The browser could not prepare the scanner model.';
+    return 'This download could not be prepared right now.';
   }
-  return raw.isEmpty ? 'The browser could not prepare the scanner model.' : raw;
+  return raw.isEmpty
+      ? 'This download could not be prepared right now.'
+      : 'Something went wrong while getting this ready. Please try again.';
 }
 
 /// Sentinel thrown while the model catalog is still loading. Callers

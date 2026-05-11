@@ -65,8 +65,7 @@ class ModelSetupController extends Notifier<ModelSetupState> {
       if (!gemmaReadiness.installed || !gemmaReadiness.usable) {
         state = state.copyWith(
           busy: false,
-          errorMessage:
-              'Download the Gemma model before continuing with offline AI.',
+          errorMessage: 'Finish the offline downloads before continuing.',
         );
         return;
       }
