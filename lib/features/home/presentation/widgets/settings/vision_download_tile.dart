@@ -8,8 +8,6 @@ import 'package:kudlit_ph/features/scanner/data/datasources/web_vision_model_pre
 import 'package:kudlit_ph/features/scanner/presentation/providers/yolo_model_selection_provider.dart';
 import 'package:kudlit_ph/features/translator/domain/entities/ai_model_info.dart';
 
-import 'profile_management_action_button.dart';
-
 /// Settings tile for the KudVis vision model (YOLO OCR / camera scanner).
 ///
 /// Manages its own download/probe progress locally and invalidates the shared
@@ -148,31 +146,27 @@ class _VisionStatusRow extends ConsumerWidget {
       error: (Object e, _) => _ErrRow(message: e.toString()),
       data: (VisionModelSetupStatus status) {
         if (status.ready) {
-          final String label = kIsWeb
-              ? '${model.name} ready in browser'
-              : '${model.name} ready';
-          final String supportingText = kIsWeb
-              ? 'Ready for browser scanner startup.'
-              : 'Ready for local scanner startup.';
           return _VisionActionRow(
-            badge: _StatusBadge(label: label, ok: true),
-            supportingText: supportingText,
-            action: ProfileManagementActionButton(
-              label: kIsWeb ? 'Reload' : 'Re-download',
+            supportingText: 'Downloaded',
+            action: _CompactIconActionButton(
+              tooltip: 'Refresh scanner model',
+              icon: Icons.refresh_rounded,
               onTap: onPrepare,
             ),
           );
         }
 
         return _VisionActionRow(
-          badge: const _StatusBadge(label: 'Setup needed', ok: false),
           supportingText: kIsWeb
               ? status.message
-              : 'Download once before live recognition.',
-          action: ProfileManagementActionButton(
-            label: kIsWeb ? 'Load in browser' : 'Download',
-            isPrimary: true,
+              : 'Download before using the scanner.',
+          action: _CompactIconActionButton(
+            tooltip: kIsWeb ? 'Load scanner model' : 'Download scanner model',
+            icon: kIsWeb
+                ? Icons.cloud_download_rounded
+                : Icons.download_rounded,
             onTap: onPrepare,
+            isPrimary: true,
           ),
         );
       },
@@ -181,13 +175,8 @@ class _VisionStatusRow extends ConsumerWidget {
 }
 
 class _VisionActionRow extends StatelessWidget {
-  const _VisionActionRow({
-    required this.badge,
-    required this.supportingText,
-    required this.action,
-  });
+  const _VisionActionRow({required this.supportingText, required this.action});
 
-  final Widget badge;
   final String supportingText;
   final Widget action;
 
@@ -197,8 +186,6 @@ class _VisionActionRow extends StatelessWidget {
     final Widget statusCopy = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        badge,
-        const SizedBox(height: 6),
         Text(
           supportingText,
           style: TextStyle(
@@ -335,34 +322,6 @@ class _VisionTileHeader extends StatelessWidget {
   }
 }
 
-class _StatusBadge extends StatelessWidget {
-  const _StatusBadge({required this.label, required this.ok});
-
-  final String label;
-  final bool ok;
-
-  @override
-  Widget build(BuildContext context) {
-    final ColorScheme cs = Theme.of(context).colorScheme;
-    final Color bg = ok ? cs.primaryContainer : cs.errorContainer;
-    final Color fg = ok ? cs.onPrimaryContainer : cs.onErrorContainer;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        label,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: TextStyle(fontSize: 11, color: fg),
-      ),
-    );
-  }
-}
-
 class _NoModelRow extends StatelessWidget {
   const _NoModelRow();
 
@@ -373,6 +332,43 @@ class _NoModelRow extends StatelessWidget {
       style: TextStyle(
         fontSize: 12,
         color: Theme.of(context).colorScheme.onSurface.withAlpha(128),
+      ),
+    );
+  }
+}
+
+class _CompactIconActionButton extends StatelessWidget {
+  const _CompactIconActionButton({
+    required this.tooltip,
+    required this.icon,
+    required this.onTap,
+    this.isPrimary = false,
+  });
+
+  final String tooltip;
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool isPrimary;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+
+    return Tooltip(
+      message: tooltip,
+      child: SizedBox(
+        width: 44,
+        height: 44,
+        child: IconButton(
+          onPressed: onTap,
+          style: IconButton.styleFrom(
+            backgroundColor: isPrimary ? cs.primary : cs.surface,
+            foregroundColor: isPrimary ? cs.onPrimary : cs.onSurface,
+            side: BorderSide(color: isPrimary ? cs.primary : cs.outline),
+            shape: const CircleBorder(),
+          ),
+          icon: Icon(icon, size: 18),
+        ),
       ),
     );
   }

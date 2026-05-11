@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:kudlit_ph/features/home/presentation/providers/app_preferences_provider.dart';
 import 'package:kudlit_ph/features/translator/domain/entities/gemma_model_info.dart';
 import 'package:kudlit_ph/features/translator/presentation/providers/ai_inference_provider.dart';
 import 'package:kudlit_ph/features/translator/presentation/providers/ai_inference_state.dart';
-
-import 'profile_management_action_button.dart';
 
 /// Settings tile for the Gemma 4 LLM model (Butty offline AI).
 ///
@@ -31,8 +28,8 @@ class LlmDownloadTile extends ConsumerWidget {
         children: <Widget>[
           const _TileHeader(
             icon: Icons.psychology_rounded,
-            label: 'Gemma 4 E2B',
-            sublabel: 'Offline Butty chat  ·  ~2.4 GB',
+            label: 'Butty AI',
+            sublabel: 'Offline chat  ·  ~2.4 GB',
           ),
           const SizedBox(height: 10),
           stateAsync.when(
@@ -43,7 +40,6 @@ class LlmDownloadTile extends ConsumerWidget {
               state: s,
               onDownload: notifier.downloadLocalModel,
               onCancel: notifier.cancelDownload,
-              onTrigger: (GemmaModelInfo m) => notifier.triggerLocalDownload(m),
             ),
           ),
         ],
@@ -59,27 +55,24 @@ class _LlmStatusRow extends StatelessWidget {
     required this.state,
     required this.onDownload,
     required this.onCancel,
-    required this.onTrigger,
   });
 
   final AiInferenceState state;
   final Future<void> Function() onDownload;
   final void Function() onCancel;
-  final void Function(GemmaModelInfo) onTrigger;
 
   @override
   Widget build(BuildContext context) {
     return switch (state) {
-      AiReady(:final AiPreference mode, :final GemmaModelInfo activeModel) =>
-        _ReadyRow(
-          modelName: activeModel.name,
-          cloudMode: mode == AiPreference.cloud,
+      AiReady() => const _StatusRow(note: 'Downloaded'),
+      AiLocalModelMissing(:final String? note) => _StatusRow(
+        note: note ?? 'Download to use Butty offline.',
+        action: _CompactIconActionButton(
+          tooltip: 'Download Butty AI',
+          icon: Icons.download_rounded,
+          onTap: onDownload,
+          isPrimary: true,
         ),
-      AiLocalModelMissing(:final String? note) => _ActionRow(
-        badge: const _StatusBadge(label: 'Setup needed', ok: false),
-        primary: 'Download',
-        onPrimary: onDownload,
-        note: note,
       ),
       AiDownloading(
         :final GemmaModelInfo model,
@@ -100,39 +93,11 @@ class _LlmStatusRow extends StatelessWidget {
   }
 }
 
-class _ReadyRow extends StatelessWidget {
-  const _ReadyRow({required this.modelName, required this.cloudMode});
+class _StatusRow extends StatelessWidget {
+  const _StatusRow({this.note, this.action});
 
-  final String modelName;
-  final bool cloudMode;
-
-  @override
-  Widget build(BuildContext context) {
-    if (cloudMode) {
-      return const _ActionRow(
-        badge: _StatusBadge(label: 'Cloud active', ok: null),
-        note: 'Optional while Cloud is active.',
-      );
-    }
-    return _ActionRow(
-      badge: _StatusBadge(label: '$modelName ready', ok: true),
-      note: 'Ready for local Butty replies.',
-    );
-  }
-}
-
-class _ActionRow extends StatelessWidget {
-  const _ActionRow({
-    required this.badge,
-    this.primary,
-    this.onPrimary,
-    this.note,
-  });
-
-  final Widget badge;
-  final String? primary;
-  final VoidCallback? onPrimary;
   final String? note;
+  final Widget? action;
 
   @override
   Widget build(BuildContext context) {
@@ -141,9 +106,7 @@ class _ActionRow extends StatelessWidget {
     final Widget statusCopy = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        badge,
-        if (note != null) ...<Widget>[
-          const SizedBox(height: 6),
+        if (note != null)
           Text(
             note!,
             style: TextStyle(
@@ -152,16 +115,8 @@ class _ActionRow extends StatelessWidget {
               color: cs.onSurface.withAlpha(150),
             ),
           ),
-        ],
       ],
     );
-    final Widget? action = primary != null && onPrimary != null
-        ? ProfileManagementActionButton(
-            label: primary!,
-            isPrimary: true,
-            onTap: onPrimary,
-          )
-        : null;
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
@@ -188,7 +143,7 @@ class _ActionRow extends StatelessWidget {
               constraints: const BoxConstraints(minWidth: 180, maxWidth: 260),
               child: statusCopy,
             ),
-            ?action,
+            if (action case final Widget compactAction) compactAction,
           ],
         );
       },
@@ -229,7 +184,11 @@ class _ProgressRow extends StatelessWidget {
                 style: TextStyle(color: cs.primary, fontSize: 13),
               ),
             ),
-            ProfileManagementActionButton(label: 'Cancel', onTap: onCancel),
+            _CompactIconActionButton(
+              tooltip: 'Cancel Butty AI download',
+              icon: Icons.close_rounded,
+              onTap: onCancel,
+            ),
           ],
         ),
         if (statusMessage != null) ...<Widget>[
@@ -298,43 +257,6 @@ class _TileHeader extends StatelessWidget {
   }
 }
 
-/// `ok: true` → green installed, `ok: false` → red missing, `ok: null` → muted.
-class _StatusBadge extends StatelessWidget {
-  const _StatusBadge({required this.label, required this.ok});
-
-  final String label;
-  final bool? ok;
-
-  @override
-  Widget build(BuildContext context) {
-    final ColorScheme cs = Theme.of(context).colorScheme;
-    final Color bg = ok == true
-        ? cs.primaryContainer
-        : ok == false
-        ? cs.errorContainer
-        : cs.surfaceContainerHigh;
-    final Color fg = ok == true
-        ? cs.onPrimaryContainer
-        : ok == false
-        ? cs.onErrorContainer
-        : cs.onSurface.withAlpha(150);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        label,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: TextStyle(fontSize: 11, color: fg),
-      ),
-    );
-  }
-}
-
 class _CheckingRow extends StatelessWidget {
   const _CheckingRow();
 
@@ -345,6 +267,43 @@ class _CheckingRow extends StatelessWidget {
       style: TextStyle(
         fontSize: 13,
         color: Theme.of(context).colorScheme.onSurface.withAlpha(128),
+      ),
+    );
+  }
+}
+
+class _CompactIconActionButton extends StatelessWidget {
+  const _CompactIconActionButton({
+    required this.tooltip,
+    required this.icon,
+    required this.onTap,
+    this.isPrimary = false,
+  });
+
+  final String tooltip;
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool isPrimary;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+
+    return Tooltip(
+      message: tooltip,
+      child: SizedBox(
+        width: 44,
+        height: 44,
+        child: IconButton(
+          onPressed: onTap,
+          style: IconButton.styleFrom(
+            backgroundColor: isPrimary ? cs.primary : cs.surface,
+            foregroundColor: isPrimary ? cs.onPrimary : cs.onSurface,
+            side: BorderSide(color: isPrimary ? cs.primary : cs.outline),
+            shape: const CircleBorder(),
+          ),
+          icon: Icon(icon, size: 18),
+        ),
       ),
     );
   }

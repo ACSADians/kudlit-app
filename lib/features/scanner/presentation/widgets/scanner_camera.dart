@@ -118,6 +118,9 @@ extension WebScannerStatusMeta on WebScannerStatus {
   };
 }
 
+@visibleForTesting
+Alignment webStatusAlignment(WebScannerStatus status) => Alignment.center;
+
 /// On web shows a real browser webcam preview and capture-based detection.
 class ScannerCamera extends ConsumerStatefulWidget {
   const ScannerCamera({
@@ -575,15 +578,10 @@ class _WebCameraPreviewState extends ConsumerState<_WebCameraPreview> {
                 : constraints.maxWidth < 380
                 ? 14
                 : 28;
-            final bool centerUnavailable = _status == WebScannerStatus.error;
             return Align(
-              alignment: centerUnavailable
-                  ? Alignment.center
-                  : Alignment.centerLeft,
+              alignment: webStatusAlignment(_status),
               child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: centerUnavailable ? 24 : horizontalPadding,
-                ),
+                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
                 child: WebStatusMessage(
                   cs: cs,
                   status: _status,
@@ -630,10 +628,11 @@ class WebStatusMessage extends StatelessWidget {
             : 360;
         final double maxWidth = availableWidth.clamp(200.0, 240.0);
         final bool narrow = maxWidth < 300;
+        final String? effectiveMessage = message ?? _defaultMessage();
 
-        final String semanticLabel = message == null
+        final String semanticLabel = effectiveMessage == null
             ? status.label
-            : '${status.label}. $message';
+            : '${status.label}. $effectiveMessage';
 
         return Semantics(
           label: semanticLabel,
@@ -662,14 +661,11 @@ class WebStatusMessage extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
-                  Icon(
-                    status.icon,
-                    size: showCompact
-                        ? 24
-                        : narrow
-                        ? 28
-                        : 32,
-                    color: _statusIconColor(cs),
+                  _StatusVisual(
+                    cs: cs,
+                    status: status,
+                    showCompact: showCompact,
+                    narrow: narrow,
                   ),
                   SizedBox(height: showCompact || narrow ? 8 : 10),
                   Text(
@@ -687,10 +683,10 @@ class WebStatusMessage extends StatelessWidget {
                       color: cs.onSurface,
                     ),
                   ),
-                  if (message != null) const SizedBox(height: 6),
-                  if (message != null)
+                  if (effectiveMessage != null) const SizedBox(height: 6),
+                  if (effectiveMessage != null)
                     Text(
-                      message!,
+                      effectiveMessage,
                       textAlign: TextAlign.center,
                       softWrap: true,
                       maxLines: 3,
@@ -701,6 +697,17 @@ class WebStatusMessage extends StatelessWidget {
                         color: cs.onSurface.withAlpha(190),
                       ),
                     ),
+                  if (status == WebScannerStatus.detecting) ...<Widget>[
+                    const SizedBox(height: 10),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(999),
+                      child: LinearProgressIndicator(
+                        minHeight: 6,
+                        backgroundColor: cs.tertiary.withAlpha(36),
+                        valueColor: AlwaysStoppedAnimation<Color>(cs.tertiary),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -732,13 +739,105 @@ class WebStatusMessage extends StatelessWidget {
     };
   }
 
-  Color _statusIconColor(ColorScheme cs) {
+  String? _defaultMessage() {
+    return switch (status) {
+      WebScannerStatus.detecting => 'Hold still while Kudlit reads the frame.',
+      _ => null,
+    };
+  }
+}
+
+class _StatusVisual extends StatelessWidget {
+  const _StatusVisual({
+    required this.cs,
+    required this.status,
+    required this.showCompact,
+    required this.narrow,
+  });
+
+  final ColorScheme cs;
+  final WebScannerStatus status;
+  final bool showCompact;
+  final bool narrow;
+
+  @override
+  Widget build(BuildContext context) {
+    final double iconSize = showCompact
+        ? 24
+        : narrow
+        ? 28
+        : 32;
+    final double frameSize = showCompact
+        ? 44
+        : narrow
+        ? 52
+        : 58;
+    final Color iconColor = _iconColor();
+    final Color fillColor = _fillColor();
+
+    final Widget iconFrame = Container(
+      width: frameSize,
+      height: frameSize,
+      decoration: BoxDecoration(
+        color: fillColor,
+        shape: BoxShape.circle,
+        border: Border.all(color: iconColor.withAlpha(60)),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: iconColor.withAlpha(
+              status == WebScannerStatus.detecting ? 46 : 22,
+            ),
+            blurRadius: status == WebScannerStatus.detecting ? 18 : 10,
+            spreadRadius: status == WebScannerStatus.detecting ? 1 : 0,
+          ),
+        ],
+      ),
+      child: Icon(status.icon, size: iconSize, color: iconColor),
+    );
+
+    if (status != WebScannerStatus.detecting) {
+      return iconFrame;
+    }
+
+    return SizedBox(
+      width: frameSize + 10,
+      height: frameSize + 10,
+      child: Stack(
+        alignment: Alignment.center,
+        children: <Widget>[
+          SizedBox(
+            width: frameSize + 10,
+            height: frameSize + 10,
+            child: CircularProgressIndicator(
+              strokeWidth: 2.4,
+              backgroundColor: cs.tertiary.withAlpha(28),
+              valueColor: AlwaysStoppedAnimation<Color>(cs.tertiary),
+            ),
+          ),
+          iconFrame,
+        ],
+      ),
+    );
+  }
+
+  Color _iconColor() {
     return switch (status) {
       WebScannerStatus.ready => cs.primary,
       WebScannerStatus.detecting => cs.tertiary,
       WebScannerStatus.modelUnavailable || WebScannerStatus.error => cs.error,
       WebScannerStatus.initializing ||
       WebScannerStatus.permissionNeeded => cs.onSurface.withAlpha(190),
+    };
+  }
+
+  Color _fillColor() {
+    return switch (status) {
+      WebScannerStatus.ready => cs.primaryContainer.withAlpha(210),
+      WebScannerStatus.detecting => cs.tertiaryContainer.withAlpha(230),
+      WebScannerStatus.modelUnavailable ||
+      WebScannerStatus.error => cs.errorContainer.withAlpha(220),
+      WebScannerStatus.initializing || WebScannerStatus.permissionNeeded =>
+        cs.surfaceContainerHighest.withAlpha(220),
     };
   }
 }

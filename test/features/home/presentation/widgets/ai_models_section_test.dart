@@ -6,7 +6,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:kudlit_ph/features/home/presentation/providers/app_preferences_provider.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/settings/ai_models_section.dart';
-import 'package:kudlit_ph/features/home/presentation/widgets/settings/profile_management_action_button.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/settings/vision_download_tile.dart';
 import 'package:kudlit_ph/features/scanner/data/datasources/yolo_model_cache.dart';
 import 'package:kudlit_ph/features/scanner/presentation/providers/yolo_model_selection_provider.dart';
@@ -20,9 +19,7 @@ void main() {
     SharedPreferences.setMockInitialValues(<String, Object>{});
   });
 
-  testWidgets('AI models section frames local setup as a clear destination', (
-    tester,
-  ) async {
+  testWidgets('AI models section keeps setup cards minimal', (tester) async {
     await tester.binding.setSurfaceSize(const Size(360, 740));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -42,11 +39,14 @@ void main() {
       find.text('Install once for offline Butty and scanner setup.'),
       findsOneWidget,
     );
-    expect(find.text('Gemma 4 E2B'), findsOneWidget);
-    expect(find.text('Ready for local Butty replies.'), findsOneWidget);
+    expect(find.text('Butty AI'), findsOneWidget);
+    expect(find.text('Offline chat  ·  ~2.4 GB'), findsOneWidget);
+    expect(find.text('Downloaded'), findsOneWidget);
     expect(find.text('KudVis-1-Turbo'), findsOneWidget);
     expect(find.text('Local scanner recognition'), findsOneWidget);
-    expect(find.text('Download once before live recognition.'), findsOneWidget);
+    expect(find.text('Download before using the scanner.'), findsOneWidget);
+    expect(find.text('Setup needed'), findsNothing);
+    expect(find.text('Ready to scan'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
@@ -68,7 +68,7 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    await tester.tap(find.text('Download'));
+    await tester.tap(find.byTooltip('Download scanner model'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
@@ -120,10 +120,9 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    expect(find.text('KudVis-Pro ready'), findsOneWidget);
-    expect(find.text('KudVis-1-Turbo ready'), findsNothing);
+    expect(find.text('Downloaded'), findsWidgets);
 
-    await tester.tap(find.text('Re-download'));
+    await tester.tap(find.byTooltip('Refresh scanner model'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
@@ -157,10 +156,10 @@ void main() {
     await tester.pump();
 
     final Rect supportText = tester.getRect(
-      find.text('Download once before live recognition.'),
+      find.text('Download before using the scanner.'),
     );
     final Rect downloadButton = tester.getRect(
-      find.widgetWithText(ProfileManagementActionButton, 'Download'),
+      find.byTooltip('Download scanner model'),
     );
 
     expect(downloadButton.top, greaterThan(supportText.bottom));
@@ -197,8 +196,8 @@ void main() {
     await tester.pump();
 
     expect(find.text('Local AI setup'), findsOneWidget);
-    expect(find.text('Setup needed'), findsWidgets);
-    expect(find.byType(ProfileManagementActionButton), findsWidgets);
+    expect(find.text('Setup needed'), findsNothing);
+    expect(find.byType(IconButton), findsWidgets);
     expect(tester.takeException(), isNull);
   });
 }
