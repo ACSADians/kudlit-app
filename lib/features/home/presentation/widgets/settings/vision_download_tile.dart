@@ -96,38 +96,58 @@ class _VisionDownloadTileState extends ConsumerState<VisionDownloadTile> {
           modelsAsync.when(
             loading: () => const _CheckingRow(),
             error: (Object e, _) => _ErrRow(message: e.toString()),
-            data: (List<AiModelInfo> models) => _body(models, activeModelAsync),
+            data: (List<AiModelInfo> models) => _VisionDownloadBody(
+              models: models,
+              activeModelAsync: activeModelAsync,
+              downloading: _downloading,
+              progress: _progress,
+              error: _error,
+              onPrepare: _prepare,
+            ),
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _body(
-    List<AiModelInfo> models,
-    AsyncValue<AiModelInfo?> activeModelAsync,
-  ) {
-    if (models.isEmpty) {
-      return const _NoModelRow();
-    }
+class _VisionDownloadBody extends StatelessWidget {
+  const _VisionDownloadBody({
+    required this.models,
+    required this.activeModelAsync,
+    required this.downloading,
+    required this.progress,
+    required this.onPrepare,
+    this.error,
+  });
 
+  final List<AiModelInfo> models;
+  final AsyncValue<AiModelInfo?> activeModelAsync;
+  final bool downloading;
+  final int progress;
+  final String? error;
+  final ValueChanged<AiModelInfo> onPrepare;
+
+  @override
+  Widget build(BuildContext context) {
+    if (models.isEmpty) return const _NoModelRow();
     return activeModelAsync.when(
       loading: () => const _CheckingRow(),
       error: (Object e, _) => _ErrRow(message: e.toString()),
       data: (AiModelInfo? activeModel) {
         final AiModelInfo model = activeModel ?? models.first;
-
-        if (_downloading) {
+        if (downloading) {
           return _DownloadProgressRow(
             label: model.name,
-            progress: _progress,
+            progress: progress,
             checkingWebModel: kIsWeb,
           );
         }
-        if (_error != null) {
-          return _ErrRow(message: _error!);
-        }
-        return _VisionStatusRow(model: model, onPrepare: () => _prepare(model));
+        if (error != null) return _ErrRow(message: error!);
+        return _VisionStatusRow(
+          model: model,
+          onPrepare: () => onPrepare(model),
+        );
       },
     );
   }

@@ -114,7 +114,10 @@ class _SetupBackground extends StatelessWidget {
         // Faded Baybayin glyphs
         const BaybayinBackdrop(),
         // Soft radial aura — larger on desktop for a more dramatic backdrop
-        _AuraGlow(size: isDesktop ? 520 : 280, top: isDesktop ? -100 : -40),
+        _AuraGlow(
+          size: isDesktop ? 520 : 280,
+          top: isDesktop ? -100 : -40,
+        ),
       ],
     );
   }
@@ -171,7 +174,8 @@ class _ModelSetupBody extends StatelessWidget {
         builder: (BuildContext context, BoxConstraints constraints) {
           final bool isDesktop = constraints.maxWidth >= 900;
           final bool landscape = constraints.maxWidth > constraints.maxHeight;
-          final bool shortPortrait = !landscape && constraints.maxHeight < 680;
+          final bool shortPortrait =
+              !landscape && constraints.maxHeight < 680;
           if (isDesktop) {
             return _DesktopSetupLayout(
               busy: busy,
@@ -325,6 +329,7 @@ class _DesktopDivider extends StatelessWidget {
     );
   }
 }
+
 
 class _PortraitSetupLayout extends StatelessWidget {
   const _PortraitSetupLayout({
@@ -519,37 +524,19 @@ class _SetupHeadline extends StatelessWidget {
           'Get ready to use Kudlit',
           style: TextStyle(
             color: KudlitColors.blue900,
-            fontSize: large
-                ? 32
-                : compact
-                ? 24
-                : 28,
+            fontSize: large ? 32 : compact ? 24 : 28,
             fontWeight: FontWeight.w700,
           ),
         ),
-        SizedBox(
-          height: large
-              ? 14
-              : compact
-              ? 8
-              : 10,
-        ),
+        SizedBox(height: large ? 14 : compact ? 8 : 10),
         Text(
           kIsWeb
               ? 'Set up the downloads Kudlit needs before you start.'
               : 'Download these once so key features can keep working even without internet.',
           style: TextStyle(
             color: KudlitColors.grey300,
-            fontSize: large
-                ? 16
-                : compact
-                ? 13
-                : 15,
-            height: large
-                ? 1.6
-                : compact
-                ? 1.35
-                : 1.55,
+            fontSize: large ? 16 : compact ? 13 : 15,
+            height: large ? 1.6 : compact ? 1.35 : 1.55,
           ),
         ),
       ],
