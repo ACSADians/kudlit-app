@@ -50,13 +50,23 @@ void main() {
   });
 
   test(
-    'web status alignment stays centered for camera prompts and detection',
+    'web camera alignment helper centers permission-related and initializing states',
     () {
       expect(
-        webStatusAlignment(WebScannerStatus.permissionNeeded),
-        Alignment.center,
+        shouldCenterWebScannerStatus(WebScannerStatus.initializing),
+        isTrue,
       );
-      expect(webStatusAlignment(WebScannerStatus.detecting), Alignment.center);
+      expect(
+        shouldCenterWebScannerStatus(WebScannerStatus.permissionNeeded),
+        isTrue,
+      );
+      expect(shouldCenterWebScannerStatus(WebScannerStatus.error), isTrue);
+      expect(shouldCenterWebScannerStatus(WebScannerStatus.ready), isFalse);
+      expect(
+        shouldCenterWebScannerStatus(WebScannerStatus.modelUnavailable),
+        isFalse,
+      );
+      expect(shouldCenterWebScannerStatus(WebScannerStatus.detecting), isFalse);
     },
   );
 
@@ -146,36 +156,6 @@ void main() {
 
     expect(find.text('Camera ready'), findsOneWidget);
     expect(find.textContaining('raw exception'), findsNothing);
-    expect(tester.takeException(), isNull);
-  });
-
-  testWidgets('detecting status shows centered progress treatment', (
-    WidgetTester tester,
-  ) async {
-    await tester.binding.setSurfaceSize(const Size(320, 480));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: Center(
-            child: WebStatusMessage(
-              cs: ThemeData.dark().colorScheme,
-              status: WebScannerStatus.detecting,
-              showCompact: false,
-            ),
-          ),
-        ),
-      ),
-    );
-
-    expect(find.text('Detecting'), findsOneWidget);
-    expect(
-      find.text('Hold still while Kudlit reads the frame.'),
-      findsOneWidget,
-    );
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
-    expect(find.byType(LinearProgressIndicator), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

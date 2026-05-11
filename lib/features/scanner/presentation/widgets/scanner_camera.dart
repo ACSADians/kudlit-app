@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer' as developer;
 
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
@@ -74,6 +75,66 @@ bool isWebCameraSecureContext(Uri uri) {
       host == '::1';
 }
 
+bool _isPermissionError(Object error) {
+  final String message = error.toString().toLowerCase();
+  return message.contains('permission') ||
+      message.contains('denied') ||
+      message.contains('notallowed') ||
+      message.contains('not allowed') ||
+      message.contains('not granted') ||
+      message.contains('camera access') ||
+      message.contains('user media') ||
+      message.contains('user denied') ||
+      message.contains('forbidden');
+}
+
+bool _isPermissionErrorCode(String code) {
+  return code.contains('permission') ||
+      code == 'security' ||
+      code == 'cameraunknown' ||
+      code.contains('denied') ||
+      code.contains('notallowed') ||
+      code.contains('notallowederror') ||
+      code.contains('permissiondeniederror') ||
+      code.contains('notgranted') ||
+      code.contains('forbidden');
+}
+
+String? _qaCameraStatusValueFromUri() {
+  final String? direct = Uri.base.queryParameters['qa_camera_status'];
+  if (direct != null && direct.isNotEmpty) return direct;
+
+  final String fragment = Uri.base.fragment;
+  final int qIndex = fragment.indexOf('?');
+  if (qIndex == -1 || qIndex == fragment.length - 1) return null;
+
+  final String hashQuery = fragment.substring(qIndex + 1);
+  return Uri(query: '?$hashQuery').queryParameters['qa_camera_status'];
+}
+
+bool _shouldRunQaCameraStatusProbe() {
+  return _qaCameraStatusValueFromUri() != null;
+}
+
+void _emitQaCameraStatusProbeLog(WebScannerStatus status, String? message) {
+  if (!_shouldRunQaCameraStatusProbe()) return;
+
+  final String effectiveMessage = message == null
+      ? status.label
+      : '${status.label}: $message';
+  developer.log(
+    'status=${status.name} message="${effectiveMessage.replaceAll('\n', ' ')}"',
+    name: 'E2E_SCANNER_STATUS',
+  );
+}
+
+@visibleForTesting
+bool shouldCenterWebScannerStatus(WebScannerStatus status) {
+  return status == WebScannerStatus.error ||
+      status == WebScannerStatus.permissionNeeded ||
+      status == WebScannerStatus.initializing;
+}
+
 @visibleForTesting
 int preferredWebCameraIndex(List<CameraDescription> cameras) {
   final int backCamera = cameras.indexWhere(
@@ -117,9 +178,6 @@ extension WebScannerStatusMeta on WebScannerStatus {
     WebScannerStatus.error => Icons.error_outline_rounded,
   };
 }
-
-@visibleForTesting
-Alignment webStatusAlignment(WebScannerStatus status) => Alignment.center;
 
 /// On web shows a real browser webcam preview and capture-based detection.
 class ScannerCamera extends ConsumerStatefulWidget {
@@ -351,7 +409,7 @@ class _WebCameraPreviewState extends ConsumerState<_WebCameraPreview> {
   }
 
   bool _shouldRunQaStatusTransition() {
-    return Uri.base.queryParameters['qa_camera_status'] == 'unavail-ready';
+    return _qaCameraStatusValueFromUri() == 'unavail-ready';
   }
 
   void _runQaStatusTransitionDemo() {
@@ -397,21 +455,28 @@ class _WebCameraPreviewState extends ConsumerState<_WebCameraPreview> {
       _activeCameraIndex = preferredWebCameraIndex(cameras);
       await _initializeCamera(cameras[_activeCameraIndex]);
     } on CameraException catch (e) {
+      final String code = e.code.toLowerCase();
+      final String description = e.description?.toLowerCase() ?? '';
+      _logQaCameraInitError(e);
       final bool denied =
-          e.code == 'CameraAccessDenied' ||
-          e.code == 'cameraPermission' ||
-          e.description?.toLowerCase().contains('permission') == true;
+          _isPermissionErrorCode(code) ||
+          _isPermissionError(description) ||
+          (code == 'cameraunknown' &&
+              description.contains('fetching the camera stream'));
       _setStatus(
         denied ? WebScannerStatus.permissionNeeded : WebScannerStatus.error,
         message: denied
             ? 'Camera permission is blocked. Allow camera access in the browser, then reload.'
             : 'Camera preview could not start. Use Gallery to test an image.',
       );
-    } catch (_) {
+    } catch (error) {
+      _logQaCameraInitError(error, StackTrace.current);
+      final bool denied = _isPermissionError(error);
       _setStatus(
-        WebScannerStatus.error,
-        message:
-            'Camera preview could not start. Use Gallery to test an image.',
+        denied ? WebScannerStatus.permissionNeeded : WebScannerStatus.error,
+        message: denied
+            ? 'Camera permission is blocked. Allow camera access in the browser, then reload.'
+            : 'Camera preview could not start. Use Gallery to test an image.',
       );
     }
   }
@@ -516,7 +581,7 @@ class _WebCameraPreviewState extends ConsumerState<_WebCameraPreview> {
       return const ScanNotice(
         title: 'Web model unavailable',
         message:
-            'Camera reading is not ready right now. Use Gallery for now and try again later.',
+            'The active scanner model file is missing from storage. Use Gallery for now or update the model URL.',
         kind: ScanNoticeKind.error,
       );
     }
@@ -524,14 +589,15 @@ class _WebCameraPreviewState extends ConsumerState<_WebCameraPreview> {
       return const ScanNotice(
         title: 'Web model unavailable',
         message:
-            'Camera reading could not start right now. Please try again later.',
+            'The scanner model could not be loaded by the browser. Check CORS or the public model URL.',
         kind: ScanNoticeKind.error,
       );
     }
     if (raw.contains('tensor') || raw.contains('shape')) {
       return const ScanNotice(
-        title: 'Scanner unavailable',
-        message: 'Camera reading is not available for this setup yet.',
+        title: 'Model not compatible',
+        message:
+            'This model output does not match the web scanner parser. Use a YOLO TFLite model with the expected class order.',
         kind: ScanNoticeKind.error,
       );
     }
@@ -552,11 +618,22 @@ class _WebCameraPreviewState extends ConsumerState<_WebCameraPreview> {
 
   void _setStatus(WebScannerStatus status, {String? message}) {
     if (!mounted) return;
+    _emitQaCameraStatusProbeLog(status, message);
     setState(() {
       _status = status;
       _message = message;
     });
     widget.onStatusChanged?.call(status);
+  }
+
+  void _logQaCameraInitError(Object error, [StackTrace? stackTrace]) {
+    if (!_shouldRunQaCameraStatusProbe()) return;
+    developer.log(
+      'camera-init-error: ${error.toString().replaceAll('\n', ' ')}',
+      name: 'E2E_SCANNER_STATUS',
+      error: error,
+      stackTrace: stackTrace,
+    );
   }
 
   @override
@@ -577,10 +654,17 @@ class _WebCameraPreviewState extends ConsumerState<_WebCameraPreview> {
                 : constraints.maxWidth < 380
                 ? 14
                 : 28;
+            final bool centerUnavailable = shouldCenterWebScannerStatus(
+              _status,
+            );
             return Align(
-              alignment: webStatusAlignment(_status),
+              alignment: centerUnavailable
+                  ? Alignment.center
+                  : Alignment.centerLeft,
               child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                padding: EdgeInsets.symmetric(
+                  horizontal: centerUnavailable ? 24 : horizontalPadding,
+                ),
                 child: WebStatusMessage(
                   cs: cs,
                   status: _status,
@@ -627,11 +711,10 @@ class WebStatusMessage extends StatelessWidget {
             : 360;
         final double maxWidth = availableWidth.clamp(200.0, 240.0);
         final bool narrow = maxWidth < 300;
-        final String? effectiveMessage = message ?? _defaultMessage();
 
-        final String semanticLabel = effectiveMessage == null
+        final String semanticLabel = message == null
             ? status.label
-            : '${status.label}. $effectiveMessage';
+            : '${status.label}. $message';
 
         return Semantics(
           label: semanticLabel,
@@ -660,11 +743,14 @@ class WebStatusMessage extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
-                  _StatusVisual(
-                    cs: cs,
-                    status: status,
-                    showCompact: showCompact,
-                    narrow: narrow,
+                  Icon(
+                    status.icon,
+                    size: showCompact
+                        ? 24
+                        : narrow
+                        ? 28
+                        : 32,
+                    color: _statusIconColor(cs),
                   ),
                   SizedBox(height: showCompact || narrow ? 8 : 10),
                   Text(
@@ -682,10 +768,10 @@ class WebStatusMessage extends StatelessWidget {
                       color: cs.onSurface,
                     ),
                   ),
-                  if (effectiveMessage != null) const SizedBox(height: 6),
-                  if (effectiveMessage != null)
+                  if (message != null) const SizedBox(height: 6),
+                  if (message != null)
                     Text(
-                      effectiveMessage,
+                      message!,
                       textAlign: TextAlign.center,
                       softWrap: true,
                       maxLines: 3,
@@ -696,17 +782,6 @@ class WebStatusMessage extends StatelessWidget {
                         color: cs.onSurface.withAlpha(190),
                       ),
                     ),
-                  if (status == WebScannerStatus.detecting) ...<Widget>[
-                    const SizedBox(height: 10),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(999),
-                      child: LinearProgressIndicator(
-                        minHeight: 6,
-                        backgroundColor: cs.tertiary.withAlpha(36),
-                        valueColor: AlwaysStoppedAnimation<Color>(cs.tertiary),
-                      ),
-                    ),
-                  ],
                 ],
               ),
             ),
@@ -738,105 +813,13 @@ class WebStatusMessage extends StatelessWidget {
     };
   }
 
-  String? _defaultMessage() {
-    return switch (status) {
-      WebScannerStatus.detecting => 'Hold still while Kudlit reads the frame.',
-      _ => null,
-    };
-  }
-}
-
-class _StatusVisual extends StatelessWidget {
-  const _StatusVisual({
-    required this.cs,
-    required this.status,
-    required this.showCompact,
-    required this.narrow,
-  });
-
-  final ColorScheme cs;
-  final WebScannerStatus status;
-  final bool showCompact;
-  final bool narrow;
-
-  @override
-  Widget build(BuildContext context) {
-    final double iconSize = showCompact
-        ? 24
-        : narrow
-        ? 28
-        : 32;
-    final double frameSize = showCompact
-        ? 44
-        : narrow
-        ? 52
-        : 58;
-    final Color iconColor = _iconColor();
-    final Color fillColor = _fillColor();
-
-    final Widget iconFrame = Container(
-      width: frameSize,
-      height: frameSize,
-      decoration: BoxDecoration(
-        color: fillColor,
-        shape: BoxShape.circle,
-        border: Border.all(color: iconColor.withAlpha(60)),
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: iconColor.withAlpha(
-              status == WebScannerStatus.detecting ? 46 : 22,
-            ),
-            blurRadius: status == WebScannerStatus.detecting ? 18 : 10,
-            spreadRadius: status == WebScannerStatus.detecting ? 1 : 0,
-          ),
-        ],
-      ),
-      child: Icon(status.icon, size: iconSize, color: iconColor),
-    );
-
-    if (status != WebScannerStatus.detecting) {
-      return iconFrame;
-    }
-
-    return SizedBox(
-      width: frameSize + 10,
-      height: frameSize + 10,
-      child: Stack(
-        alignment: Alignment.center,
-        children: <Widget>[
-          SizedBox(
-            width: frameSize + 10,
-            height: frameSize + 10,
-            child: CircularProgressIndicator(
-              strokeWidth: 2.4,
-              backgroundColor: cs.tertiary.withAlpha(28),
-              valueColor: AlwaysStoppedAnimation<Color>(cs.tertiary),
-            ),
-          ),
-          iconFrame,
-        ],
-      ),
-    );
-  }
-
-  Color _iconColor() {
+  Color _statusIconColor(ColorScheme cs) {
     return switch (status) {
       WebScannerStatus.ready => cs.primary,
       WebScannerStatus.detecting => cs.tertiary,
       WebScannerStatus.modelUnavailable || WebScannerStatus.error => cs.error,
       WebScannerStatus.initializing ||
       WebScannerStatus.permissionNeeded => cs.onSurface.withAlpha(190),
-    };
-  }
-
-  Color _fillColor() {
-    return switch (status) {
-      WebScannerStatus.ready => cs.primaryContainer.withAlpha(210),
-      WebScannerStatus.detecting => cs.tertiaryContainer.withAlpha(230),
-      WebScannerStatus.modelUnavailable ||
-      WebScannerStatus.error => cs.errorContainer.withAlpha(220),
-      WebScannerStatus.initializing || WebScannerStatus.permissionNeeded =>
-        cs.surfaceContainerHighest.withAlpha(220),
     };
   }
 }
