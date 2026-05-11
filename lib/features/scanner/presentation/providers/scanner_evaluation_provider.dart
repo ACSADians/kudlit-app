@@ -124,7 +124,7 @@ class ScannerEvaluationNotifier extends Notifier<ScanEvalState> {
       ),
       ChatMessage(
         text:
-            "Tell me more about this word — its meaning, how it's used, "
+            'Tell me more about this word — its meaning, how it\'s used, '
             'or something interesting about it.',
         isUser: true,
         timestamp: DateTime.now(),
