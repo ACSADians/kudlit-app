@@ -9,10 +9,12 @@ import 'package:kudlit_ph/features/home/presentation/widgets/settings/ai_models_
 import 'package:kudlit_ph/features/home/presentation/widgets/settings/vision_download_tile.dart';
 import 'package:kudlit_ph/features/scanner/data/datasources/yolo_model_cache.dart';
 import 'package:kudlit_ph/features/scanner/presentation/providers/yolo_model_selection_provider.dart';
+import 'package:kudlit_ph/features/translator/data/datasources/local_gemma_datasource.dart';
 import 'package:kudlit_ph/features/translator/domain/entities/ai_model_info.dart';
 import 'package:kudlit_ph/features/translator/domain/entities/gemma_model_info.dart';
 import 'package:kudlit_ph/features/translator/presentation/providers/ai_inference_provider.dart';
 import 'package:kudlit_ph/features/translator/presentation/providers/ai_inference_state.dart';
+import 'package:kudlit_ph/features/translator/presentation/providers/translator_providers.dart';
 
 void main() {
   setUp(() {
@@ -229,6 +231,13 @@ List<Override> _modelOverrides(
           ];
     }),
     aiInferenceNotifierProvider.overrideWith(_ReadyInferenceNotifier.new),
+    localModelReadinessProvider.overrideWith((Ref ref) async {
+      return const LocalGemmaReadiness(
+        installed: true,
+        usable: true,
+        detail: 'Downloaded',
+      );
+    }),
   ];
 }
 
