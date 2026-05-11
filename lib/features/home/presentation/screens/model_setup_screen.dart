@@ -96,6 +96,7 @@ class _SetupBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDesktop = MediaQuery.sizeOf(context).width >= 900;
     return Stack(
       fit: StackFit.expand,
       children: <Widget>[
@@ -112,28 +113,43 @@ class _SetupBackground extends StatelessWidget {
         ),
         // Faded Baybayin glyphs
         const BaybayinBackdrop(),
-        // Soft radial aura concentrated in the upper third (behind Butty)
-        Positioned(
-          top: -40,
-          left: 0,
-          right: 0,
-          child: Center(
-            child: Container(
-              width: 280,
-              height: 280,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: <Color>[
-                    KudlitColors.blue400.withAlpha(90),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
+        // Soft radial aura — larger on desktop for a more dramatic backdrop
+        _AuraGlow(
+          size: isDesktop ? 520 : 280,
+          top: isDesktop ? -100 : -40,
+        ),
+      ],
+    );
+  }
+}
+
+class _AuraGlow extends StatelessWidget {
+  const _AuraGlow({required this.size, required this.top});
+
+  final double size;
+  final double top;
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      top: top,
+      left: 0,
+      right: 0,
+      child: Center(
+        child: Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: RadialGradient(
+              colors: <Color>[
+                KudlitColors.blue400.withAlpha(90),
+                Colors.transparent,
+              ],
             ),
           ),
         ),
-      ],
+      ),
     );
   }
 }
@@ -156,8 +172,18 @@ class _ModelSetupBody extends StatelessWidget {
     return SafeArea(
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
+          final bool isDesktop = constraints.maxWidth >= 900;
           final bool landscape = constraints.maxWidth > constraints.maxHeight;
-          final bool shortPortrait = constraints.maxHeight < 680;
+          final bool shortPortrait =
+              !landscape && constraints.maxHeight < 680;
+          if (isDesktop) {
+            return _DesktopSetupLayout(
+              busy: busy,
+              onContinue: onContinue,
+              onSkip: onSkip,
+              errorMessage: errorMessage,
+            );
+          }
           return landscape
               ? _LandscapeSetupLayout(
                   busy: busy,
@@ -184,6 +210,127 @@ class _ModelSetupBody extends StatelessWidget {
   }
 }
 
+class _DesktopSetupLayout extends StatelessWidget {
+  const _DesktopSetupLayout({
+    required this.busy,
+    required this.onContinue,
+    required this.onSkip,
+    this.errorMessage,
+  });
+
+  final bool busy;
+  final VoidCallback onContinue;
+  final VoidCallback onSkip;
+  final String? errorMessage;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 32),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 860),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(44, 48, 44, 48),
+            decoration: BoxDecoration(
+              color: KudlitColors.blue100,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: KudlitColors.blue300.withAlpha(90),
+                width: 1.5,
+              ),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: <Widget>[
+                const Expanded(flex: 5, child: _DesktopBranding()),
+                const _DesktopDivider(),
+                Expanded(
+                  flex: 4,
+                  child: _DesktopFormPanel(
+                    busy: busy,
+                    onContinue: onContinue,
+                    onSkip: onSkip,
+                    errorMessage: errorMessage,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DesktopBranding extends StatelessWidget {
+  const _DesktopBranding();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 36),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: const <Widget>[
+          _SetupHero(height: 150),
+          SizedBox(height: 28),
+          _SetupHeadline(large: true),
+        ],
+      ),
+    );
+  }
+}
+
+class _DesktopFormPanel extends StatelessWidget {
+  const _DesktopFormPanel({
+    required this.busy,
+    required this.onContinue,
+    required this.onSkip,
+    this.errorMessage,
+  });
+
+  final bool busy;
+  final VoidCallback onContinue;
+  final VoidCallback onSkip;
+  final String? errorMessage;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        const _ModelDownloadsPanel(),
+        const SizedBox(height: 14),
+        const _DownloadNotice(),
+        if (errorMessage != null) ...<Widget>[
+          const SizedBox(height: 10),
+          _SetupErrorBanner(message: errorMessage!),
+        ],
+        const SizedBox(height: 28),
+        _SetupActions(busy: busy, onContinue: onContinue, onSkip: onSkip),
+      ],
+    );
+  }
+}
+
+class _DesktopDivider extends StatelessWidget {
+  const _DesktopDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 1,
+      height: 280,
+      margin: const EdgeInsets.only(right: 36),
+      color: KudlitColors.blue300.withAlpha(70),
+    );
+  }
+}
+
+
 class _PortraitSetupLayout extends StatelessWidget {
   const _PortraitSetupLayout({
     required this.busy,
@@ -199,27 +346,32 @@ class _PortraitSetupLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          const Spacer(flex: 2),
-          const _SetupHero(),
-          const SizedBox(height: 20),
-          const _SetupHeadline(),
-          const SizedBox(height: 18),
-          const _ModelDownloadsPanel(),
-          const SizedBox(height: 10),
-          const _DownloadNotice(),
-          if (errorMessage != null) ...<Widget>[
-            const SizedBox(height: 10),
-            _SetupErrorBanner(message: errorMessage!),
-          ],
-          const Spacer(flex: 3),
-          _SetupActions(busy: busy, onContinue: onContinue, onSkip: onSkip),
-          const SizedBox(height: 12),
-        ],
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 460),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              const Spacer(flex: 2),
+              const _SetupHero(),
+              const SizedBox(height: 20),
+              const _SetupHeadline(),
+              const SizedBox(height: 18),
+              const _ModelDownloadsPanel(),
+              const SizedBox(height: 10),
+              const _DownloadNotice(),
+              if (errorMessage != null) ...<Widget>[
+                const SizedBox(height: 10),
+                _SetupErrorBanner(message: errorMessage!),
+              ],
+              const Spacer(flex: 3),
+              _SetupActions(busy: busy, onContinue: onContinue, onSkip: onSkip),
+              const SizedBox(height: 12),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -358,9 +510,10 @@ class _SetupHero extends StatelessWidget {
 }
 
 class _SetupHeadline extends StatelessWidget {
-  const _SetupHeadline({this.compact = false});
+  const _SetupHeadline({this.compact = false, this.large = false});
 
   final bool compact;
+  final bool large;
 
   @override
   Widget build(BuildContext context) {
@@ -371,19 +524,19 @@ class _SetupHeadline extends StatelessWidget {
           'Get ready to use Kudlit',
           style: TextStyle(
             color: KudlitColors.blue900,
-            fontSize: compact ? 24 : 28,
+            fontSize: large ? 32 : compact ? 24 : 28,
             fontWeight: FontWeight.w700,
           ),
         ),
-        SizedBox(height: compact ? 8 : 10),
+        SizedBox(height: large ? 14 : compact ? 8 : 10),
         Text(
           kIsWeb
               ? 'Set up the downloads Kudlit needs before you start.'
               : 'Download these once so key features can keep working even without internet.',
           style: TextStyle(
             color: KudlitColors.grey300,
-            fontSize: compact ? 13 : 15,
-            height: compact ? 1.35 : 1.55,
+            fontSize: large ? 16 : compact ? 13 : 15,
+            height: large ? 1.6 : compact ? 1.35 : 1.55,
           ),
         ),
       ],
