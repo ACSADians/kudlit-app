@@ -55,7 +55,7 @@ class _StatusContent extends ConsumerWidget {
       AiReady(:final AiPreference mode) =>
         mode == AiPreference.cloud
             ? Text(
-                'Online help is active. Offline download is optional.',
+                'Internet mode is active. Offline download is optional.',
                 style: TextStyle(
                   color: cs.onSurface.withAlpha(150),
                   fontSize: 13,
@@ -78,7 +78,7 @@ class _StatusContent extends ConsumerWidget {
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
-                  'Offline help is not downloaded yet.',
+                  'Offline replies are not downloaded yet.',
                   style: TextStyle(color: cs.error, fontSize: 13),
                 ),
               ),
@@ -139,7 +139,7 @@ class _StatusContent extends ConsumerWidget {
         style: TextStyle(color: cs.error, fontSize: 13),
       ),
       _ => Text(
-        'Getting offline help ready…',
+        'Getting offline replies ready…',
         style: TextStyle(color: cs.onSurface.withAlpha(150), fontSize: 13),
       ),
     };

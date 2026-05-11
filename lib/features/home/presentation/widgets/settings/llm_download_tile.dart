@@ -36,7 +36,7 @@ class LlmDownloadTile extends ConsumerWidget {
           const _TileHeader(
             icon: Icons.psychology_rounded,
             label: 'Butty replies',
-            sublabel: 'Offline help  ·  large download',
+            sublabel: 'Offline replies  ·  large download',
           ),
           const SizedBox(height: 10),
           _LlmStatusRow(
@@ -373,7 +373,7 @@ class _ErrRow extends StatelessWidget {
 String _friendlyLlmModelError(String rawMessage) {
   final String message = rawMessage.trim();
   if (message.isEmpty) {
-    return 'Offline setup is paused. You can keep using online help and try again later.';
+    return 'Offline setup is paused. You can stay on internet mode and try again later.';
   }
 
   final String lower = message.toLowerCase();
@@ -394,7 +394,7 @@ String _friendlyLlmModelError(String rawMessage) {
   }
 
   if (lower.contains('no ai models configured')) {
-    return 'Offline downloads are not available right now. You can keep using online help for now.';
+    return 'Offline downloads are not available right now. You can stay on internet mode for now.';
   }
 
   final bool looksTechnical =
@@ -405,7 +405,7 @@ String _friendlyLlmModelError(String rawMessage) {
       lower.contains('uri=') ||
       lower.contains('https://');
   if (looksTechnical) {
-    return 'Offline setup is paused. You can keep using online help and try again later.';
+    return 'Offline setup is paused. You can stay on internet mode and try again later.';
   }
 
   return message;

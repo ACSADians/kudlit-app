@@ -52,7 +52,7 @@ class _ModelSetupScreenState extends ConsumerState<ModelSetupScreen> {
   String _friendlyModelSetupError(String rawMessage) {
     final String message = rawMessage.trim();
     if (message.isEmpty) {
-      return 'Offline setup is paused. You can keep using online help and try again later.';
+      return 'Offline setup is paused. You can stay on internet mode and try again later.';
     }
 
     final String lower = message.toLowerCase();
@@ -73,7 +73,7 @@ class _ModelSetupScreenState extends ConsumerState<ModelSetupScreen> {
     }
 
     if (lower.contains('no ai models configured')) {
-      return 'Offline downloads are not available right now. You can keep using online help for now.';
+      return 'Offline downloads are not available right now. You can stay on internet mode for now.';
     }
 
     final bool looksTechnical =
@@ -84,7 +84,7 @@ class _ModelSetupScreenState extends ConsumerState<ModelSetupScreen> {
         lower.contains('uri=') ||
         lower.contains('https://');
     if (looksTechnical) {
-      return 'Offline setup is paused. You can keep using online help and try again later.';
+      return 'Offline setup is paused. You can stay on internet mode and try again later.';
     }
 
     return message;
@@ -494,7 +494,7 @@ class _SetupActions extends StatelessWidget {
             disabledForegroundColor: KudlitColors.grey500,
           ),
           child: const Text(
-            'Not now - use online help',
+            'Not now - stay on internet mode',
             style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
           ),
         ),

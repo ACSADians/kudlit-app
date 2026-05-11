@@ -46,9 +46,9 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Butty replies'), findsOneWidget);
-    expect(find.text('Offline help  ·  large download'), findsOneWidget);
+    expect(find.text('Offline replies  ·  large download'), findsOneWidget);
     expect(find.text('Needs download'), findsWidgets);
-    expect(find.text('Camera reading'), findsOneWidget);
+    expect(find.text('KudVis-1-Turbo'), findsOneWidget);
     expect(find.text('Reads Baybayin with your camera'), findsOneWidget);
     expect(
       find.text('Download once before using camera reading.'),
@@ -127,6 +127,7 @@ void main() {
     await tester.pump();
     await tester.pump();
 
+    expect(find.text('KudVis-Pro'), findsOneWidget);
     expect(find.text('Ready to scan'), findsOneWidget);
 
     await tester.tap(find.text('Set up again'));

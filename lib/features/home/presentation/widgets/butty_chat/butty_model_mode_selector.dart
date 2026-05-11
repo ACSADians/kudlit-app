@@ -56,8 +56,8 @@ class ButtyModelModeSelector extends ConsumerWidget {
       AsyncData(:final ButtyOfflineStatus value) =>
         value.detail ?? 'Offline status unknown.',
       AsyncError() =>
-        'Offline check failed. Use online help or try again later.',
-      _ => 'Checking whether offline help is ready…',
+        'Offline check failed. Stay on internet mode or try again later.',
+      _ => 'Checking whether offline replies are ready…',
     };
 
     final Widget pills = Container(
