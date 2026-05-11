@@ -1,27 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:kudlit_ph/features/home/presentation/providers/app_preferences_provider.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/settings/ai_models_section.dart';
+import 'package:kudlit_ph/features/home/presentation/widgets/settings/profile_management_action_button.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/settings/vision_download_tile.dart';
 import 'package:kudlit_ph/features/scanner/data/datasources/yolo_model_cache.dart';
 import 'package:kudlit_ph/features/scanner/presentation/providers/yolo_model_selection_provider.dart';
-import 'package:kudlit_ph/features/translator/data/datasources/local_gemma_datasource.dart';
 import 'package:kudlit_ph/features/translator/domain/entities/ai_model_info.dart';
 import 'package:kudlit_ph/features/translator/domain/entities/gemma_model_info.dart';
 import 'package:kudlit_ph/features/translator/presentation/providers/ai_inference_provider.dart';
 import 'package:kudlit_ph/features/translator/presentation/providers/ai_inference_state.dart';
-import 'package:kudlit_ph/features/translator/presentation/providers/translator_providers.dart';
 
 void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues(<String, Object>{});
   });
 
-  testWidgets('offline downloads section keeps setup cards minimal', (
+  testWidgets('offline downloads section frames setup in plain language', (
     tester,
   ) async {
     await tester.binding.setSurfaceSize(const Size(360, 740));
@@ -46,14 +45,15 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(find.text('Butty AI'), findsOneWidget);
-    expect(find.text('Offline chat  ·  large download'), findsOneWidget);
-    expect(find.text('Downloaded'), findsWidgets);
+    expect(find.text('Butty replies'), findsOneWidget);
+    expect(find.text('Offline replies  ·  large download'), findsOneWidget);
+    expect(find.text('Needs download'), findsWidgets);
     expect(find.text('KudVis-1-Turbo'), findsOneWidget);
     expect(find.text('Reads Baybayin with your camera'), findsOneWidget);
-    expect(find.text('Download before using the scanner.'), findsOneWidget);
-    expect(find.text('Needs download'), findsNothing);
-    expect(find.text('Ready to scan'), findsNothing);
+    expect(
+      find.text('Download once before using camera reading.'),
+      findsOneWidget,
+    );
     expect(tester.takeException(), isNull);
   });
 
@@ -75,7 +75,7 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    await tester.tap(find.byTooltip('Download scanner model'));
+    await tester.tap(find.text('Set up'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
@@ -128,9 +128,9 @@ void main() {
     await tester.pump();
 
     expect(find.text('KudVis-Pro'), findsOneWidget);
-    expect(find.text('Downloaded'), findsWidgets);
+    expect(find.text('Ready to scan'), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Refresh scanner model'));
+    await tester.tap(find.text('Set up again'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
@@ -164,10 +164,10 @@ void main() {
     await tester.pump();
 
     final Rect supportText = tester.getRect(
-      find.text('Download before using the scanner.'),
+      find.text('Download once before using camera reading.'),
     );
     final Rect downloadButton = tester.getRect(
-      find.byTooltip('Download scanner model'),
+      find.widgetWithText(ProfileManagementActionButton, 'Set up'),
     );
 
     expect(downloadButton.top, greaterThan(supportText.bottom));
@@ -204,8 +204,8 @@ void main() {
     await tester.pump();
 
     expect(find.text('Use Kudlit offline'), findsOneWidget);
-    expect(find.text('Needs download'), findsNothing);
-    expect(find.byType(IconButton), findsWidgets);
+    expect(find.text('Needs download'), findsWidgets);
+    expect(find.byType(ProfileManagementActionButton), findsWidgets);
     expect(tester.takeException(), isNull);
   });
 }
@@ -231,13 +231,6 @@ List<Override> _modelOverrides(
           ];
     }),
     aiInferenceNotifierProvider.overrideWith(_ReadyInferenceNotifier.new),
-    localModelReadinessProvider.overrideWith((Ref ref) async {
-      return const LocalGemmaReadiness(
-        installed: true,
-        usable: true,
-        detail: 'Downloaded',
-      );
-    }),
   ];
 }
 
@@ -284,8 +277,9 @@ class _FakeYoloModelCache implements YoloModelCacheStore {
     void Function(int received, int total)? onProgress,
   }) async {
     downloadedIds.add(modelId);
+    onProgress?.call(1, 2);
     installed = true;
-    onProgress?.call(1, 1);
+    onProgress?.call(2, 2);
     return '/tmp/$modelId.tflite';
   }
 

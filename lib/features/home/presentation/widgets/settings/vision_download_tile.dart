@@ -8,6 +8,8 @@ import 'package:kudlit_ph/features/scanner/data/datasources/web_vision_model_pre
 import 'package:kudlit_ph/features/scanner/presentation/providers/yolo_model_selection_provider.dart';
 import 'package:kudlit_ph/features/translator/domain/entities/ai_model_info.dart';
 
+import 'profile_management_action_button.dart';
+
 class VisionDownloadTile extends ConsumerStatefulWidget {
   const VisionDownloadTile({super.key});
 
@@ -96,58 +98,38 @@ class _VisionDownloadTileState extends ConsumerState<VisionDownloadTile> {
           modelsAsync.when(
             loading: () => const _CheckingRow(),
             error: (Object e, _) => _ErrRow(message: e.toString()),
-            data: (List<AiModelInfo> models) => _VisionDownloadBody(
-              models: models,
-              activeModelAsync: activeModelAsync,
-              downloading: _downloading,
-              progress: _progress,
-              error: _error,
-              onPrepare: _prepare,
-            ),
+            data: (List<AiModelInfo> models) => _body(models, activeModelAsync),
           ),
         ],
       ),
     );
   }
-}
 
-class _VisionDownloadBody extends StatelessWidget {
-  const _VisionDownloadBody({
-    required this.models,
-    required this.activeModelAsync,
-    required this.downloading,
-    required this.progress,
-    required this.onPrepare,
-    this.error,
-  });
+  Widget _body(
+    List<AiModelInfo> models,
+    AsyncValue<AiModelInfo?> activeModelAsync,
+  ) {
+    if (models.isEmpty) {
+      return const _NoModelRow();
+    }
 
-  final List<AiModelInfo> models;
-  final AsyncValue<AiModelInfo?> activeModelAsync;
-  final bool downloading;
-  final int progress;
-  final String? error;
-  final ValueChanged<AiModelInfo> onPrepare;
-
-  @override
-  Widget build(BuildContext context) {
-    if (models.isEmpty) return const _NoModelRow();
     return activeModelAsync.when(
       loading: () => const _CheckingRow(),
       error: (Object e, _) => _ErrRow(message: e.toString()),
       data: (AiModelInfo? activeModel) {
         final AiModelInfo model = activeModel ?? models.first;
-        if (downloading) {
+
+        if (_downloading) {
           return _DownloadProgressRow(
             label: model.name,
-            progress: progress,
+            progress: _progress,
             checkingWebModel: kIsWeb,
           );
         }
-        if (error != null) return _ErrRow(message: error!);
-        return _VisionStatusRow(
-          model: model,
-          onPrepare: () => onPrepare(model),
-        );
+        if (_error != null) {
+          return _ErrRow(message: _error!);
+        }
+        return _VisionStatusRow(model: model, onPrepare: () => _prepare(model));
       },
     );
   }
@@ -170,26 +152,24 @@ class _VisionStatusRow extends ConsumerWidget {
       data: (VisionModelSetupStatus status) {
         if (status.ready) {
           return _VisionActionRow(
-            supportingText: 'Downloaded',
-            action: _CompactIconActionButton(
-              tooltip: 'Refresh scanner model',
-              icon: Icons.refresh_rounded,
+            badge: const _StatusBadge(label: 'Ready to scan', ok: true),
+            supportingText: 'Downloaded and ready when you open the scanner.',
+            action: ProfileManagementActionButton(
+              label: 'Set up again',
               onTap: onPrepare,
             ),
           );
         }
 
         return _VisionActionRow(
+          badge: const _StatusBadge(label: 'Needs download', ok: false),
           supportingText: kIsWeb
-              ? status.message
-              : 'Download before using the scanner.',
-          action: _CompactIconActionButton(
-            tooltip: kIsWeb ? 'Load scanner model' : 'Download scanner model',
-            icon: kIsWeb
-                ? Icons.cloud_download_rounded
-                : Icons.download_rounded,
-            onTap: onPrepare,
+              ? 'Set this up once to use camera reading in this browser.'
+              : 'Download once before using camera reading.',
+          action: ProfileManagementActionButton(
+            label: 'Set up',
             isPrimary: true,
+            onTap: onPrepare,
           ),
         );
       },
@@ -198,8 +178,13 @@ class _VisionStatusRow extends ConsumerWidget {
 }
 
 class _VisionActionRow extends StatelessWidget {
-  const _VisionActionRow({required this.supportingText, required this.action});
+  const _VisionActionRow({
+    required this.badge,
+    required this.supportingText,
+    required this.action,
+  });
 
+  final Widget badge;
   final String supportingText;
   final Widget action;
 
@@ -209,6 +194,8 @@ class _VisionActionRow extends StatelessWidget {
     final Widget statusCopy = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
+        badge,
+        const SizedBox(height: 6),
         Text(
           supportingText,
           style: TextStyle(
@@ -347,6 +334,34 @@ class _VisionTileHeader extends StatelessWidget {
   }
 }
 
+class _StatusBadge extends StatelessWidget {
+  const _StatusBadge({required this.label, required this.ok});
+
+  final String label;
+  final bool ok;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    final Color bg = ok ? cs.primaryContainer : cs.errorContainer;
+    final Color fg = ok ? cs.onPrimaryContainer : cs.onErrorContainer;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(fontSize: 11, color: fg),
+      ),
+    );
+  }
+}
+
 class _NoModelRow extends StatelessWidget {
   const _NoModelRow();
 
@@ -357,43 +372,6 @@ class _NoModelRow extends StatelessWidget {
       style: TextStyle(
         fontSize: 12,
         color: Theme.of(context).colorScheme.onSurface.withAlpha(128),
-      ),
-    );
-  }
-}
-
-class _CompactIconActionButton extends StatelessWidget {
-  const _CompactIconActionButton({
-    required this.tooltip,
-    required this.icon,
-    required this.onTap,
-    this.isPrimary = false,
-  });
-
-  final String tooltip;
-  final IconData icon;
-  final VoidCallback onTap;
-  final bool isPrimary;
-
-  @override
-  Widget build(BuildContext context) {
-    final ColorScheme cs = Theme.of(context).colorScheme;
-
-    return Tooltip(
-      message: tooltip,
-      child: SizedBox(
-        width: 44,
-        height: 44,
-        child: IconButton(
-          onPressed: onTap,
-          style: IconButton.styleFrom(
-            backgroundColor: isPrimary ? cs.primary : cs.surface,
-            foregroundColor: isPrimary ? cs.onPrimary : cs.onSurface,
-            side: BorderSide(color: isPrimary ? cs.primary : cs.outline),
-            shape: const CircleBorder(),
-          ),
-          icon: Icon(icon, size: 18),
-        ),
       ),
     );
   }
