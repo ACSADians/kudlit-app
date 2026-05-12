@@ -1,4 +1,5 @@
 const fs = require('node:fs');
+const crypto = require('node:crypto');
 const path = require('node:path');
 const { chromium } = require('playwright');
 const { expect, test } = require('@playwright/test');
@@ -62,8 +63,38 @@ function writeScreenshot(page, name) {
   return page.screenshot({ path: filePath, fullPage: true }).then(() => filePath);
 }
 
+function sha256(filePath) {
+  return crypto.createHash('sha256').update(fs.readFileSync(filePath)).digest('hex');
+}
+
+function assertScreenshotArtifacts(artifacts) {
+  expect(artifacts.length, 'expected screenshot artifacts').toBe(4);
+  const names = new Set(artifacts.map((entry) => entry.name));
+  const expectedNames = Object.values(SCREENSHOTS);
+  expect(names.size, 'expected all screenshot names to be unique').toBe(4);
+  for (const expectedName of expectedNames) {
+    expect(names.has(expectedName), `Expected screenshot name: ${expectedName}`).toBe(true);
+  }
+
+  const hashes = new Set();
+  for (const entry of artifacts) {
+    expect(fs.existsSync(entry.path), `Expected ${entry.name} to exist`).toBe(true);
+    expect(fs.statSync(entry.path).size, `${entry.name} should not be empty`).toBeGreaterThan(500);
+    expect(fs.statSync(entry.path).size, `${entry.name} should not be tiny`).toBeGreaterThan(1024);
+    expect(entry.hash).toMatch(/^[a-f0-9]{64}$/);
+    hashes.add(entry.hash);
+  }
+
+  return {
+    uniqueHashCount: hashes.size,
+    hashes: [...hashes],
+  };
+}
+
 test('camera denied and grant transition keeps deterministic permission API + screenshot names', async () => {
   fs.mkdirSync(ARTIFACT_ROOT, { recursive: true });
+  const screenshotArtifacts = [];
+  const logs = [];
 
   const browser = await chromium.launch({
     headless: true,
@@ -73,26 +104,33 @@ test('camera denied and grant transition keeps deterministic permission API + sc
     viewport: VIEWPORT,
   });
   const page = await context.newPage();
-  const logs = [];
-  const url = `${ORIGIN}${SCAN_PATH}&qa_camera_status=denied`;
+  const deniedUrl = `${ORIGIN}${SCAN_PATH}&qa_camera_status=denied`;
 
   page.on('console', (msg) => {
     logs.push(`[${msg.type()}] ${msg.text()}`);
   });
 
-  await page.goto(url, { waitUntil: 'domcontentloaded' });
+  await page.goto(deniedUrl, { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(2500);
 
   const denied = await readPermissionState(page);
   const deniedState = assertStateValue(denied, ['prompt', 'denied']);
 
   const deniedScreenshot = await writeScreenshot(page, SCREENSHOTS.denied);
-  expect(fs.existsSync(deniedScreenshot), `Expected ${SCREENSHOTS.denied} to exist`).toBe(true);
-  expect(fs.statSync(deniedScreenshot).size, 'Screenshot should not be empty').toBeGreaterThan(0);
+  screenshotArtifacts.push({
+    name: SCREENSHOTS.denied,
+    path: deniedScreenshot,
+    hash: sha256(deniedScreenshot),
+    permissionState: deniedState,
+  });
 
   const transitionBefore = await writeScreenshot(page, SCREENSHOTS.transitionBefore);
-  expect(fs.existsSync(transitionBefore), `Expected ${SCREENSHOTS.transitionBefore} to exist`).toBe(true);
-  expect(fs.statSync(transitionBefore).size, 'Screenshot should not be empty').toBeGreaterThan(0);
+  screenshotArtifacts.push({
+    name: SCREENSHOTS.transitionBefore,
+    path: transitionBefore,
+    hash: sha256(transitionBefore),
+    permissionState: deniedState,
+  });
 
   await context.grantPermissions(['camera'], { origin: ORIGIN });
   await page.reload({ waitUntil: 'domcontentloaded' });
@@ -100,10 +138,13 @@ test('camera denied and grant transition keeps deterministic permission API + sc
 
   const granted = await readPermissionState(page);
   const grantedState = assertStateValue(granted, ['granted']);
-
   const transitionAfter = await writeScreenshot(page, SCREENSHOTS.transitionAfter);
-  expect(fs.existsSync(transitionAfter), `Expected ${SCREENSHOTS.transitionAfter} to exist`).toBe(true);
-  expect(fs.statSync(transitionAfter).size, 'Screenshot should not be empty').toBeGreaterThan(0);
+  screenshotArtifacts.push({
+    name: SCREENSHOTS.transitionAfter,
+    path: transitionAfter,
+    hash: sha256(transitionAfter),
+    permissionState: grantedState,
+  });
 
   const grantedScenarioUrl = `${ORIGIN}${SCAN_PATH}&qa_camera_status=granted`;
   await page.goto(grantedScenarioUrl, { waitUntil: 'domcontentloaded' });
@@ -111,8 +152,14 @@ test('camera denied and grant transition keeps deterministic permission API + sc
   const grantedDirect = await readPermissionState(page);
   const grantedDirectState = assertStateValue(grantedDirect, ['granted']);
   const grantedScenarioScreenshot = await writeScreenshot(page, SCREENSHOTS.granted);
-  expect(fs.existsSync(grantedScenarioScreenshot), `Expected ${SCREENSHOTS.granted} to exist`).toBe(true);
-  expect(fs.statSync(grantedScenarioScreenshot).size, 'Screenshot should not be empty').toBeGreaterThan(0);
+  screenshotArtifacts.push({
+    name: SCREENSHOTS.granted,
+    path: grantedScenarioScreenshot,
+    hash: sha256(grantedScenarioScreenshot),
+    permissionState: grantedDirectState,
+  });
+
+  const hashSummary = assertScreenshotArtifacts(screenshotArtifacts);
 
   await page.close();
   await context.close();
@@ -120,7 +167,7 @@ test('camera denied and grant transition keeps deterministic permission API + sc
 
   writeArtifact('camera-permission-transition-regression', {
     scenarioUrls: {
-      denied: url,
+      denied: deniedUrl,
       grantedScenario: grantedScenarioUrl,
     },
     permission: {
@@ -130,9 +177,15 @@ test('camera denied and grant transition keeps deterministic permission API + sc
       grantedDirect: grantedDirectState,
     },
     screenshots: SCREENSHOTS,
+    screenshotSummaries: screenshotArtifacts.map((entry) => ({
+      name: entry.name,
+      permissionState: entry.permissionState,
+      hash: entry.hash,
+      size: fs.statSync(entry.path).size,
+    })),
+    hashSummary,
     logs,
     viewport: VIEWPORT_TAG,
     passedAt: new Date().toISOString(),
   });
-
 });

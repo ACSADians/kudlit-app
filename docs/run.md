@@ -8,41 +8,40 @@ Fix 2 — if that still fails, also disable auth
 
 Camera permission E2E check (scanner)
 
-Use this when validating camera status transitions in web scanner.
+Use this when validating web scanner camera permission transitions.
 
-- Start app on http://127.0.0.1:5173.
+- Start app on `http://127.0.0.1:5173`.
 - From repo root:
-- cd tmp-playwright
-- npm install
-- npm run test:camera-permission-state
-- npm run test:camera-permission-state:mobile-390x844
-- npm run test:camera-permission-state:playwright
-- npm run qa:clean-camera-permission-artifacts
+- `cd "tmp-playwright"`
+- `npm install`
 
-- Manual scripted mobile capture (including blocked/prompt/granted with artifacts):
-  - `node camera-permission-manual-flow-390x844.cjs`
-  - `node camera-permission-manual-flow-390x844.cjs --headed`
+### Recommended quick check
 
-The script covers:
-- denied/prompt state capture
-- denied (prompt blocked) transition
-- granted state after permission grant
+- Run full e2e sweep (clean + mobile + playwright + manual):
+  - `npm run test:camera-permission-state:all-390x844`
 
-The focused Playwright spec (`test:camera-permission-state:playwright`) adds:
-- explicit permission API checks for denied/prompt -> granted transitions
-- deterministic 390x844 screenshot-name coverage
+### Full sequence (if you prefer step-by-step)
 
-Artifacts are written under:
-- tmp-playwright/qa-artifact/camera-permission-state/
-  - camera-permission-denied-camera-state.png
-  - camera-permission-denied.json
-  - camera-permission-granted-camera-state.png
-  - camera-permission-granted.json
-  - camera-permission-transition-before-grant.png
-  - camera-permission-transition-after-grant.png
-  - camera-permission-transition.json
-  - camera-permission-transition-summary.json
+- `npm run test:camera-permission-state:mobile-390x844`
+- `npm run test:camera-permission-state:playwright`
+- `npm run test:camera-permission-state:manual-390x844`
+- `npm run qa:clean-camera-permission-artifacts`
 
-Expected pass criteria:
-- script exits with `[PASS] camera-permission regression test completed`
-- blocked/supported states are emitted in JSON artifacts
+Manual scripted mobile capture (including blocked/prompt/granted states):
+- `npm run test:camera-permission-state:manual-390x844`
+- `node camera-permission-manual-flow-390x844.cjs --headed` (visual review)
+- blocked scenario URL:
+  - `http://127.0.0.1:5173/#/home?tab=scan&scenario=camera-permission-manual&qa_camera_status=denied`
+
+Pass criteria:
+- Playwright regression passes and writes:
+  - `tmp-playwright/qa-artifact/camera-permission-state/transition-regression/camera-permission-transition-regression.json`
+- Mobile regression writes expected 390x844 screenshot names:
+  - `camera-permission-denied-camera-state-390x844.png`
+  - `camera-permission-granted-camera-state-390x844.png`
+  - `camera-permission-transition-before-grant-390x844.png`
+  - `camera-permission-transition-after-grant-390x844.png`
+- Manual flow writes expected artifacts under:
+  - `tmp-playwright/qa-artifact/manual-camera-flow/`
+- Final command prints:
+  - `[PASS] camera permission e2e sweep completed`

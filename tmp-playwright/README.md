@@ -28,44 +28,60 @@ Quick QA entry points for camera permission coverage in web scanner.
   - script prints `[PASS] camera-permission mobile viewport regression completed`
   - all 4 expected screenshot names exist
 
-### 3) Manual capture flow (scanner states)
+### 3) Focused Playwright transition (permission API states + naming)
 
-- Open each URL and capture a screenshot in the same folder:
-  - `http://127.0.0.1:5173/#/home?tab=scan&scenario=denied&qa_camera_status=denied`
-  - `http://127.0.0.1:5173/#/home?tab=scan&scenario=prompt&qa_camera_status=prompt`
-  - `http://127.0.0.1:5173/#/home?tab=scan&scenario=granted&qa_camera_status=granted`
-- Save expected screenshots:
+- Run focused transition + permission API assertions:
+  - `npm run test:camera-permission-state:playwright`
+- Artifacts:
+  - `qa-artifact/camera-permission-state/transition-regression/camera-permission-transition-regression.json`
+  - screenshot set with exact names:
+    - `camera-permission-denied-camera-state-390x844.png`
+    - `camera-permission-transition-before-grant-390x844.png`
+    - `camera-permission-transition-after-grant-390x844.png`
+    - `camera-permission-granted-camera-state-390x844.png`
+- Test validates:
+  - Permission API state transitions from denied/prompt -> granted
+  - Expected screenshot filenames (exact matches)
+  - Browser console output captured in JSON artifact
+
+### 4) Manual capture flow (command + headed)
+
+#### 4.1 Command-line manual capture
+
+- Capture denied/prompt/granted + blocked browser state in one pass:
+  - `npm run test:camera-permission-state:manual-390x844`
+- Capture screenshots and console evidence to:
   - `qa-artifact/manual-camera-flow/denied-camera-status.png`
   - `qa-artifact/manual-camera-flow/prompt-camera-status.png`
   - `qa-artifact/manual-camera-flow/granted-camera-status.png`
-- Save console/state evidence in matching `*.json`.
-
-### 4) Manual scripted capture (recommended)
-
-- One command run (headless):
-  - `node camera-permission-manual-flow-390x844.cjs`
-- One command run (headed browser for visual review):
-  - `node camera-permission-manual-flow-390x844.cjs --headed`
-
-Artifacts:
-- same filenames as above plus:
   - `qa-artifact/manual-camera-flow/denied-browser-blocked-camera-status.png`
-  - `qa-artifact/manual-camera-flow/denied-browser-blocked-camera-status.json`
+  - matching `*.json` state snapshots
+- Expected summary:
   - `qa-artifact/manual-camera-flow/camera-status-manual-summary.json`
 
-### 5) Focused Playwright regression (denied transition + screenshot naming)
+#### 4.2 Visual/manual browser review
 
-- Focused long-lived regression test for permission API state + transition flow:
-  - `npm run test:camera-permission-state:playwright`
-- The test:
-  - verifies permission API state transitions from denied/prompt -> granted
-  - captures `camera-permission-denied-camera-state-390x844.png`
-  - captures `camera-permission-transition-before-grant-390x844.png`
-  - captures `camera-permission-transition-after-grant-390x844.png`
-  - captures `camera-permission-granted-camera-state-390x844.png`
-- Test artifacts:
-  - `qa-artifact/camera-permission-state/transition-regression/camera-permission-transition-regression.json`
-  - screenshot artifacts in the same folder
+- Headed browser review:
+  - `node camera-permission-manual-flow-390x844.cjs --headed`
+
+- Manual URLs (for direct visual check, no script):
+  - denied: `http://127.0.0.1:5173/#/home?tab=scan&scenario=camera-permission-manual&qa_camera_status=denied`
+  - prompt: `http://127.0.0.1:5173/#/home?tab=scan&scenario=camera-permission-manual&qa_camera_status=prompt`
+  - granted: `http://127.0.0.1:5173/#/home?tab=scan&scenario=camera-permission-manual&qa_camera_status=granted`
+
+### 5) One-shot e2e sweep (mobile + playwright + manual)
+
+- Full verification run in one command:
+  - `npm run test:camera-permission-state:all-390x844`
+- Optional skip cleanup:
+  - `node camera-permission-state-e2e-390x844.cjs --skip-cleanup`
+- This command runs, in order:
+  - cleanup artifacts
+  - mobile strict regression
+  - playwright focused transition
+  - manual flow capture
+- Pass check:
+  - prints `[PASS] camera permission e2e sweep completed`
 
 ### 6) Cleanup permission artifacts
 
