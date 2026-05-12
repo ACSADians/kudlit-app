@@ -5,6 +5,7 @@ const ROOT = path.join(__dirname, 'qa-artifact');
 const TARGET_DIRS = [
   'camera-permission-state',
   path.join('camera-permission-state', 'mobile-390x844'),
+  path.join('camera-permission-state', 'transition-regression'),
   'manual-camera-flow',
 ];
 

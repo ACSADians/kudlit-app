@@ -720,8 +720,12 @@ class WebStatusMessage extends StatelessWidget {
         final double availableWidth = constraints.hasBoundedWidth
             ? constraints.maxWidth
             : 360;
-        final double maxWidth = availableWidth.clamp(200.0, 240.0);
-        final bool narrow = maxWidth < 300;
+        final bool shouldCenter = shouldCenterWebScannerStatus(status);
+        final double centeredWidth = availableWidth < 240
+            ? availableWidth
+            : 240;
+        final double cardWidth = shouldCenter ? centeredWidth : availableWidth;
+        final bool narrow = availableWidth < 320 || shouldCenter;
 
         final String semanticLabel = message == null
             ? status.label
@@ -730,10 +734,11 @@ class WebStatusMessage extends StatelessWidget {
         return Semantics(
           label: semanticLabel,
           excludeSemantics: true,
-          child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: maxWidth),
+          child: RepaintBoundary(
+            key: const ValueKey('web-status-message-container'),
             child: Container(
-              width: double.infinity,
+              width: cardWidth,
+              key: const ValueKey('web-status-message-card'),
               padding: EdgeInsets.symmetric(
                 horizontal: showCompact
                     ? 12
