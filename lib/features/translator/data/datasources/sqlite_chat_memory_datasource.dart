@@ -195,9 +195,7 @@ class SqliteChatMemoryDatasource {
       remoteId: row['remote_id'] as String?,
       factType: row['fact_type'] as String,
       content: row['content'] as String,
-      createdAt: DateTime.fromMillisecondsSinceEpoch(
-        row['created_at'] as int,
-      ),
+      createdAt: DateTime.fromMillisecondsSinceEpoch(row['created_at'] as int),
       lastReferencedAt: DateTime.fromMillisecondsSinceEpoch(
         row['last_referenced_at'] as int,
       ),

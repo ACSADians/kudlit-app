@@ -39,17 +39,17 @@ class TranslateHeader extends StatelessWidget {
         final double runSpacing = tabletDensity ? 10 : 8;
         return Padding(
           padding: EdgeInsets.fromLTRB(
-            horizontalPadding,
-            topPadding,
-            horizontalPadding,
+            horizontalPadding - (tabletDensity ? 3 : 0),
+            topPadding - (tabletDensity ? 1 : 0),
+            horizontalPadding - (tabletDensity ? 3 : 0),
             bottomPadding,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               Wrap(
-                spacing: spacing,
-                runSpacing: runSpacing,
+                spacing: tabletDensity ? spacing - 2 : spacing,
+                runSpacing: tabletDensity ? runSpacing - 2 : runSpacing,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: <Widget>[
                   TranslateModeSwitch(

@@ -270,11 +270,7 @@ class _BottomBar extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              _PillButton(
-                label: 'Clear',
-                enabled: hasStrokes,
-                onTap: onClear,
-              ),
+              _PillButton(label: 'Clear', enabled: hasStrokes, onTap: onClear),
               const SizedBox(width: 8),
               _PillButton(
                 label: state.aiBusy ? 'Working...' : 'Get Feedback',
@@ -425,10 +421,7 @@ MarkdownStyleSheet _feedbackMarkdownStyle(ColorScheme cs) {
     strong: base.copyWith(fontWeight: FontWeight.w700),
     em: base.copyWith(fontStyle: FontStyle.italic),
     listBullet: base,
-    a: base.copyWith(
-      color: cs.primary,
-      decoration: TextDecoration.underline,
-    ),
+    a: base.copyWith(color: cs.primary, decoration: TextDecoration.underline),
     code: base.copyWith(
       fontFamily: 'monospace',
       fontSize: 12.5,
@@ -463,13 +456,14 @@ class _ThinkingDotsState extends State<_ThinkingDots>
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 500),
-    )..addListener(() {
-        final int next = (_ctrl.value * 3).floor() + 1;
-        if (next != _dotCount) setState(() => _dotCount = next);
-      });
+    _ctrl =
+        AnimationController(
+          vsync: this,
+          duration: const Duration(milliseconds: 500),
+        )..addListener(() {
+          final int next = (_ctrl.value * 3).floor() + 1;
+          if (next != _dotCount) setState(() => _dotCount = next);
+        });
     _ctrl.repeat();
   }
 

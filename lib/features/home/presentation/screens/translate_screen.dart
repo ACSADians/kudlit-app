@@ -14,11 +14,23 @@ import 'package:kudlit_ph/features/home/presentation/widgets/translate/translate
 import 'package:kudlit_ph/features/home/presentation/widgets/translate/translate_text_mode_panel.dart';
 import 'package:kudlit_ph/features/home/presentation/widgets/floating_tab_nav.dart';
 
-class TranslateScreen extends ConsumerWidget {
+class TranslateScreen extends ConsumerStatefulWidget {
   const TranslateScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TranslateScreen> createState() => _TranslateScreenState();
+}
+
+class _TranslateScreenState extends ConsumerState<TranslateScreen> {
+  bool _textInputFocused = false;
+
+  void _setTextInputFocused(bool focused) {
+    if (_textInputFocused == focused) return;
+    setState(() => _textInputFocused = focused);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final TranslatePageState pageState = ref.watch(
       translatePageControllerProvider,
     );
@@ -85,6 +97,7 @@ class TranslateScreen extends ConsumerWidget {
         ),
         onCopy: () => _copyOutput(context, textState),
         onShare: () => _shareOutput(context, textState),
+        onInputFocusChanged: _setTextInputFocused,
       );
     }
 
@@ -108,11 +121,19 @@ class TranslateScreen extends ConsumerWidget {
         bottom: false,
         child: LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
+            final bool portraitKeyboardOpen =
+                keyboardOpen && screenSize.height >= screenSize.width;
+            final bool preserveFocusedPortraitInput =
+                _textInputFocused &&
+                (portraitKeyboardOpen ||
+                    (screenSize.width <= 500 && constraints.maxHeight < 560));
+            final bool shortLandscape =
+                constraints.maxWidth > constraints.maxHeight &&
+                constraints.maxHeight < 500;
             final bool constrainedKeyboardLayout =
-                keyboardOpen ||
-                constraints.maxHeight < 560 ||
-                (constraints.maxWidth > constraints.maxHeight &&
-                    constraints.maxHeight < 500);
+                shortLandscape ||
+                ((keyboardOpen || constraints.maxHeight < 560) &&
+                    !preserveFocusedPortraitInput);
             if (constrainedKeyboardLayout) {
               return switch (pageState.mode) {
                 TranslateWorkspaceMode.text => textModePanel(
@@ -124,12 +145,13 @@ class TranslateScreen extends ConsumerWidget {
 
             return Column(
               children: <Widget>[
-                TranslateHeader(
-                  workspaceMode: pageState.mode,
-                  onWorkspaceModeChanged: ref
-                      .read(translatePageControllerProvider.notifier)
-                      .setMode,
-                ),
+                if (!keyboardOpen)
+                  TranslateHeader(
+                    workspaceMode: pageState.mode,
+                    onWorkspaceModeChanged: ref
+                        .read(translatePageControllerProvider.notifier)
+                        .setMode,
+                  ),
                 Expanded(
                   child: switch (pageState.mode) {
                     TranslateWorkspaceMode.text => textModePanel(
