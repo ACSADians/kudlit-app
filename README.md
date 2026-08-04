@@ -109,7 +109,7 @@ dart format lib/ test/
 The repository includes two web deployment paths:
 
 - `build.sh` for Cloudflare Pages. Configure the build command as `bash build.sh` and the output directory as `build/web`.
-- `.github/workflows/deploy-pages.yml` for GitHub Pages. It runs on pushes to `main` and can also be started manually from GitHub Actions.
+- `.github/workflows/deploy-pages.yml` for GitHub Pages. It runs on pushes to `main` and can also be started manually from GitHub Actions. A repository or organization administrator must first enable Pages with **GitHub Actions** as the source; the workflow token cannot enable Pages itself.
 
 Both deployment paths expect these repository or platform secrets:
 
