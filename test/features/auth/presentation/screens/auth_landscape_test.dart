@@ -138,7 +138,10 @@ void main() {
       await tester.pumpWidget(
         const ProviderScope(
           child: MaterialApp(
-            home: PhoneOtpScreen(phoneNumber: '+639171234567'),
+            home: PhoneOtpScreen(
+              phoneNumber: '+639171234567',
+              initialCooldown: 0,
+            ),
           ),
         ),
       );
@@ -158,7 +161,10 @@ void main() {
   ) async {
     await pumpLandscape(
       tester,
-      const PhoneOtpScreen(phoneNumber: '+639171234567'),
+      const PhoneOtpScreen(
+        phoneNumber: '+639171234567',
+        initialCooldown: 0,
+      ),
     );
 
     expect(find.text('Enter the code'), findsOneWidget);
@@ -177,7 +183,8 @@ void main() {
   testWidgets('reset password screen fits phone landscape', (tester) async {
     await pumpLandscape(tester, const ResetPasswordScreen());
 
-    expect(find.text('Reset password'), findsOneWidget);
+    expect(find.text('Set a new password'), findsOneWidget);
+    expect(find.text('Update password'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }
